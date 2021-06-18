@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  gotyno-hs:
+    image: gonz/quanterall-development:lts-16.31
+    volumes:
+      - ..:/workspace:cached
+      - ./build/stack-work:/workspace/.stack-work:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+
+networks:
+  default:
+    driver: bridge
