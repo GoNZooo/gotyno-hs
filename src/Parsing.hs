@@ -11,16 +11,21 @@ import RIO
     Maybe (..),
     RIO,
     Show,
+    String,
     Text,
     Void,
+    any,
     ask,
     error,
     fromMaybe,
+    id,
     maybe,
     mconcat,
     modifyIORef,
     newIORef,
+    not,
     pure,
+    readFileUtf8,
     readIORef,
     runRIO,
     show,
@@ -34,6 +39,7 @@ import RIO
     (>>>),
   )
 import RIO.List (find)
+import qualified RIO.Set as Set
 import RIO.Text (pack, unpack)
 import System.IO (putStrLn)
 import Text.Megaparsec
@@ -61,6 +67,47 @@ test state text parser = do
     Right successValue -> pPrint successValue
     Left e -> putStrLn $ errorBundlePretty e
 
+typeDefinitionP :: Parser TypeDefinition
+typeDefinitionP = do
+  keyword <- choice [string "struct", string "union"]
+  char ' '
+  definition <- case keyword of
+    "struct" -> structP
+    "union" -> reportError "`union` not implemented"
+    other -> reportError $ "Unknown type definition keyword: " <> unpack other
+  addDefinition definition
+  pure definition
+
+structP :: Parser TypeDefinition
+structP = do
+  name <- definitionNameP
+  string " {\n"
+  fields <- fieldsP
+  char '}'
+  pure TypeDefinition {name, typeData = PlainStruct PlainStructData {fields}}
+
+fieldsP :: Parser [StructField]
+fieldsP = some fieldP
+
+fieldP :: Parser StructField
+fieldP = do
+  string "    "
+  name <- fieldNameP
+  string ": "
+  fieldType <- fieldTypeP
+  newline
+  pure $ StructField {name, fieldType}
+
+fieldNameP :: Parser Text
+fieldNameP = do
+  initialLowerCaseCharacter <- lowerChar
+  ((initialLowerCaseCharacter :) >>> pack) <$> some alphaNumChar
+
+definitionNameP :: Parser DefinitionName
+definitionNameP = do
+  initialTitleCaseCharacter <- upperChar
+  ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> some alphaNumChar
+
 fieldTypeP :: Parser FieldType
 fieldTypeP =
   choice
@@ -76,20 +123,28 @@ getDefinition name = do
   pure $ find (\TypeDefinition {name = definitionName} -> name == definitionName) definitions
 
 addDefinition :: TypeDefinition -> Parser ()
-addDefinition definition = do
+addDefinition definition@TypeDefinition {name = DefinitionName definitionName} = do
   AppState {definitionsReference} <- ask
-  modifyIORef definitionsReference (definition :)
+  definitions <- readIORef definitionsReference
+  if not (hasDefinition definition definitions)
+    then modifyIORef definitionsReference (definition :)
+    else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
+
+hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
+hasDefinition TypeDefinition {name} = any (\TypeDefinition {name = name'} -> name == name')
 
 definitionReferenceP :: Parser TypeDefinition
-definitionReferenceP = do
-  initialTitleCaseCharacter <- upperChar
-  soughtName <-
-    ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> someTill alphaNumChar newline
-  fromMaybe
-    ( error $
-        mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName]
-    )
-    <$> getDefinition soughtName
+definitionReferenceP =
+  do
+    soughtName <- definitionNameP
+    maybeDefinition <- getDefinition soughtName
+    maybe
+      (reportError $ mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName])
+      pure
+      maybeDefinition
+
+reportError :: String -> Parser a
+reportError = ErrorFail >>> Set.singleton >>> fancyFailure
 
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, booleanP, basicStringP]
@@ -98,25 +153,25 @@ uintP :: Parser BasicTypeValue
 uintP = do
   char 'U'
   size <- decimal
-  pure $ case size of
-    8 -> U8
-    16 -> U16
-    32 -> U32
-    64 -> U64
-    128 -> U128
-    other -> error $ "Invalid size for Ux: " <> show @Int other
+  case size of
+    8 -> pure U8
+    16 -> pure U16
+    32 -> pure U32
+    64 -> pure U64
+    128 -> pure U128
+    other -> reportError $ "Invalid size for Ux: " <> show @Int other
 
 intP :: Parser BasicTypeValue
 intP = do
   char 'I'
   size <- decimal
-  pure $ case size of
-    8 -> I8
-    16 -> I16
-    32 -> I32
-    64 -> I64
-    128 -> I128
-    other -> error $ "Invalid size for Ix: " <> show @Int other
+  case size of
+    8 -> pure I8
+    16 -> pure I16
+    32 -> pure I32
+    64 -> pure I64
+    128 -> pure I128
+    other -> reportError $ "Invalid size for Ix: " <> show @Int other
 
 booleanP :: Parser BasicTypeValue
 booleanP = string "Boolean" $> Boolean
@@ -147,7 +202,7 @@ falseP = string "false" $> False
 
 testAppState :: IO AppState
 testAppState = do
-  definitionsReference <- newIORef [recruiterType]
+  definitionsReference <- newIORef []
   pure AppState {currentModuleName = "test.gotyno", definitionsReference}
 
 recruiterType :: TypeDefinition
@@ -157,8 +212,7 @@ recruiterType =
       typeData =
         PlainStruct
           ( PlainStructData
-              { name = "Recruiter",
-                fields =
+              { fields =
                   [ StructField
                       { name = "type",
                         fieldType = LiteralType (LiteralString "Recruiter")
@@ -171,3 +225,6 @@ recruiterType =
               }
           )
     }
+
+exampleContent :: IO Text
+exampleContent = readFileUtf8 "basic.gotyno"

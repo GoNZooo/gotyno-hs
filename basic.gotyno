@@ -1,3 +1,4 @@
 struct Recruiter {
+    type: "Recruiter"
     name: String
 }

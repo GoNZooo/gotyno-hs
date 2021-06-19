@@ -23,9 +23,8 @@ newtype TypeData
   = PlainStruct PlainStructData
   deriving (Eq, Show)
 
-data PlainStructData = PlainStructData
-  { name :: Text,
-    fields :: [StructField]
+newtype PlainStructData = PlainStructData
+  { fields :: [StructField]
   }
   deriving (Eq, Show)
 
