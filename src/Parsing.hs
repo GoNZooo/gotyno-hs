@@ -75,6 +75,11 @@ getDefinition name = do
   definitions <- readIORef definitionsReference
   pure $ find (\TypeDefinition {name = definitionName} -> name == definitionName) definitions
 
+addDefinition :: TypeDefinition -> Parser ()
+addDefinition definition = do
+  AppState {definitionsReference} <- ask
+  modifyIORef definitionsReference (definition :)
+
 definitionReferenceP :: Parser TypeDefinition
 definitionReferenceP = do
   initialTitleCaseCharacter <- upperChar
