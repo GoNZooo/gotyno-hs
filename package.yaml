@@ -4,6 +4,9 @@ version: "0.0.0"
 dependencies:
 
 - base >=4.9.1.0 && <5
+- rio
+- megaparsec
+- pretty-show
 
 default-extensions:
 - ApplicativeDo

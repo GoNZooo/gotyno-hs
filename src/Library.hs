@@ -1,6 +1,7 @@
 module Library where
 
-import Prelude
+import RIO
+import Prelude (putStrLn)
 
 runMain :: IO ()
 runMain = do

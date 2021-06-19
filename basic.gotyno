@@ -1,0 +1,3 @@
+struct Recruiter {
+    name: String
+}
