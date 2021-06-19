@@ -6,22 +6,36 @@ import RIO
   ( Bool (..),
     Either (..),
     IO,
+    IORef,
     Int,
+    Maybe (..),
     RIO,
     Show,
     Text,
     Void,
+    ask,
     error,
+    fromMaybe,
+    maybe,
+    mconcat,
+    modifyIORef,
+    newIORef,
     pure,
+    readIORef,
     runRIO,
     show,
+    undefined,
+    writeIORef,
     ($),
     ($>),
     (<$>),
     (<>),
+    (==),
     (>>>),
   )
-import RIO.Text (pack)
+import RIO.List (find)
+import RIO.Text (pack, unpack)
+import System.IO (putStrLn)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer
@@ -29,7 +43,8 @@ import Text.Show.Pretty (pPrint)
 import Types
 
 data AppState = AppState
-  { currentModuleName :: Text
+  { currentModuleName :: !Text,
+    definitionsReference :: !(IORef [TypeDefinition])
   }
 
 type Parser = ParsecT Void Text (RIO AppState)
@@ -39,15 +54,37 @@ run state text parser = do
   let parserResult = runParserT parser "" text
   runRIO state parserResult
 
-test :: (Show a) => Text -> Parser a -> IO ()
-test text parser = do
-  result <- run (AppState {currentModuleName = "test"}) text parser
+test :: (Show a) => AppState -> Text -> Parser a -> IO ()
+test state text parser = do
+  result <- run state text parser
   case result of
     Right successValue -> pPrint successValue
-    Left e -> pPrint e
+    Left e -> putStrLn $ errorBundlePretty e
 
-helloP :: Parser Text
-helloP = string "hello"
+fieldTypeP :: Parser FieldType
+fieldTypeP =
+  choice
+    [ LiteralType <$> literalP,
+      BasicType <$> basicTypeValueP,
+      DefinitionReferenceType <$> definitionReferenceP
+    ]
+
+getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
+getDefinition name = do
+  AppState {definitionsReference} <- ask
+  definitions <- readIORef definitionsReference
+  pure $ find (\TypeDefinition {name = definitionName} -> name == definitionName) definitions
+
+definitionReferenceP :: Parser TypeDefinition
+definitionReferenceP = do
+  initialTitleCaseCharacter <- upperChar
+  soughtName <-
+    ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> someTill alphaNumChar newline
+  fromMaybe
+    ( error $
+        mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName]
+    )
+    <$> getDefinition soughtName
 
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, booleanP, basicStringP]
@@ -102,3 +139,30 @@ trueP = string "true" $> True
 
 falseP :: Parser Bool
 falseP = string "false" $> False
+
+testAppState :: IO AppState
+testAppState = do
+  definitionsReference <- newIORef [recruiterType]
+  pure AppState {currentModuleName = "test.gotyno", definitionsReference}
+
+recruiterType :: TypeDefinition
+recruiterType =
+  TypeDefinition
+    { name = DefinitionName "Recruiter",
+      typeData =
+        PlainStruct
+          ( PlainStructData
+              { name = "Recruiter",
+                fields =
+                  [ StructField
+                      { name = "type",
+                        fieldType = LiteralType (LiteralString "Recruiter")
+                      },
+                    StructField
+                      { name = "name",
+                        fieldType = BasicType BasicString
+                      }
+                  ]
+              }
+          )
+    }

@@ -10,7 +10,16 @@ data Expression
 newtype Import = Import {unImport :: Text}
   deriving (Eq, Show)
 
-newtype TypeDefinition
+newtype DefinitionName = DefinitionName {unDefinitionName :: Text}
+  deriving (Eq, Show)
+
+data TypeDefinition = TypeDefinition
+  { name :: DefinitionName,
+    typeData :: TypeData
+  }
+  deriving (Eq, Show)
+
+newtype TypeData
   = PlainStruct PlainStructData
   deriving (Eq, Show)
 
@@ -29,7 +38,7 @@ data StructField = StructField
 data FieldType
   = LiteralType LiteralTypeValue
   | BasicType BasicTypeValue
-  | DefinitionType TypeDefinition
+  | DefinitionReferenceType TypeDefinition
   deriving (Eq, Show)
 
 data BasicTypeValue
