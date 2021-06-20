@@ -19,12 +19,24 @@ data TypeDefinition = TypeDefinition
   }
   deriving (Eq, Show)
 
-newtype TypeData
+data TypeData
   = PlainStruct PlainStructData
+  | PlainUnion PlainUnionData
   deriving (Eq, Show)
 
 newtype PlainStructData = PlainStructData
   { fields :: [StructField]
+  }
+  deriving (Eq, Show)
+
+newtype PlainUnionData = PlainUnionData
+  { constructors :: [PlainUnionConstructor]
+  }
+  deriving (Eq, Show)
+
+data PlainUnionConstructor = PlainUnionConstructor
+  { name :: Text,
+    payload :: Maybe FieldType
   }
   deriving (Eq, Show)
 

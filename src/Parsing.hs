@@ -73,7 +73,7 @@ typeDefinitionP = do
   char ' '
   definition <- case keyword of
     "struct" -> structP
-    "union" -> reportError "`union` not implemented"
+    "union" -> unionP
     other -> reportError $ "Unknown type definition keyword: " <> unpack other
   addDefinition definition
   pure definition
@@ -85,6 +85,28 @@ structP = do
   fields <- fieldsP
   char '}'
   pure TypeDefinition {name, typeData = PlainStruct PlainStructData {fields}}
+
+constructorsP :: Parser [PlainUnionConstructor]
+constructorsP = some constructorP
+
+constructorP :: Parser PlainUnionConstructor
+constructorP = do
+  string "    "
+  (DefinitionName name) <- definitionNameP
+  maybeColon <- optional $ string ": "
+  payload <- case maybeColon of
+    Just _ -> Just <$> fieldTypeP
+    Nothing -> pure Nothing
+  newline
+  pure PlainUnionConstructor {name, payload}
+
+unionP :: Parser TypeDefinition
+unionP = do
+  name <- definitionNameP
+  string " {\n"
+  constructors <- constructorsP
+  char '}'
+  pure TypeDefinition {name, typeData = PlainUnion PlainUnionData {constructors}}
 
 fieldsP :: Parser [StructField]
 fieldsP = some fieldP

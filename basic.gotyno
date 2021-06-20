@@ -2,3 +2,13 @@ struct Recruiter {
     type: "Recruiter"
     name: String
 }
+
+union GetSearchesFilter {
+    SearchesByQueryLike: String
+    SearchesByResultLike: String
+    NoSearchesFilter
+}
+
+struct SearchesParameters {
+    filter: GetSearchesFilter
+}
