@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
-
 module Parsing where
 
 import RIO
@@ -370,29 +368,33 @@ precededBy precededParser parser = do
   _ <- precededParser
   parser
 
+integerSizes :: [Int]
+integerSizes = [8, 16, 32, 64, 128]
+
+integerTypeParsers :: Text -> [Parser Text]
+integerTypeParsers prefix = List.map (show >>> pack >>> (prefix <>) >>> string) integerSizes
+
 uintP :: Parser BasicTypeValue
 uintP = do
-  char 'U'
-  size <- decimal
-  case size of
-    8 -> pure U8
-    16 -> pure U16
-    32 -> pure U32
-    64 -> pure U64
-    128 -> pure U128
-    other -> reportError $ "Invalid size for Ux: " <> show @Int other
+  uint <- choice $ integerTypeParsers "U"
+  case uint of
+    "U8" -> pure U8
+    "U16" -> pure U16
+    "U32" -> pure U32
+    "U64" -> pure U64
+    "U128" -> pure U128
+    other -> reportError $ "Invalid size for Ux: " <> unpack other
 
 intP :: Parser BasicTypeValue
 intP = do
-  char 'I'
-  size <- decimal
-  case size of
-    8 -> pure I8
-    16 -> pure I16
-    32 -> pure I32
-    64 -> pure I64
-    128 -> pure I128
-    other -> reportError $ "Invalid size for Ix: " <> show @Int other
+  int <- choice $ integerTypeParsers "I"
+  case int of
+    "I8" -> pure I8
+    "I16" -> pure I16
+    "I32" -> pure I32
+    "I64" -> pure I64
+    "I128" -> pure I128
+    other -> reportError $ "Invalid size for Ix: " <> unpack other
 
 booleanP :: Parser BasicTypeValue
 booleanP = string "Boolean" $> Boolean
