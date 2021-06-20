@@ -17,7 +17,7 @@ data Expression
 newtype Import = Import Module
   deriving (Eq, Show)
 
-newtype DefinitionName = DefinitionName {unDefinitionName :: Text}
+newtype DefinitionName = DefinitionName Text
   deriving (Eq, Show)
 
 data TypeDefinition = TypeDefinition

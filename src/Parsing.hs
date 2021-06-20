@@ -211,10 +211,10 @@ recursiveReferenceP = do
 definitionReferenceP :: Parser TypeDefinition
 definitionReferenceP =
   do
-    soughtName <- definitionNameP
+    soughtName@(DefinitionName n) <- definitionNameP
     maybeDefinition <- getDefinition soughtName
     maybe
-      (reportError $ mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName])
+      (reportError $ mconcat ["Unknown type reference: ", unpack n])
       pure
       maybeDefinition
 
