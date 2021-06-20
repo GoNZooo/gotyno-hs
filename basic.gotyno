@@ -1,6 +1,8 @@
 struct Recruiter {
     type: "Recruiter"
     name: String
+    emails: [3]?String
+    recruiter: ?Recruiter
 }
 
 union GetSearchesFilter {

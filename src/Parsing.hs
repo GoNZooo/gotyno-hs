@@ -33,6 +33,7 @@ import RIO
     writeIORef,
     ($),
     ($>),
+    (*>),
     (<$>),
     (<>),
     (==),
@@ -50,6 +51,7 @@ import Types
 
 data AppState = AppState
   { currentModuleName :: !Text,
+    currentDefinitionNameReference :: !(IORef (Maybe DefinitionName)),
     definitionsReference :: !(IORef [TypeDefinition])
   }
 
@@ -81,6 +83,7 @@ typeDefinitionP = do
 structP :: Parser TypeDefinition
 structP = do
   name <- definitionNameP
+  setCurrentDefinitionName name
   string " {\n"
   fields <- fieldsP
   char '}'
@@ -103,6 +106,7 @@ constructorP = do
 unionP :: Parser TypeDefinition
 unionP = do
   name <- definitionNameP
+  setCurrentDefinitionName name
   string " {\n"
   constructors <- constructorsP
   char '}'
@@ -129,6 +133,22 @@ definitionNameP :: Parser DefinitionName
 definitionNameP = do
   initialTitleCaseCharacter <- upperChar
   ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> some alphaNumChar
+
+setCurrentDefinitionName :: DefinitionName -> Parser ()
+setCurrentDefinitionName name = do
+  AppState {currentDefinitionNameReference} <- ask
+  writeIORef currentDefinitionNameReference (Just name)
+
+recursiveReferenceP :: Parser DefinitionName
+recursiveReferenceP = do
+  AppState {currentDefinitionNameReference} <- ask
+  maybeCurrentDefinitionName <- readIORef currentDefinitionNameReference
+  case maybeCurrentDefinitionName of
+    Just currentDefinitionName@(DefinitionName n) -> do
+      _ <- string n
+      pure currentDefinitionName
+    Nothing ->
+      reportError "Recursive reference not valid when we have no current definition name"
 
 definitionReferenceP :: Parser TypeDefinition
 definitionReferenceP =
@@ -162,6 +182,7 @@ fieldTypeP =
   choice
     [ LiteralType <$> literalP,
       BasicType <$> basicTypeValueP,
+      RecursiveReferenceType <$> recursiveReferenceP,
       DefinitionReferenceType <$> definitionReferenceP,
       ComplexType <$> complexTypeP
     ]
@@ -173,17 +194,26 @@ basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, booleanP, basicStringP]
 
 complexTypeP :: Parser ComplexTypeValue
-complexTypeP = choice [sliceTypeP, arrayTypeP]
+complexTypeP = choice [sliceTypeP, arrayTypeP, optionalTypeP, pointerTypeP]
 
 sliceTypeP :: Parser ComplexTypeValue
-sliceTypeP = do
-  _ <- string "[]"
-  SliceType <$> fieldTypeP
+sliceTypeP = SliceType <$> precededBy (string "[]") fieldTypeP
 
 arrayTypeP :: Parser ComplexTypeValue
 arrayTypeP = do
   size <- between (char '[') (char ']') decimal
   ArrayType size <$> fieldTypeP
+
+optionalTypeP :: Parser ComplexTypeValue
+optionalTypeP = OptionalType <$> precededBy (char '?') fieldTypeP
+
+pointerTypeP :: Parser ComplexTypeValue
+pointerTypeP = PointerType <$> precededBy (char '*') fieldTypeP
+
+precededBy :: Parser ignored -> Parser a -> Parser a
+precededBy precededParser parser = do
+  _ <- precededParser
+  parser
 
 uintP :: Parser BasicTypeValue
 uintP = do
@@ -239,7 +269,13 @@ falseP = string "false" $> False
 testAppState :: IO AppState
 testAppState = do
   definitionsReference <- newIORef []
-  pure AppState {currentModuleName = "test.gotyno", definitionsReference}
+  currentDefinitionNameReference <- newIORef Nothing
+  pure
+    AppState
+      { currentModuleName = "test.gotyno",
+        definitionsReference,
+        currentDefinitionNameReference
+      }
 
 recruiterType :: TypeDefinition
 recruiterType =

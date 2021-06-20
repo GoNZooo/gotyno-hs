@@ -51,6 +51,7 @@ data FieldType
   | BasicType BasicTypeValue
   | ComplexType ComplexTypeValue
   | DefinitionReferenceType TypeDefinition
+  | RecursiveReferenceType DefinitionName
   deriving (Eq, Show)
 
 data BasicTypeValue
@@ -71,6 +72,8 @@ data BasicTypeValue
 data ComplexTypeValue
   = SliceType FieldType
   | ArrayType Integer FieldType
+  | OptionalType FieldType
+  | PointerType FieldType
   deriving (Eq, Show)
 
 data LiteralTypeValue
