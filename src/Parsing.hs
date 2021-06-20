@@ -52,7 +52,6 @@ import Types
 
 data AppState = AppState
   { modulesReference :: !(IORef [Module]),
-    currentModuleNameReference :: !(IORef Text),
     currentImportsReference :: !(IORef [Import]),
     currentDefinitionsReference :: !(IORef [TypeDefinition]),
     currentDefinitionNameReference :: !(IORef (Maybe DefinitionName))
@@ -326,11 +325,9 @@ testAppState = do
   currentDefinitionsReference <- newIORef []
   currentImportsReference <- newIORef []
   currentDefinitionNameReference <- newIORef Nothing
-  currentModuleNameReference <- newIORef "importExample"
   pure
     AppState
-      { currentModuleNameReference,
-        currentDefinitionsReference,
+      { currentDefinitionsReference,
         currentDefinitionNameReference,
         currentImportsReference,
         modulesReference
