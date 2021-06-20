@@ -1,0 +1,14 @@
+union Maybe <T>{
+    Nothing
+    Just: T
+}
+
+union Either <L, R>{
+    Left: L
+    Right: R
+}
+
+struct UsingGenerics {
+    field1: Maybe<String>
+    field2: Either<String, U32>
+}

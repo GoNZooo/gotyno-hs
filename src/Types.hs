@@ -36,6 +36,7 @@ data ImportedTypeDefinition = ImportedTypeDefinition
 data TypeData
   = PlainStruct PlainStructData
   | PlainUnion PlainUnionData
+  | GenericUnion GenericUnionData
   deriving (Eq, Show)
 
 newtype PlainStructData = PlainStructData
@@ -44,11 +45,17 @@ newtype PlainStructData = PlainStructData
   deriving (Eq, Show)
 
 newtype PlainUnionData = PlainUnionData
-  { constructors :: [PlainUnionConstructor]
+  { constructors :: [Constructor]
   }
   deriving (Eq, Show)
 
-data PlainUnionConstructor = PlainUnionConstructor
+data GenericUnionData = GenericUnionData
+  { constructors :: [Constructor],
+    typeVariables :: [Text]
+  }
+  deriving (Eq, Show)
+
+data Constructor = Constructor
   { name :: !Text,
     payload :: !(Maybe FieldType)
   }
@@ -64,9 +71,15 @@ data FieldType
   = LiteralType LiteralTypeValue
   | BasicType BasicTypeValue
   | ComplexType ComplexTypeValue
-  | DefinitionReferenceType TypeDefinition
+  | DefinitionReferenceType DefinitionReference
   | RecursiveReferenceType DefinitionName
+  | TypeVariableReferenceType Text
   | ImportedReferenceType ImportedTypeDefinition
+  deriving (Eq, Show)
+
+data DefinitionReference
+  = DefinitionReference TypeDefinition
+  | AppliedGenericReference [FieldType] TypeDefinition
   deriving (Eq, Show)
 
 data BasicTypeValue
