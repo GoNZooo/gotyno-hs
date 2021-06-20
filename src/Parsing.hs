@@ -130,13 +130,15 @@ definitionNameP = do
   initialTitleCaseCharacter <- upperChar
   ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> some alphaNumChar
 
-fieldTypeP :: Parser FieldType
-fieldTypeP =
-  choice
-    [ LiteralType <$> literalP,
-      BasicType <$> basicTypeValueP,
-      DefinitionReferenceType <$> definitionReferenceP
-    ]
+definitionReferenceP :: Parser TypeDefinition
+definitionReferenceP =
+  do
+    soughtName <- definitionNameP
+    maybeDefinition <- getDefinition soughtName
+    maybe
+      (reportError $ mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName])
+      pure
+      maybeDefinition
 
 getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
 getDefinition name = do
@@ -155,21 +157,33 @@ addDefinition definition@TypeDefinition {name = DefinitionName definitionName} =
 hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
 hasDefinition TypeDefinition {name} = any (\TypeDefinition {name = name'} -> name == name')
 
-definitionReferenceP :: Parser TypeDefinition
-definitionReferenceP =
-  do
-    soughtName <- definitionNameP
-    maybeDefinition <- getDefinition soughtName
-    maybe
-      (reportError $ mconcat ["Unknown type reference: ", unpack $ unDefinitionName soughtName])
-      pure
-      maybeDefinition
+fieldTypeP :: Parser FieldType
+fieldTypeP =
+  choice
+    [ LiteralType <$> literalP,
+      BasicType <$> basicTypeValueP,
+      DefinitionReferenceType <$> definitionReferenceP,
+      ComplexType <$> complexTypeP
+    ]
 
 reportError :: String -> Parser a
 reportError = ErrorFail >>> Set.singleton >>> fancyFailure
 
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, booleanP, basicStringP]
+
+complexTypeP :: Parser ComplexTypeValue
+complexTypeP = choice [sliceTypeP, arrayTypeP]
+
+sliceTypeP :: Parser ComplexTypeValue
+sliceTypeP = do
+  _ <- string "[]"
+  SliceType <$> fieldTypeP
+
+arrayTypeP :: Parser ComplexTypeValue
+arrayTypeP = do
+  size <- between (char '[') (char ']') decimal
+  ArrayType size <$> fieldTypeP
 
 uintP :: Parser BasicTypeValue
 uintP = do

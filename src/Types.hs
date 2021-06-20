@@ -49,6 +49,7 @@ data StructField = StructField
 data FieldType
   = LiteralType LiteralTypeValue
   | BasicType BasicTypeValue
+  | ComplexType ComplexTypeValue
   | DefinitionReferenceType TypeDefinition
   deriving (Eq, Show)
 
@@ -65,6 +66,11 @@ data BasicTypeValue
   | I128
   | Boolean
   | BasicString
+  deriving (Eq, Show)
+
+data ComplexTypeValue
+  = SliceType FieldType
+  | ArrayType Integer FieldType
   deriving (Eq, Show)
 
 data LiteralTypeValue

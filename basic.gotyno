@@ -10,5 +10,5 @@ union GetSearchesFilter {
 }
 
 struct SearchesParameters {
-    filter: GetSearchesFilter
+    filters: []GetSearchesFilter
 }
