@@ -17,6 +17,7 @@ import RIO
     Void,
     any,
     ask,
+    error,
     forM_,
     fromMaybe,
     maybe,
@@ -77,7 +78,7 @@ parseModules files = do
     maybeModule <- run state fileContents (moduleP $ pack moduleName)
     case maybeModule of
       Right module' -> addModule module' modulesReference
-      Left e -> putStrLn $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
+      Left e -> error $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
 
   readIORef modulesReference
 
@@ -95,7 +96,7 @@ test state text parser = do
 
 moduleP :: Text -> Parser Module
 moduleP name = do
-  imports <- fromMaybe [] <$> optional (some importP <* newline)
+  imports <- fromMaybe [] <$> optional (sepEndBy1 importP newline <* newline)
   addImports imports
   definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
   pure Module {name, imports, definitions}
@@ -108,7 +109,7 @@ addImports imports = do
 importP :: Parser Import
 importP = do
   string "import "
-  importName <- manyTill (alphaNumChar <|> char '_') newline
+  importName <- some (alphaNumChar <|> char '_')
   maybeModule <- getModule importName
   case maybeModule of
     Just module' -> do
