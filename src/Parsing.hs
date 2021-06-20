@@ -311,18 +311,30 @@ checkForTypeVariable name = do
 
 importedReferenceP :: Parser ImportedTypeDefinition
 importedReferenceP = do
-  moduleName <- someTill lowerChar (char '.')
+  imports <- getImports
+  moduleName <- choice (List.map (\(Import Module {name}) -> string name) imports) <* char '.'
   definitionName@(DefinitionName n) <- definitionNameP
-  maybeModule <- getImport $ pack moduleName
+  maybeModule <- getImport moduleName
   case maybeModule of
     Just (Import Module {name = sourceModule, definitions}) -> do
       case List.find (\TypeDefinition {name} -> name == definitionName) definitions of
         Just TypeDefinition {name = foundDefinitionName, typeData} ->
           pure $ ImportedTypeDefinition {name = foundDefinitionName, sourceModule, typeData}
         Nothing ->
-          reportError $ mconcat ["Unknown definition in module '", moduleName, "': ", unpack n]
+          reportError $
+            mconcat
+              [ "Unknown definition in module '",
+                unpack moduleName,
+                "': ",
+                unpack n
+              ]
     Nothing ->
-      reportError $ "Unknown module referenced, not in imports: " <> moduleName
+      reportError $ "Unknown module referenced, not in imports: " <> unpack moduleName
+
+getImports :: Parser [Import]
+getImports = do
+  AppState {currentImportsReference} <- ask
+  readIORef currentImportsReference
 
 getImport :: Text -> Parser (Maybe Import)
 getImport soughtName = do
