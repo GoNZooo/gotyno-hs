@@ -2,20 +2,34 @@ module Types where
 
 import RIO
 
+data Module = Module
+  { name :: !Text,
+    imports :: [Import],
+    definitions :: [TypeDefinition]
+  }
+  deriving (Eq, Show)
+
 data Expression
   = ImportExpression Import
   | TypeDefinitionExpression TypeDefinition
   deriving (Eq, Show)
 
-newtype Import = Import {unImport :: Text}
+newtype Import = Import Module
   deriving (Eq, Show)
 
 newtype DefinitionName = DefinitionName {unDefinitionName :: Text}
   deriving (Eq, Show)
 
 data TypeDefinition = TypeDefinition
-  { name :: DefinitionName,
-    typeData :: TypeData
+  { name :: !DefinitionName,
+    typeData :: !TypeData
+  }
+  deriving (Eq, Show)
+
+data ImportedTypeDefinition = ImportedTypeDefinition
+  { sourceModule :: !Text,
+    name :: !DefinitionName,
+    typeData :: !TypeData
   }
   deriving (Eq, Show)
 
@@ -35,8 +49,8 @@ newtype PlainUnionData = PlainUnionData
   deriving (Eq, Show)
 
 data PlainUnionConstructor = PlainUnionConstructor
-  { name :: Text,
-    payload :: Maybe FieldType
+  { name :: !Text,
+    payload :: !(Maybe FieldType)
   }
   deriving (Eq, Show)
 
@@ -52,6 +66,7 @@ data FieldType
   | ComplexType ComplexTypeValue
   | DefinitionReferenceType TypeDefinition
   | RecursiveReferenceType DefinitionName
+  | ImportedReferenceType ImportedTypeDefinition
   deriving (Eq, Show)
 
 data BasicTypeValue

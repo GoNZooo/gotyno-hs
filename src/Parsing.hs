@@ -35,6 +35,7 @@ import RIO
     ($>),
     (*>),
     (<$>),
+    (<*),
     (<>),
     (==),
     (>>>),
@@ -50,9 +51,11 @@ import Text.Show.Pretty (pPrint)
 import Types
 
 data AppState = AppState
-  { currentModuleName :: !Text,
-    currentDefinitionNameReference :: !(IORef (Maybe DefinitionName)),
-    definitionsReference :: !(IORef [TypeDefinition])
+  { modulesReference :: !(IORef [Module]),
+    currentModuleNameReference :: !(IORef Text),
+    currentImportsReference :: !(IORef [Import]),
+    currentDefinitionsReference :: !(IORef [TypeDefinition]),
+    currentDefinitionNameReference :: !(IORef (Maybe DefinitionName))
   }
 
 type Parser = ParsecT Void Text (RIO AppState)
@@ -68,6 +71,35 @@ test state text parser = do
   case result of
     Right successValue -> pPrint successValue
     Left e -> putStrLn $ errorBundlePretty e
+
+moduleP :: Text -> Parser Module
+moduleP name = do
+  imports <- fromMaybe [] <$> optional (some importP <* newline)
+  addImports imports
+  definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
+  pure Module {name, imports, definitions}
+
+addImports :: [Import] -> Parser ()
+addImports imports = do
+  AppState {currentImportsReference} <- ask
+  writeIORef currentImportsReference imports
+
+importP :: Parser Import
+importP = do
+  string "import "
+  importName <- manyTill (alphaNumChar <|> char '_') newline
+  maybeModule <- getModule importName
+  case maybeModule of
+    Just module' -> do
+      pure $ Import module'
+    Nothing ->
+      reportError $ "Unknown module referenced: " <> importName
+
+getModule :: String -> Parser (Maybe Module)
+getModule importName = do
+  AppState {modulesReference} <- ask
+  modules <- readIORef modulesReference
+  pure $ find (\Module {name} -> name == pack importName) modules
 
 typeDefinitionP :: Parser TypeDefinition
 typeDefinitionP = do
@@ -162,16 +194,16 @@ definitionReferenceP =
 
 getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
 getDefinition name = do
-  AppState {definitionsReference} <- ask
-  definitions <- readIORef definitionsReference
+  AppState {currentDefinitionsReference} <- ask
+  definitions <- readIORef currentDefinitionsReference
   pure $ find (\TypeDefinition {name = definitionName} -> name == definitionName) definitions
 
 addDefinition :: TypeDefinition -> Parser ()
 addDefinition definition@TypeDefinition {name = DefinitionName definitionName} = do
-  AppState {definitionsReference} <- ask
-  definitions <- readIORef definitionsReference
+  AppState {currentDefinitionsReference} <- ask
+  definitions <- readIORef currentDefinitionsReference
   if not (hasDefinition definition definitions)
-    then modifyIORef definitionsReference (definition :)
+    then modifyIORef currentDefinitionsReference (definition :)
     else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
 
 hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
@@ -184,8 +216,30 @@ fieldTypeP =
       BasicType <$> basicTypeValueP,
       RecursiveReferenceType <$> recursiveReferenceP,
       DefinitionReferenceType <$> definitionReferenceP,
-      ComplexType <$> complexTypeP
+      ComplexType <$> complexTypeP,
+      ImportedReferenceType <$> importedReferenceP
     ]
+
+importedReferenceP :: Parser ImportedTypeDefinition
+importedReferenceP = do
+  moduleName <- someTill lowerChar (char '.')
+  definitionName@(DefinitionName n) <- definitionNameP
+  maybeModule <- getImport $ pack moduleName
+  case maybeModule of
+    Just (Import Module {name = sourceModule, definitions}) -> do
+      case find (\TypeDefinition {name} -> name == definitionName) definitions of
+        Just TypeDefinition {name = foundDefinitionName, typeData} ->
+          pure $ ImportedTypeDefinition {name = foundDefinitionName, sourceModule, typeData}
+        Nothing ->
+          reportError $ mconcat ["Unknown definition in module '", moduleName, "': ", unpack n]
+    Nothing ->
+      reportError $ "Unknown module referenced, not in imports: " <> moduleName
+
+getImport :: Text -> Parser (Maybe Import)
+getImport soughtName = do
+  AppState {currentImportsReference} <- ask
+  imports <- readIORef currentImportsReference
+  pure $ find (\(Import Module {name}) -> soughtName == name) imports
 
 reportError :: String -> Parser a
 reportError = ErrorFail >>> Set.singleton >>> fancyFailure
@@ -268,35 +322,125 @@ falseP = string "false" $> False
 
 testAppState :: IO AppState
 testAppState = do
-  definitionsReference <- newIORef []
+  modulesReference <- newIORef [basicModule]
+  currentDefinitionsReference <- newIORef []
+  currentImportsReference <- newIORef []
   currentDefinitionNameReference <- newIORef Nothing
+  currentModuleNameReference <- newIORef "importExample"
   pure
     AppState
-      { currentModuleName = "test.gotyno",
-        definitionsReference,
-        currentDefinitionNameReference
+      { currentModuleNameReference,
+        currentDefinitionsReference,
+        currentDefinitionNameReference,
+        currentImportsReference,
+        modulesReference
       }
 
-recruiterType :: TypeDefinition
-recruiterType =
-  TypeDefinition
-    { name = DefinitionName "Recruiter",
-      typeData =
-        PlainStruct
-          ( PlainStructData
-              { fields =
-                  [ StructField
-                      { name = "type",
-                        fieldType = LiteralType (LiteralString "Recruiter")
-                      },
-                    StructField
-                      { name = "name",
-                        fieldType = BasicType BasicString
-                      }
-                  ]
-              }
-          )
-    }
-
 exampleContent :: IO Text
-exampleContent = readFileUtf8 "basic.gotyno"
+exampleContent = readFileUtf8 "importExample.gotyno"
+
+basicModule :: Module
+basicModule =
+  Module
+    { name = "basic",
+      imports = [],
+      definitions =
+        [ TypeDefinition
+            { name = DefinitionName {unDefinitionName = "Recruiter"},
+              typeData =
+                PlainStruct
+                  PlainStructData
+                    { fields =
+                        [ StructField
+                            { name = "type",
+                              fieldType = LiteralType (LiteralString "Recruiter")
+                            },
+                          StructField {name = "name", fieldType = BasicType BasicString},
+                          StructField
+                            { name = "emails",
+                              fieldType =
+                                ComplexType
+                                  (ArrayType 3 (ComplexType (OptionalType (BasicType BasicString))))
+                            },
+                          StructField
+                            { name = "recruiter",
+                              fieldType =
+                                ComplexType
+                                  ( OptionalType
+                                      ( ComplexType
+                                          ( PointerType
+                                              ( RecursiveReferenceType
+                                                  DefinitionName {unDefinitionName = "Recruiter"}
+                                              )
+                                          )
+                                      )
+                                  )
+                            }
+                        ]
+                    }
+            },
+          TypeDefinition
+            { name = DefinitionName {unDefinitionName = "GetSearchesFilter"},
+              typeData =
+                PlainUnion
+                  PlainUnionData
+                    { constructors =
+                        [ PlainUnionConstructor
+                            { name = "SearchesByQueryLike",
+                              payload = Just (BasicType BasicString)
+                            },
+                          PlainUnionConstructor
+                            { name = "SearchesByResultLike",
+                              payload = Just (BasicType BasicString)
+                            },
+                          PlainUnionConstructor
+                            { name = "NoSearchesFilter",
+                              payload = Nothing
+                            }
+                        ]
+                    }
+            },
+          TypeDefinition
+            { name = DefinitionName {unDefinitionName = "SearchesParameters"},
+              typeData =
+                PlainStruct
+                  PlainStructData
+                    { fields =
+                        [ StructField
+                            { name = "filters",
+                              fieldType =
+                                ComplexType
+                                  ( SliceType
+                                      ( DefinitionReferenceType
+                                          TypeDefinition
+                                            { name =
+                                                DefinitionName
+                                                  { unDefinitionName = "GetSearchesFilter"
+                                                  },
+                                              typeData =
+                                                PlainUnion
+                                                  PlainUnionData
+                                                    { constructors =
+                                                        [ PlainUnionConstructor
+                                                            { name = "SearchesByQueryLike",
+                                                              payload = Just (BasicType BasicString)
+                                                            },
+                                                          PlainUnionConstructor
+                                                            { name = "SearchesByResultLike",
+                                                              payload = Just (BasicType BasicString)
+                                                            },
+                                                          PlainUnionConstructor
+                                                            { name = "NoSearchesFilter",
+                                                              payload = Nothing
+                                                            }
+                                                        ]
+                                                    }
+                                            }
+                                      )
+                                  )
+                            }
+                        ]
+                    }
+            }
+        ]
+    }

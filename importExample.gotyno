@@ -1,0 +1,6 @@
+import basic
+
+struct UsesImport {
+    type: "UsesImport"
+    recruiter: basic.Recruiter
+}
