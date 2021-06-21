@@ -33,6 +33,7 @@ data TypeData
   | GenericStruct GenericStructData
   | PlainUnion PlainUnionData
   | GenericUnion GenericUnionData
+  | Enumeration EnumerationData
   deriving (Eq, Show)
 
 newtype PlainStructData = PlainStructData
@@ -66,6 +67,17 @@ data Constructor = Constructor
 data StructField = StructField
   { name :: Text,
     fieldType :: FieldType
+  }
+  deriving (Eq, Show)
+
+newtype EnumerationData = EnumerationData
+  { values :: [EnumerationValue]
+  }
+  deriving (Eq, Show)
+
+data EnumerationValue = EnumerationValue
+  { identifier :: Text,
+    value :: LiteralTypeValue
   }
   deriving (Eq, Show)
 

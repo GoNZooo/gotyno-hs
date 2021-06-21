@@ -14,3 +14,11 @@ union GetSearchesFilter {
 struct SearchesParameters {
     filters: []GetSearchesFilter
 }
+
+enum StillSize {
+    w92 = "w92"
+    w185 = "w185"
+    w300 = "w300"
+    h632 = "h632"
+    original = "original"
+}

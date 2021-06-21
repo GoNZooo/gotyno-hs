@@ -129,11 +129,12 @@ addModule module' modulesReference = do
 
 typeDefinitionP :: Parser TypeDefinition
 typeDefinitionP = do
-  keyword <- choice [string "struct", string "union"]
+  keyword <- choice $ List.map string ["struct", "union", "enum"]
   char ' '
   definition <- case keyword of
     "struct" -> structP
     "union" -> unionP
+    "enum" -> enumerationP
     other -> reportError $ "Unknown type definition keyword: " <> unpack other
   addDefinition definition
   clearTypeVariables
@@ -196,6 +197,25 @@ genericUnionP name typeVariables = do
   constructors <- constructorsP
   char '}'
   pure TypeDefinition {name, typeData = GenericUnion GenericUnionData {constructors, typeVariables}}
+
+enumerationP :: Parser TypeDefinition
+enumerationP = do
+  name <- definitionNameP
+  setCurrentDefinitionName name
+  string " {\n"
+  values <- enumerationValuesP
+  char '}'
+  pure TypeDefinition {name, typeData = Enumeration EnumerationData {values}}
+
+enumerationValuesP :: Parser [EnumerationValue]
+enumerationValuesP = some enumerationValueP
+
+enumerationValueP :: Parser EnumerationValue
+enumerationValueP = do
+  string "    "
+  identifier <- pack <$> someTill alphaNumChar (string " = ")
+  value <- literalP <* newline
+  pure EnumerationValue {identifier, value}
 
 addTypeVariables :: [Text] -> Parser ()
 addTypeVariables typeVariables = do
