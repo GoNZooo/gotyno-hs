@@ -139,11 +139,30 @@ typeDefinitionP = do
   clearTypeVariables
   pure definition
 
-structP :: Parser TypeDefinition
-structP = do
+readCurrentDefinitionName :: Parser DefinitionName
+readCurrentDefinitionName = do
   name <- definitionNameP
   setCurrentDefinitionName name
-  string " {\n"
+  pure name
+
+structP :: Parser TypeDefinition
+structP = do
+  name <- readCurrentDefinitionName <* char ' '
+  maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
+  string "{\n"
+  case maybeTypeVariables of
+    Just typeVariables -> genericStructP name typeVariables
+    Nothing -> plainStructP name
+
+genericStructP :: DefinitionName -> [Text] -> Parser TypeDefinition
+genericStructP name typeVariables = do
+  addTypeVariables typeVariables
+  fields <- fieldsP
+  char '}'
+  pure TypeDefinition {name, typeData = GenericStruct GenericStructData {fields, typeVariables}}
+
+plainStructP :: DefinitionName -> Parser TypeDefinition
+plainStructP name = do
   fields <- fieldsP
   char '}'
   pure TypeDefinition {name, typeData = PlainStruct PlainStructData {fields}}
@@ -164,9 +183,7 @@ constructorP = do
 
 unionP :: Parser TypeDefinition
 unionP = do
-  name <- definitionNameP
-  setCurrentDefinitionName name
-  char ' '
+  name <- readCurrentDefinitionName <* char ' '
   maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
   string "{\n"
   case maybeTypeVariables of
@@ -294,7 +311,7 @@ fieldTypeP =
       RecursiveReferenceType <$> recursiveReferenceP,
       TypeVariableReferenceType <$> typeVariableReferenceP,
       DefinitionReferenceType <$> definitionReferenceP,
-      ImportedReferenceType <$> importedReferenceP
+      DefinitionReferenceType <$> importedReferenceP
     ]
 
 typeVariableReferenceP :: Parser Text
@@ -307,7 +324,7 @@ checkForTypeVariable name = do
   AppState {currentTypeVariablesReference} <- ask
   (name `List.elem`) <$> readIORef currentTypeVariablesReference
 
-importedReferenceP :: Parser ImportedTypeDefinition
+importedReferenceP :: Parser DefinitionReference
 importedReferenceP = do
   imports <- getImports
   moduleName <- choice (List.map (\(Import Module {name}) -> string name) imports) <* char '.'
@@ -316,8 +333,26 @@ importedReferenceP = do
   case maybeModule of
     Just (Import Module {name = sourceModule, definitions}) -> do
       case List.find (\TypeDefinition {name} -> name == definitionName) definitions of
-        Just TypeDefinition {name = foundDefinitionName, typeData} ->
-          pure $ ImportedTypeDefinition {name = foundDefinitionName, sourceModule, typeData}
+        Just definition@TypeDefinition {name = foundDefinitionName, typeData} -> do
+          maybeTypeVariables <-
+            optional $ between (char '<') (char '>') $ sepBy1 fieldTypeP (string ", ")
+          case maybeTypeVariables of
+            Just typeVariables ->
+              pure $
+                AppliedImportedGenericReference
+                  AppliedImportedGenericReferenceData
+                    { moduleName,
+                      typeVariables,
+                      definition
+                    }
+            Nothing ->
+              pure $
+                ImportedDefinitionReference
+                  ImportedTypeDefinition
+                    { name = foundDefinitionName,
+                      sourceModule,
+                      typeData
+                    }
         Nothing ->
           reportError $
             mconcat

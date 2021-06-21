@@ -9,11 +9,6 @@ data Module = Module
   }
   deriving (Eq, Show)
 
-data Expression
-  = ImportExpression Import
-  | TypeDefinitionExpression TypeDefinition
-  deriving (Eq, Show)
-
 newtype Import = Import Module
   deriving (Eq, Show)
 
@@ -35,12 +30,19 @@ data ImportedTypeDefinition = ImportedTypeDefinition
 
 data TypeData
   = PlainStruct PlainStructData
+  | GenericStruct GenericStructData
   | PlainUnion PlainUnionData
   | GenericUnion GenericUnionData
   deriving (Eq, Show)
 
 newtype PlainStructData = PlainStructData
   { fields :: [StructField]
+  }
+  deriving (Eq, Show)
+
+data GenericStructData = GenericStructData
+  { fields :: [StructField],
+    typeVariables :: [Text]
   }
   deriving (Eq, Show)
 
@@ -74,12 +76,20 @@ data FieldType
   | DefinitionReferenceType DefinitionReference
   | RecursiveReferenceType DefinitionName
   | TypeVariableReferenceType Text
-  | ImportedReferenceType ImportedTypeDefinition
   deriving (Eq, Show)
 
 data DefinitionReference
   = DefinitionReference TypeDefinition
+  | ImportedDefinitionReference ImportedTypeDefinition
   | AppliedGenericReference [FieldType] TypeDefinition
+  | AppliedImportedGenericReference AppliedImportedGenericReferenceData
+  deriving (Eq, Show)
+
+data AppliedImportedGenericReferenceData = AppliedImportedGenericReferenceData
+  { moduleName :: !Text,
+    typeVariables :: ![FieldType],
+    definition :: !TypeDefinition
+  }
   deriving (Eq, Show)
 
 data BasicTypeValue

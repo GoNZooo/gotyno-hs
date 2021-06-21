@@ -1,0 +1,4 @@
+union Maybe <T>{
+    Nothing
+    Just: T
+}

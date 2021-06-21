@@ -1,6 +1,11 @@
-union Maybe <T>{
-    Nothing
-    Just: T
+import hasGeneric
+
+struct Holder <T>{
+    value: T
+}
+
+struct MaybeHolder <T>{
+    value: ?T
 }
 
 union Either <L, R>{
@@ -9,6 +14,10 @@ union Either <L, R>{
 }
 
 struct UsingGenerics {
-    field1: Maybe<String>
+    field1: hasGeneric.Maybe<String>
     field2: Either<String, U32>
+}
+
+struct UsingOwnGenerics <T>{
+    field1: hasGeneric.Maybe<T>
 }
