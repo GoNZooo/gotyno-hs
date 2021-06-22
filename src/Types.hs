@@ -31,9 +31,6 @@ data ImportedTypeDefinition = ImportedTypeDefinition
 newtype TypeTag = TypeTag Text
   deriving (Eq, Show)
 
-newtype EmbeddedTag = EmbeddedTag Bool
-  deriving (Eq, Show)
-
 newtype TypeVariable = TypeVariable Text
   deriving (Eq, Show)
 
@@ -51,14 +48,15 @@ data TagType
   = -- | The union is untagged.
     NoTypeTag
   | -- | The union has the type tag with the rest of the payload.
-    EmbeddedTypeTag TypeTag
+    EmbeddedTypeTag FieldName
   | -- | The union has the type tag outside of the payload, wrapping it.
-    StandardTypeTag TypeTag
+    StandardTypeTag FieldName
   deriving (Eq, Show)
 
 data TypeData
   = Struct !StructType
   | Union !TagType !UnionType
+  | UntaggedUnion ![FieldType]
   | Enumeration ![EnumerationValue]
   deriving (Eq, Show)
 
@@ -111,6 +109,8 @@ data BasicTypeValue
   | I32
   | I64
   | I128
+  | F32
+  | F64
   | Boolean
   | BasicString
   deriving (Eq, Show)
