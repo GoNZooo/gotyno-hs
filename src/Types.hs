@@ -3,10 +3,13 @@ module Types where
 import RIO
 
 data Module = Module
-  { name :: !Text,
-    imports :: [Import],
-    definitions :: [TypeDefinition]
+  { name :: !ModuleName,
+    imports :: ![Import],
+    definitions :: ![TypeDefinition]
   }
+  deriving (Eq, Show)
+
+newtype ModuleName = ModuleName Text
   deriving (Eq, Show)
 
 newtype Import = Import Module
@@ -15,93 +18,76 @@ newtype Import = Import Module
 newtype DefinitionName = DefinitionName Text
   deriving (Eq, Show)
 
-data TypeDefinition = TypeDefinition
-  { name :: !DefinitionName,
-    typeData :: !TypeData
-  }
+data TypeDefinition = TypeDefinition !DefinitionName !TypeData
   deriving (Eq, Show)
 
 data ImportedTypeDefinition = ImportedTypeDefinition
-  { sourceModule :: !Text,
+  { sourceModule :: !ModuleName,
     name :: !DefinitionName,
     typeData :: !TypeData
   }
   deriving (Eq, Show)
 
+newtype TypeTag = TypeTag Text
+  deriving (Eq, Show)
+
+newtype EmbeddedTag = EmbeddedTag Bool
+  deriving (Eq, Show)
+
+newtype TypeVariable = TypeVariable Text
+  deriving (Eq, Show)
+
+newtype ConstructorName = ConstructorName Text
+  deriving (Eq, Show)
+
+newtype FieldName = FieldName Text
+  deriving (Eq, Show)
+
+newtype EnumerationIdentifier = EnumerationIdentifier Text
+  deriving (Eq, Show)
+
 data TypeData
-  = PlainStruct PlainStructData
-  | GenericStruct GenericStructData
-  | PlainUnion PlainUnionData
-  | GenericUnion GenericUnionData
-  | Enumeration EnumerationData
+  = Struct !StructType
+  | Union !(Maybe TypeTag) !EmbeddedTag !UnionType
+  | Enumeration ![EnumerationValue]
   deriving (Eq, Show)
 
-newtype PlainStructData = PlainStructData
-  { fields :: [StructField]
-  }
+data StructType
+  = PlainStruct ![StructField]
+  | GenericStruct ![TypeVariable] ![StructField]
   deriving (Eq, Show)
 
-data GenericStructData = GenericStructData
-  { fields :: [StructField],
-    typeVariables :: [Text]
-  }
+data UnionType
+  = PlainUnion ![Constructor]
+  | GenericUnion ![TypeVariable] ![Constructor]
   deriving (Eq, Show)
 
-newtype PlainUnionData = PlainUnionData
-  { constructors :: [Constructor]
-  }
+data Constructor = Constructor !ConstructorName !(Maybe FieldType)
   deriving (Eq, Show)
 
-data GenericUnionData = GenericUnionData
-  { constructors :: [Constructor],
-    typeVariables :: [Text]
-  }
+data StructField = StructField !FieldName !FieldType
   deriving (Eq, Show)
 
-data Constructor = Constructor
-  { name :: !Text,
-    payload :: !(Maybe FieldType)
-  }
-  deriving (Eq, Show)
-
-data StructField = StructField
-  { name :: Text,
-    fieldType :: FieldType
-  }
-  deriving (Eq, Show)
-
-newtype EnumerationData = EnumerationData
-  { values :: [EnumerationValue]
-  }
-  deriving (Eq, Show)
-
-data EnumerationValue = EnumerationValue
-  { identifier :: Text,
-    value :: LiteralTypeValue
-  }
+data EnumerationValue = EnumerationValue !EnumerationIdentifier !LiteralTypeValue
   deriving (Eq, Show)
 
 data FieldType
-  = LiteralType LiteralTypeValue
-  | BasicType BasicTypeValue
-  | ComplexType ComplexTypeValue
-  | DefinitionReferenceType DefinitionReference
-  | RecursiveReferenceType DefinitionName
-  | TypeVariableReferenceType Text
+  = LiteralType !LiteralTypeValue
+  | BasicType !BasicTypeValue
+  | ComplexType !ComplexTypeValue
+  | DefinitionReferenceType !DefinitionReference
+  | RecursiveReferenceType !DefinitionName
+  | TypeVariableReferenceType !TypeVariable
   deriving (Eq, Show)
 
 data DefinitionReference
-  = DefinitionReference TypeDefinition
-  | ImportedDefinitionReference ImportedTypeDefinition
-  | AppliedGenericReference [FieldType] TypeDefinition
-  | AppliedImportedGenericReference AppliedImportedGenericReferenceData
+  = DefinitionReference !TypeDefinition
+  | ImportedDefinitionReference !ModuleName !DefinitionName !TypeData
+  | AppliedGenericReference ![FieldType] !TypeDefinition
+  | AppliedImportedGenericReference !ModuleName !AppliedTypes !TypeDefinition
   deriving (Eq, Show)
 
-data AppliedImportedGenericReferenceData = AppliedImportedGenericReferenceData
-  { moduleName :: !Text,
-    typeVariables :: ![FieldType],
-    definition :: !TypeDefinition
-  }
+newtype AppliedTypes = AppliedTypes [FieldType]
   deriving (Eq, Show)
 
 data BasicTypeValue
@@ -127,8 +113,8 @@ data ComplexTypeValue
   deriving (Eq, Show)
 
 data LiteralTypeValue
-  = LiteralString Text
-  | LiteralInteger Integer
-  | LiteralFloat Float
-  | LiteralBoolean Bool
+  = LiteralString !Text
+  | LiteralInteger !Integer
+  | LiteralFloat !Float
+  | LiteralBoolean !Bool
   deriving (Eq, Show)
