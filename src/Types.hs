@@ -46,9 +46,15 @@ newtype FieldName = FieldName Text
 newtype EnumerationIdentifier = EnumerationIdentifier Text
   deriving (Eq, Show)
 
+data TagType
+  = NoTypeTag
+  | EmbeddedTypeTag TypeTag
+  | StandardTypeTag TypeTag
+  deriving (Eq, Show)
+
 data TypeData
   = Struct !StructType
-  | Union !(Maybe TypeTag) !EmbeddedTag !UnionType
+  | Union !TagType !UnionType
   | Enumeration ![EnumerationValue]
   deriving (Eq, Show)
 

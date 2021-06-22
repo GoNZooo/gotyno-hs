@@ -197,7 +197,7 @@ genericUnionP name typeVariables = do
   addTypeVariables typeVariables
   constructors <- constructorsP
   _ <- char '}'
-  let union = Union defaultUnionTag (EmbeddedTag False) unionType
+  let union = Union (StandardTypeTag $ TypeTag "type") unionType
       unionType = GenericUnion typeVariables constructors
   pure $ TypeDefinition name union
 
@@ -234,11 +234,8 @@ plainUnionP :: DefinitionName -> Parser TypeDefinition
 plainUnionP name = do
   constructors <- constructorsP
   _ <- char '}'
-  let union = Union defaultUnionTag (EmbeddedTag False) (PlainUnion constructors)
+  let union = Union (StandardTypeTag $ TypeTag "type") (PlainUnion constructors)
   pure $ TypeDefinition name union
-
-defaultUnionTag :: Maybe TypeTag
-defaultUnionTag = Just $ TypeTag "type"
 
 typeVariablesP :: Parser [Text]
 typeVariablesP = sepBy1 pascalWordP (string ", ")
