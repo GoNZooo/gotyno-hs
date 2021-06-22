@@ -46,10 +46,14 @@ newtype FieldName = FieldName Text
 newtype EnumerationIdentifier = EnumerationIdentifier Text
   deriving (Eq, Show)
 
+-- | Defines what type tag field a union should have as well as the type tag location.
 data TagType
-  = NoTypeTag
-  | EmbeddedTypeTag TypeTag
-  | StandardTypeTag TypeTag
+  = -- | The union is untagged.
+    NoTypeTag
+  | -- | The union has the type tag with the rest of the payload.
+    EmbeddedTypeTag TypeTag
+  | -- | The union has the type tag outside of the payload, wrapping it.
+    StandardTypeTag TypeTag
   deriving (Eq, Show)
 
 data TypeData
