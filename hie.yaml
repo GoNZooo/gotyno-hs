@@ -1,3 +1,6 @@
 cradle:
   stack:
-      component: gotyno-hs:lib
+      - component: gotyno-hs:test:gotyno-hs-test
+        path: test
+      - component: gotyno-hs:lib
+        path: src
