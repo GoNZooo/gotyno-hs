@@ -92,3 +92,19 @@ export function isSearchesParameters(value: unknown): value is SearchesParameter
 export function validateSearchesParameters(value: unknown): svt.ValidationResult<SearchesParameters> {
     return svt.validate<SearchesParameters>(value, {filters: svt.validateArray(validateGetSearchesFilter)});
 }
+
+export enum StillSize {
+    w92 = "w92",
+    w185 = "w185",
+    w300 = "w300",
+    h632 = "h632",
+    original = "original",
+}
+
+export function isStillSize(value: unknown): value is StillSize {
+    return [StillSize.w92, StillSize.w185, StillSize.w300, StillSize.h632, StillSize.original].some((v) => v === value);
+}
+
+export function validateStillSize(value: unknown): svt.ValidationResult<StillSize> {
+    return svt.validateOneOfLiterals<StillSize>(value, [StillSize.w92, StillSize.w185, StillSize.w300, StillSize.h632, StillSize.original]);
+}
