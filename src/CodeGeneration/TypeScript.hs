@@ -5,9 +5,12 @@ import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {definitions} =
-  let definitionOutput = definitions & fmap outputDefinition & mconcat
-   in mconcat [modulePrelude, "\n\n", definitionOutput]
+outputModule Module {definitions, imports} =
+  let definitionOutput = definitions & fmap outputDefinition & Text.intercalate "\n\n"
+      importsOutput = imports & fmap outputImport & mconcat
+      outputImport (Import Module {name = ModuleName name}) =
+        mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
+   in mconcat [modulePrelude, "\n\n", importsOutput, definitionOutput]
 
 modulePrelude :: Text
 modulePrelude = "import * as svt from \"simple-validation-tools\";"
@@ -95,7 +98,7 @@ outputPlainStruct name fields =
       fieldsOutput = fields & fmap outputField & mconcat
       typeGuardOutput = outputStructTypeGuard name fields
       validatorOutput = outputStructValidator name fields
-   in mconcat [export, fieldsOutput, "};\n\n", typeGuardOutput, "\n\n", validatorOutput, "\n\n"]
+   in mconcat [export, fieldsOutput, "};\n\n", typeGuardOutput, "\n\n", validatorOutput]
 
 outputStructValidator :: Text -> [StructField] -> Text
 outputStructValidator name fields =
@@ -126,6 +129,13 @@ outputValidatorForFieldType (TypeVariableReferenceType (TypeVariable name)) = "v
 outputValidatorForDefinitionReference :: DefinitionReference -> Text
 outputValidatorForDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
   "validate" <> name
+outputValidatorForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      _typeData
+    ) =
+    mconcat [moduleName, ".validate", name]
 outputValidatorForDefinitionReference _ = ""
 
 outputValidatorForBasicType :: BasicTypeValue -> Text
@@ -183,6 +193,13 @@ outputTypeGuardForFieldType (TypeVariableReferenceType (TypeVariable name)) = "i
 outputTypeGuardForDefinitionReference :: DefinitionReference -> Text
 outputTypeGuardForDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
   "is" <> name
+outputTypeGuardForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      _typeData
+    ) =
+    mconcat [moduleName, ".is", name]
 outputTypeGuardForDefinitionReference _ = ""
 
 outputTypeGuardForBasicType :: BasicTypeValue -> Text
@@ -238,8 +255,7 @@ outputUnion name tagType unionType =
           "\n\n",
           unionValidatorOutput,
           "\n\n",
-          caseValidatorOutput,
-          "\n\n"
+          caseValidatorOutput
         ]
 
 newtype FunctionPrefix = FunctionPrefix Text
