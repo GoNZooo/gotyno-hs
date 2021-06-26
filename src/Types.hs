@@ -90,7 +90,7 @@ data FieldType
 
 data DefinitionReference
   = DefinitionReference !TypeDefinition
-  | ImportedDefinitionReference !ModuleName !DefinitionName !TypeData
+  | ImportedDefinitionReference !ModuleName !TypeDefinition
   | AppliedGenericReference ![FieldType] !TypeDefinition
   | AppliedImportedGenericReference !ModuleName !AppliedTypes !TypeDefinition
   deriving (Eq, Show)

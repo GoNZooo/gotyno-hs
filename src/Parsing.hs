@@ -385,7 +385,7 @@ importedReferenceP typeVariables = do
                 (AppliedTypes appliedTypeVariables)
                 definition
             Nothing ->
-              ImportedDefinitionReference sourceModule foundDefinitionName typeData
+              ImportedDefinitionReference sourceModule $ TypeDefinition foundDefinitionName typeData
         Nothing ->
           reportError $
             mconcat
