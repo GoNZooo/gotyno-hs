@@ -2,3 +2,8 @@ union Maybe <T>{
     Nothing
     Just: T
 }
+
+union Result <T, E>{
+    Success: T
+    Failure: E
+}

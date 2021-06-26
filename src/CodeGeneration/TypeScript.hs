@@ -316,7 +316,7 @@ outputUnionTypeGuard typeVariables unionName constructors =
             typeVariables
               & fmap (\(TypeVariable t) -> mconcat ["is", t, ": svt.TypePredicate<", t, ">"])
               & Text.intercalate ", "
-          returnedFunctionName = "is" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
+          returnedFunctionName = "is" <> Text.filter ((`elem` ("<>, " :: String)) >>> not) fullName
           constructorPredicates =
             constructors
               & fmap
@@ -402,7 +402,8 @@ outputUnionValidator typeVariables tagType unionName constructors =
                 constructors
         else
           let fullName = unionName <> joinTypeVariables typeVariables
-              returnedFunctionName = "validate" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
+              returnedFunctionName =
+                "validate" <> Text.filter ((`elem` ("<>, " :: String)) >>> not) fullName
               tagField (StandardTypeTag (FieldName tag)) = tag
            in mconcat
                 [ mconcat
