@@ -16,8 +16,11 @@ importTypeScriptReferenceOutput = readFileUtf8 "./test/reference-output/importEx
 hasGenericTypeScriptReferenceOutput :: IO Text
 hasGenericTypeScriptReferenceOutput = readFileUtf8 "./test/reference-output/hasGeneric.ts"
 
-spec :: Text -> Text -> Text -> Spec
-spec basicOutput importOutput hasGenericOutput = do
+genericsTypeScriptReferenceOutput :: IO Text
+genericsTypeScriptReferenceOutput = readFileUtf8 "./test/reference-output/generics.ts"
+
+spec :: Text -> Text -> Text -> Text -> Spec
+spec basicOutput importOutput hasGenericOutput genericsOutput = do
   describe "`parseModules`" $ do
     it "Parses and returns modules" $ do
       modules <- parseModules ["basic.gotyno"]
@@ -55,3 +58,9 @@ spec basicOutput importOutput hasGenericOutput = do
       hasGenericModuleText <-
         (PartialList.head >>> TypeScript.outputModule) <$> parseModules ["hasGeneric.gotyno"]
       hasGenericModuleText `shouldBe` hasGenericOutput
+
+    it "Mirrors reference output for `generics.gotyno`" $ do
+      genericsModuleText <-
+        (PartialList.head >>> TypeScript.outputModule)
+          <$> parseModules ["hasGeneric.gotyno", "generics.gotyno"]
+      genericsModuleText `shouldBe` genericsOutput

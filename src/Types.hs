@@ -55,9 +55,13 @@ data TagType
 
 data TypeData
   = Struct !StructType
-  | Union !TagType !UnionType
+  | Union !FieldName !UnionType
+  | EmbeddedUnion !FieldName ![EmbeddedConstructor]
   | UntaggedUnion ![FieldType]
   | Enumeration ![EnumerationValue]
+  deriving (Eq, Show)
+
+data EmbeddedConstructor = EmbeddedConstructor !ConstructorName !DefinitionReference
   deriving (Eq, Show)
 
 data StructType

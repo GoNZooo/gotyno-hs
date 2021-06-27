@@ -9,8 +9,10 @@ main = do
   basicTypeScriptOutput <- ParsingSpec.basicTypeScriptReferenceOutput
   importExampleTypeScriptOutput <- ParsingSpec.importTypeScriptReferenceOutput
   hasGenericTypeScriptOutput <- ParsingSpec.hasGenericTypeScriptReferenceOutput
+  genericsTypeScriptOutput <- ParsingSpec.genericsTypeScriptReferenceOutput
   hspec $
     ParsingSpec.spec
       basicTypeScriptOutput
       importExampleTypeScriptOutput
       hasGenericTypeScriptOutput
+      genericsTypeScriptOutput

@@ -143,7 +143,12 @@ typeDefinitionP = do
         _ <- char '('
         tagTypeP <* char ')'
       let tagType = fromMaybe (StandardTypeTag $ FieldName "type") maybeTagType
-      char ' ' *> unionP tagType
+      char ' ' *> case tagType of
+        StandardTypeTag fieldName ->
+          unionP fieldName
+        EmbeddedTypeTag fieldName ->
+          embeddedUnionP fieldName
+        NoTypeTag -> error "TODO: no type tag in union"
     "untagged union" ->
       char ' ' *> untaggedUnionP
     "enum" ->
@@ -217,22 +222,59 @@ constructorP typeVariables = do
   newline
   pure $ Constructor (ConstructorName name) payload
 
-unionP :: TagType -> Parser TypeDefinition
-unionP tagType = do
+unionP :: FieldName -> Parser TypeDefinition
+unionP typeTag = do
   name <- readCurrentDefinitionName <* char ' '
   maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
   string "{\n"
   case maybeTypeVariables of
-    Just typeVariables -> genericUnionP tagType name $ List.map TypeVariable typeVariables
-    Nothing -> plainUnionP tagType name
+    Just typeVariables -> genericUnionP typeTag name $ List.map TypeVariable typeVariables
+    Nothing -> plainUnionP typeTag name
 
-genericUnionP :: TagType -> DefinitionName -> [TypeVariable] -> Parser TypeDefinition
-genericUnionP tagType name typeVariables = do
+embeddedUnionP :: FieldName -> Parser TypeDefinition
+embeddedUnionP typeTag = do
+  name <- readCurrentDefinitionName <* string " {\n"
+  constructors <- embeddedUnionStructConstructorsP []
+  _ <- char '}'
+  pure $ TypeDefinition name (EmbeddedUnion typeTag constructors)
+
+genericUnionP :: FieldName -> DefinitionName -> [TypeVariable] -> Parser TypeDefinition
+genericUnionP typeTag name typeVariables = do
   constructors <- constructorsP typeVariables
   _ <- char '}'
-  let union = Union tagType unionType
+  let union = Union typeTag unionType
       unionType = GenericUnion typeVariables constructors
   pure $ TypeDefinition name union
+
+embeddedUnionStructConstructorsP :: [TypeVariable] -> Parser [EmbeddedConstructor]
+embeddedUnionStructConstructorsP typeVariables =
+  some $ embeddedUnionStructConstructorP typeVariables
+
+embeddedUnionStructConstructorP :: [TypeVariable] -> Parser EmbeddedConstructor
+embeddedUnionStructConstructorP typeVariables = do
+  constructorName <- string "    " *> embeddedConstructorNameP <* string ": "
+  definition <- structReferenceP typeVariables <* newline
+  pure $ EmbeddedConstructor (ConstructorName constructorName) definition
+
+structReferenceP :: [TypeVariable] -> Parser DefinitionReference
+structReferenceP typeVariables = do
+  definition <- definitionReferenceP typeVariables
+  case definition of
+    (DefinitionReference (TypeDefinition _name (Struct (PlainStruct _)))) ->
+      pure definition
+    (ImportedDefinitionReference _moduleName (TypeDefinition _name (Struct (PlainStruct _)))) ->
+      pure definition
+    (AppliedGenericReference _appliedTypes (TypeDefinition _name (Struct (PlainStruct _)))) ->
+      pure definition
+    ( AppliedImportedGenericReference
+        _moduleName
+        _appliedTypes
+        (TypeDefinition _name (Struct (PlainStruct _)))
+      ) -> pure definition
+    other -> reportError $ mconcat ["Expected plain struct reference, got: ", show other]
+
+embeddedConstructorNameP :: Parser Text
+embeddedConstructorNameP = pack <$> some alphaNumChar
 
 enumerationP :: Parser TypeDefinition
 enumerationP = do
@@ -253,11 +295,11 @@ enumerationValueP = do
   value <- literalP <* newline
   pure $ EnumerationValue identifier value
 
-plainUnionP :: TagType -> DefinitionName -> Parser TypeDefinition
-plainUnionP tagType name = do
+plainUnionP :: FieldName -> DefinitionName -> Parser TypeDefinition
+plainUnionP typeTag name = do
   constructors <- constructorsP []
   _ <- char '}'
-  pure $ TypeDefinition name $ Union tagType (PlainUnion constructors)
+  pure $ TypeDefinition name $ Union typeTag (PlainUnion constructors)
 
 typeVariablesP :: Parser [Text]
 typeVariablesP = sepBy1 pascalWordP (string ", ")
