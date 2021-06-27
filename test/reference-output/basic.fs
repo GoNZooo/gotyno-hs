@@ -82,3 +82,21 @@ type SearchesParameters =
             [
                 "filters", (GotynoCoders.encodeList GetSearchesFilter.Encoder value.filters)
             ]
+
+type StillSize =
+    | W92
+    | W185
+    | W300
+    | H632
+    | Original
+
+    static member Decoder: Decoder<StillSize> =
+        GotynoCoders.decodeOneOf Decode.string [|"w92", W92; "w185", W185; "w300", W300; "h632", H632; "original", Original|]
+
+    static member Encoder =
+        function
+        | W92 -> Encode.string "w92"
+        | W185 -> Encode.string "w185"
+        | W300 -> Encode.string "w300"
+        | H632 -> Encode.string "h632"
+        | Original -> Encode.string "original"

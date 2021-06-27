@@ -6,13 +6,6 @@ import Test.Hspec
 
 main :: IO ()
 main = do
-  basicTypeScriptOutput <- ParsingSpec.basicTypeScriptReferenceOutput
-  importExampleTypeScriptOutput <- ParsingSpec.importTypeScriptReferenceOutput
-  hasGenericTypeScriptOutput <- ParsingSpec.hasGenericTypeScriptReferenceOutput
-  genericsTypeScriptOutput <- ParsingSpec.genericsTypeScriptReferenceOutput
-  hspec $
-    ParsingSpec.spec
-      basicTypeScriptOutput
-      importExampleTypeScriptOutput
-      hasGenericTypeScriptOutput
-      genericsTypeScriptOutput
+  tsReferenceOutput <- ParsingSpec.typeScriptReferenceOutput
+  fsReferenceOutput <- ParsingSpec.fSharpReferenceOutput
+  hspec $ ParsingSpec.spec tsReferenceOutput fsReferenceOutput
