@@ -25,8 +25,8 @@ type Recruiter =
             [
                 "type", Encode.string "Recruiter"
                 "name", Encode.string value.name
-                "emails", (GotynoCoders.encodeList (Encode.option Encode.string) value.emails)
-                "recruiter", (Encode.option Recruiter.Encoder value.recruiter)
+                "emails", GotynoCoders.encodeList (Encode.option Encode.string) value.emails
+                "recruiter", Encode.option Recruiter.Encoder value.recruiter
             ]
 
 type GetSearchesFilter =

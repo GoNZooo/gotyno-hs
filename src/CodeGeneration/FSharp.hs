@@ -5,18 +5,18 @@ import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {name, definitions, imports} =
+outputModule Module {name = ModuleName name, definitions, imports} =
   let definitionOutput = definitions & fmap outputDefinition & Text.intercalate "\n\n"
       importsOutput = imports & fmap outputImport & mconcat
       outputImport (Import Module {name = ModuleName name}) =
         mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
-   in mconcat [modulePrelude (fsharpifyModuleName name)]
+   in mconcat [modulePrelude (fsharpifyModuleName name), definitionOutput]
 
-fsharpifyModuleName :: ModuleName -> ModuleName
-fsharpifyModuleName (ModuleName name) = ModuleName $ Text.toTitle name
+fsharpifyModuleName :: Text -> Text
+fsharpifyModuleName = Text.toTitle
 
-modulePrelude :: ModuleName -> Text
-modulePrelude (ModuleName name) =
+modulePrelude :: Text -> Text
+modulePrelude name =
   mconcat
     [ mconcat ["module ", name, "\n\n"],
       "open Thoth.Json.Net\n\n"
@@ -76,7 +76,7 @@ outputEmbeddedCaseTypeGuard
     let fields = structFieldsFromReference reference
         tagName = unionEnumConstructorTag unionName name
         interface = mconcat ["{", tag, ": ", tagName, ", ", fieldTypeGuards, "}"]
-        fieldTypeGuards = fields & fmap outputStructTypeGuardForField & Text.intercalate ", "
+        fieldTypeGuards = fields & fmap outputDecoderForField & Text.intercalate ", "
      in mconcat
           [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
             mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"],
@@ -118,7 +118,11 @@ outputEmbeddedConstructorType
   unionName
   (FieldName tag)
   (EmbeddedConstructor (ConstructorName name) fields) =
-    let fieldsOutput = fields & structFieldsFromReference & fmap outputField & Text.intercalate ""
+    let fieldsOutput =
+          fields
+            & structFieldsFromReference
+            & fmap (outputField 8)
+            & Text.intercalate ""
         tagFieldOutput = mconcat ["    ", tag, ": ", tagValue, ";"]
         tagValue = unionEnumConstructorTag unionName name
      in mconcat
@@ -174,7 +178,7 @@ outputUntaggedUnion unionName cases =
 
 outputUntaggedUnionTypeGuard :: Text -> [FieldType] -> Text
 outputUntaggedUnionTypeGuard name cases =
-  let typeGuards = cases & fmap outputTypeGuardForFieldType & Text.intercalate ", "
+  let typeGuards = cases & fmap decoderForFieldType & Text.intercalate ", "
    in mconcat
         [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
           mconcat ["    return [", typeGuards, "].some((typePredicate) => typePredicate(value));\n"],
@@ -265,11 +269,19 @@ outputEnumerationValidator =
 
 outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
-  let export = mconcat ["export type ", name, " = {\n"]
-      fieldsOutput = fields & fmap outputField & mconcat
-      typeGuardOutput = outputStructTypeGuard name fields []
-      validatorOutput = outputStructValidator name fields []
-   in mconcat [export, fieldsOutput, "};\n\n", typeGuardOutput, "\n\n", validatorOutput]
+  let fieldsOutput = fields & fmap (outputField 8) & mconcat
+      decoderOutput = outputStructDecoder name fields []
+      encoderOutput = outputStructEncoder name fields []
+   in mconcat
+        [ mconcat ["type ", name, " =\n"],
+          "    {\n",
+          fieldsOutput,
+          "    }\n",
+          "}\n\n",
+          decoderOutput,
+          "\n\n",
+          encoderOutput
+        ]
 
 outputGenericStruct :: Text -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
@@ -280,8 +292,8 @@ outputGenericStruct name typeVariables fields =
             fieldsOutput,
             "};"
           ]
-      fieldsOutput = fields & fmap outputField & mconcat
-      typeGuardOutput = outputStructTypeGuard name fields typeVariables
+      fieldsOutput = fields & fmap (outputField 8) & mconcat
+      typeGuardOutput = outputStructDecoder name fields typeVariables
       validatorOutput = outputStructValidator name fields typeVariables
    in mconcat [typeOutput, "\n\n", typeGuardOutput, "\n\n", validatorOutput]
 
@@ -403,16 +415,23 @@ outputValidatorForComplexType (PointerType typeData) =
 outputValidatorForComplexType (OptionalType typeData) =
   mconcat ["svt.validateOptional(", outputValidatorForFieldType typeData, ")"]
 
-outputStructTypeGuard :: Text -> [StructField] -> [TypeVariable] -> Text
-outputStructTypeGuard name fields typeVariables =
-  let interface =
-        "{" <> (fields & fmap outputStructTypeGuardForField & Text.intercalate ", ") <> "}"
+outputStructDecoder :: Text -> [StructField] -> [TypeVariable] -> Text
+outputStructDecoder name fields typeVariables =
+  let prelude =
+        mconcat ["    static member Decoder: Decoder<", name, "> =\n"]
+      interface =
+        fields & fmap (outputDecoderForField >>> addIndentation) & Text.intercalate "\n"
+      addIndentation = ("                " <>)
    in if null typeVariables
         then
           mconcat
             [ mconcat
-                [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
-                  mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"]
+                [ prelude,
+                  "        Decode.object (fun get ->\n",
+                  "            {\n",
+                  mconcat [interface, "\n"],
+                  "            }\n",
+                  "        )\n"
                 ],
               "}"
             ]
@@ -448,72 +467,220 @@ outputStructTypeGuard name fields typeVariables =
                   "}"
                 ]
 
-outputStructTypeGuardForField :: StructField -> Text
-outputStructTypeGuardForField (StructField (FieldName fieldName) fieldType) =
-  mconcat [fieldName, ": ", outputTypeGuardForFieldType fieldType]
+outputStructEncoder :: Text -> [StructField] -> [TypeVariable] -> Text
+outputStructEncoder name fields typeVariables =
+  let prelude =
+        mconcat ["    static member Encoder value =\n"]
+      interface =
+        fields & fmap (outputEncoderForField >>> addIndentation) & Text.intercalate "\n"
+      addIndentation = ("                " <>)
+   in if null typeVariables
+        then
+          mconcat
+            [ mconcat
+                [ prelude,
+                  "        Encode.object\n",
+                  "            [\n",
+                  mconcat [interface, "\n"],
+                  "            ]\n",
+                  "        )\n"
+                ],
+              "}"
+            ]
+        else
+          let fullName = name <> joinTypeVariables typeVariables
+              returnedFunctionName =
+                ("is" <> fullName) & Text.filter ((`elem` ("<>, " :: String)) >>> not)
+           in mconcat
+                [ mconcat
+                    [ "export function is",
+                      fullName,
+                      "(",
+                      typeVariablePredicateParameters typeVariables,
+                      "): svt.TypePredicate<",
+                      fullName,
+                      "> {\n"
+                    ],
+                  mconcat
+                    [ "    return function ",
+                      returnedFunctionName,
+                      "(value: unknown): value is ",
+                      fullName,
+                      " {\n"
+                    ],
+                  mconcat
+                    [ "        return svt.isInterface<",
+                      fullName,
+                      ">(value, ",
+                      interface,
+                      ");\n"
+                    ],
+                  "    };\n",
+                  "}"
+                ]
 
-outputTypeGuardForFieldType :: FieldType -> Text
-outputTypeGuardForFieldType (LiteralType (LiteralString text)) = mconcat ["\"", text, "\""]
-outputTypeGuardForFieldType (LiteralType (LiteralInteger x)) = tshow x
-outputTypeGuardForFieldType (LiteralType (LiteralFloat f)) = tshow f
-outputTypeGuardForFieldType (LiteralType (LiteralBoolean b)) = bool "false" "true" b
-outputTypeGuardForFieldType (BasicType basicType) = outputTypeGuardForBasicType basicType
-outputTypeGuardForFieldType (ComplexType complexType) = outputTypeGuardForComplexType complexType
-outputTypeGuardForFieldType (DefinitionReferenceType definitionReference) =
-  outputTypeGuardForDefinitionReference definitionReference
-outputTypeGuardForFieldType (RecursiveReferenceType (DefinitionName name)) = "is" <> name
-outputTypeGuardForFieldType (TypeVariableReferenceType (TypeVariable name)) = "is" <> name
+outputDecoderForField :: StructField -> Text
+outputDecoderForField (StructField (FieldName fieldName) fieldType) =
+  let accessor = accessorForFieldType fieldType
+   in mconcat
+        [ sanitizeName fieldName,
+          " = ",
+          accessor,
+          " \"",
+          fieldName,
+          "\" ",
+          decoderForFieldType fieldType
+        ]
 
-outputTypeGuardForDefinitionReference :: DefinitionReference -> Text
-outputTypeGuardForDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
-  "is" <> name
-outputTypeGuardForDefinitionReference
+outputEncoderForField :: StructField -> Text
+outputEncoderForField (StructField (FieldName fieldName) fieldType@(LiteralType _)) =
+  mconcat ["\"", fieldName, "\", ", encoderForFieldType ("", "") fieldType]
+outputEncoderForField (StructField (FieldName fieldName) fieldType) =
+  mconcat ["\"", fieldName, "\", ", encoderForFieldType ("", "") fieldType, " value.", fieldName]
+
+accessorForFieldType :: FieldType -> Text
+accessorForFieldType (ComplexType (OptionalType _)) = "get.Optional.Field"
+accessorForFieldType _other = "get.Required.Field"
+
+decoderForFieldType :: FieldType -> Text
+decoderForFieldType (LiteralType literalType) = decoderForLiteralType literalType
+decoderForFieldType (BasicType basicType) = decoderForBasicType basicType
+decoderForFieldType (ComplexType complexType) = decoderForComplexType complexType
+decoderForFieldType (DefinitionReferenceType definitionReference) =
+  decoderForDefinitionReference definitionReference
+decoderForFieldType (TypeVariableReferenceType (TypeVariable name)) = "decode" <> name
+decoderForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".Decoder"
+
+decoderForBasicType :: BasicTypeValue -> Text
+decoderForBasicType BasicString = "Decode.string"
+decoderForBasicType U8 = "Decode.uint8"
+decoderForBasicType U16 = "Decode.uint16"
+decoderForBasicType U32 = "Decode.uint32"
+decoderForBasicType U64 = "Decode.uint64"
+decoderForBasicType U128 = "Decode.uint128"
+decoderForBasicType I8 = "Decode.int8"
+decoderForBasicType I16 = "Decode.int16"
+decoderForBasicType I32 = "Decode.int32"
+decoderForBasicType I64 = "Decode.int64"
+decoderForBasicType I128 = "Decode.int128"
+decoderForBasicType F32 = "Decode.float32"
+decoderForBasicType F64 = "Decode.float64"
+decoderForBasicType Boolean = "Decode.boolean"
+
+decoderForLiteralType :: LiteralTypeValue -> Text
+decoderForLiteralType (LiteralString s) = "(GotynoCoders.decodeLiteralString \"" <> s <> "\")"
+decoderForLiteralType (LiteralInteger i) = "(GotynoCoders.decodeLiteralInteger " <> tshow i <> ")"
+decoderForLiteralType (LiteralFloat f) = "(GotynoCoders.decodeLiteralFloat " <> tshow f <> ")"
+decoderForLiteralType (LiteralBoolean b) =
+  "(GotynoCoders.decodeLiteralBoolean " <> bool "false" "true" b <> ")"
+
+decoderForComplexType :: ComplexTypeValue -> Text
+decoderForComplexType (PointerType fieldType) = decoderForFieldType fieldType
+decoderForComplexType (ArrayType _size fieldType) =
+  mconcat ["(Decode.list ", decoderForFieldType fieldType, ")"]
+decoderForComplexType (SliceType fieldType) =
+  mconcat ["(Decode.list ", decoderForFieldType fieldType, ")"]
+decoderForComplexType (OptionalType fieldType) =
+  mconcat ["(Decode.option ", decoderForFieldType fieldType, ")"]
+
+decoderForDefinitionReference :: DefinitionReference -> Text
+decoderForDefinitionReference
+  ( DefinitionReference
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    name <> ".Decoder"
+decoderForDefinitionReference
   ( ImportedDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [moduleName, ".is", name]
-outputTypeGuardForDefinitionReference
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
+decoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedTypeGuards = appliedTypes & fmap outputTypeGuardForFieldType & Text.intercalate ", "
-     in mconcat ["is", name, "(", appliedTypeGuards, ")"]
-outputTypeGuardForDefinitionReference
+    let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate ", "
+     in mconcat [name, ".Decoder ", appliedDecoders]
+decoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedTypeGuards = appliedTypes & fmap outputTypeGuardForFieldType & Text.intercalate ", "
-     in mconcat [moduleName, ".is", name, "(", appliedTypeGuards, ")"]
+    let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate ", "
+     in mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders]
 
-outputTypeGuardForBasicType :: BasicTypeValue -> Text
-outputTypeGuardForBasicType BasicString = "svt.isString"
-outputTypeGuardForBasicType U8 = "svt.isNumber"
-outputTypeGuardForBasicType U16 = "svt.isNumber"
-outputTypeGuardForBasicType U32 = "svt.isNumber"
-outputTypeGuardForBasicType U64 = "svt.isNumber"
-outputTypeGuardForBasicType U128 = "svt.isNumber"
-outputTypeGuardForBasicType I8 = "svt.isNumber"
-outputTypeGuardForBasicType I16 = "svt.isNumber"
-outputTypeGuardForBasicType I32 = "svt.isNumber"
-outputTypeGuardForBasicType I64 = "svt.isNumber"
-outputTypeGuardForBasicType I128 = "svt.isNumber"
-outputTypeGuardForBasicType F32 = "svt.isNumber"
-outputTypeGuardForBasicType F64 = "svt.isNumber"
-outputTypeGuardForBasicType Boolean = "svt.isBoolean"
+encoderForFieldType :: (Text, Text) -> FieldType -> Text
+encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
+encoderForFieldType (_l, _r) (BasicType basicType) = encoderForBasicType basicType
+encoderForFieldType (_l, _r) (ComplexType complexType@(PointerType _)) =
+  encoderForComplexType complexType
+encoderForFieldType (l, r) (ComplexType complexType) = l <> encoderForComplexType complexType <> r
+encoderForFieldType (_l, _r) (DefinitionReferenceType definitionReference) =
+  encoderForDefinitionReference definitionReference
+encoderForFieldType (_l, _r) (TypeVariableReferenceType (TypeVariable name)) = "encode" <> name
+encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = name <> ".Encoder"
 
-outputTypeGuardForComplexType :: ComplexTypeValue -> Text
-outputTypeGuardForComplexType (ArrayType _size typeData) =
-  mconcat ["svt.arrayOf(", outputTypeGuardForFieldType typeData, ")"]
-outputTypeGuardForComplexType (SliceType typeData) =
-  mconcat ["svt.arrayOf(", outputTypeGuardForFieldType typeData, ")"]
-outputTypeGuardForComplexType (PointerType typeData) =
-  outputTypeGuardForFieldType typeData
-outputTypeGuardForComplexType (OptionalType typeData) =
-  mconcat ["svt.optional(", outputTypeGuardForFieldType typeData, ")"]
+encoderForBasicType :: BasicTypeValue -> Text
+encoderForBasicType BasicString = "Encode.string"
+encoderForBasicType U8 = "Encode.uint8"
+encoderForBasicType U16 = "Encode.uint16"
+encoderForBasicType U32 = "Encode.uint32"
+encoderForBasicType U64 = "Encode.uint64"
+encoderForBasicType U128 = "Encode.uint128"
+encoderForBasicType I8 = "Encode.int8"
+encoderForBasicType I16 = "Encode.int16"
+encoderForBasicType I32 = "Encode.int32"
+encoderForBasicType I64 = "Encode.int64"
+encoderForBasicType I128 = "Encode.int128"
+encoderForBasicType F32 = "Encode.float32"
+encoderForBasicType F64 = "Encode.float64"
+encoderForBasicType Boolean = "Encode.boolean"
+
+encoderForLiteralType :: LiteralTypeValue -> Text
+encoderForLiteralType (LiteralString s) = "Encode.string \"" <> s <> "\""
+encoderForLiteralType (LiteralInteger i) = "Encode.int32 " <> tshow i
+encoderForLiteralType (LiteralFloat f) = "Encode.float32 " <> tshow f
+encoderForLiteralType (LiteralBoolean b) =
+  "Encode.boolean " <> bool "false" "true" b
+
+encoderForComplexType :: ComplexTypeValue -> Text
+encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
+encoderForComplexType (ArrayType _size fieldType) =
+  mconcat ["GotynoCoders.encodeList ", encoderForFieldType ("(", ")") fieldType]
+encoderForComplexType (SliceType fieldType) =
+  mconcat ["GotynoCoders.encodeList ", encoderForFieldType ("(", ")") fieldType]
+encoderForComplexType (OptionalType fieldType) =
+  mconcat ["Encode.option ", encoderForFieldType ("(", ")") fieldType, ""]
+
+encoderForDefinitionReference :: DefinitionReference -> Text
+encoderForDefinitionReference
+  ( DefinitionReference
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    name <> ".Encoder"
+encoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
+encoderForDefinitionReference
+  ( AppliedGenericReference
+      appliedTypes
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate ", "
+     in mconcat [name, ".Encoder ", appliedEncoders]
+encoderForDefinitionReference
+  ( AppliedImportedGenericReference
+      (ModuleName moduleName)
+      (AppliedTypes appliedTypes)
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate ", "
+     in mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders]
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
@@ -739,7 +906,7 @@ outputCaseTypeGuard
         interface =
           mconcat $
             ["{", tag, ": ", tagValue]
-              <> maybe ["}"] (\p -> [", data: ", outputTypeGuardForFieldType p, "}"]) maybePayload
+              <> maybe ["}"] (\p -> [", data: ", decoderForFieldType p, "}"]) maybePayload
      in if null typeVariables
           then
             mconcat
@@ -990,29 +1157,35 @@ outputCaseConstructor
 unionEnumConstructorTag :: Text -> Text -> Text
 unionEnumConstructorTag unionName constructorName = mconcat [unionName, "Tag.", constructorName]
 
-outputField :: StructField -> Text
-outputField (StructField (FieldName name) fieldType) =
-  mconcat ["    ", name, ": ", outputFieldType fieldType, ";\n"]
+outputField :: Int -> StructField -> Text
+outputField indentation (StructField (FieldName name) fieldType) =
+  let indent = Text.pack $ replicate indentation ' '
+   in indent <> mconcat [sanitizeName name, ": ", outputFieldType fieldType, "\n"]
+
+sanitizeName :: Text -> Text
+sanitizeName "type" = "``type``"
+sanitizeName name = name
 
 outputFieldType :: FieldType -> Text
-outputFieldType (LiteralType (LiteralString text)) = mconcat ["\"", text, "\""]
-outputFieldType (LiteralType (LiteralInteger x)) = tshow x
-outputFieldType (LiteralType (LiteralFloat f)) = tshow f
-outputFieldType (LiteralType (LiteralBoolean b)) = bool "false" "true" b
+outputFieldType (LiteralType (LiteralString _text)) = outputBasicType BasicString
+outputFieldType (LiteralType (LiteralInteger _x)) = outputBasicType I32
+outputFieldType (LiteralType (LiteralFloat _f)) = outputBasicType F32
+outputFieldType (LiteralType (LiteralBoolean _b)) = outputBasicType Boolean
 outputFieldType (BasicType basicType) = outputBasicType basicType
 outputFieldType (ComplexType (OptionalType fieldType)) =
-  mconcat [outputFieldType fieldType, " | null | undefined"]
-outputFieldType (ComplexType (ArrayType _size fieldType@(ComplexType (OptionalType _)))) =
-  mconcat ["(", outputFieldType fieldType, ")", "[]"]
+  mconcat ["option<", outputFieldType fieldType, ">"]
 outputFieldType (ComplexType (ArrayType _size fieldType)) =
-  mconcat [outputFieldType fieldType, "[]"]
+  mconcat ["list<", outputFieldType fieldType, ">"]
 outputFieldType (ComplexType (SliceType fieldType)) =
-  mconcat [outputFieldType fieldType, "[]"]
+  mconcat ["list<", outputFieldType fieldType, ">"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
 outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =
   outputDefinitionReference definitionReference
-outputFieldType (TypeVariableReferenceType (TypeVariable t)) = t
+outputFieldType (TypeVariableReferenceType (TypeVariable t)) = fsharpifyTypeVariable t
+
+fsharpifyTypeVariable :: Text -> Text
+fsharpifyTypeVariable t = t & Text.toLower & ("'" <>)
 
 outputDefinitionReference :: DefinitionReference -> Text
 outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
