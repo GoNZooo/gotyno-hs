@@ -276,8 +276,7 @@ outputPlainStruct name fields =
         [ mconcat ["type ", name, " =\n"],
           "    {\n",
           fieldsOutput,
-          "    }\n",
-          "}\n\n",
+          "    }\n\n",
           decoderOutput,
           "\n\n",
           encoderOutput
@@ -431,9 +430,8 @@ outputStructDecoder name fields typeVariables =
                   "            {\n",
                   mconcat [interface, "\n"],
                   "            }\n",
-                  "        )\n"
-                ],
-              "}"
+                  "        )"
+                ]
             ]
         else
           let fullName = name <> joinTypeVariables typeVariables
@@ -482,10 +480,8 @@ outputStructEncoder name fields typeVariables =
                   "        Encode.object\n",
                   "            [\n",
                   mconcat [interface, "\n"],
-                  "            ]\n",
-                  "        )\n"
-                ],
-              "}"
+                  "            ]"
+                ]
             ]
         else
           let fullName = name <> joinTypeVariables typeVariables
@@ -1033,15 +1029,19 @@ outputCaseUnion name constructors typeVariables =
         constructors
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
-                (mconcat [constructorName])
-                  <> maybe
-                    ""
-                    (typeVariablesFrom >>> maybeJoinTypeVariables)
-                    maybePayload
+                let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
+                 in mconcat [constructorName, payload]
+                      <> maybe
+                        ""
+                        (typeVariablesFrom >>> maybeJoinTypeVariables)
+                        maybePayload
             )
           & Text.intercalate " | "
-      maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
-   in mconcat ["export type ", name, maybeTypeVariables, " = ", cases, ";"]
+      _maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
+   in mconcat
+        [ mconcat ["type ", name, " =\n"],
+          cases
+        ]
 
 typeVariablesFrom :: FieldType -> Maybe [TypeVariable]
 typeVariablesFrom (TypeVariableReferenceType typeVariable) = pure [typeVariable]
