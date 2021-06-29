@@ -688,7 +688,7 @@ outputUnion name typeTag unionType =
   let caseUnionOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
-      unionTagEnumerationOutput = outputUnionTagEnumeration name (constructorsFrom unionType)
+      decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType)
       caseTypesOutput = outputCaseTypes name typeTag (constructorsFrom unionType)
       caseConstructorOutput = outputCaseConstructors name typeTag (constructorsFrom unionType)
       unionTypeGuardOutput = outputUnionTypeGuard typeTag typeVariables name (constructorsFrom unionType)
@@ -699,22 +699,48 @@ outputUnion name typeTag unionType =
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
-   in mconcat
+   in Text.intercalate
+        "\n\n"
         [ caseUnionOutput,
-          "\n\n",
-          unionTagEnumerationOutput,
-          "\n\n",
-          caseTypesOutput,
-          "\n\n",
-          caseConstructorOutput,
-          "\n\n",
-          unionTypeGuardOutput,
-          "\n\n",
-          caseTypeGuardOutput,
-          "\n\n",
-          unionValidatorOutput,
-          "\n\n",
-          caseValidatorOutput
+          decoderOutput
+        ]
+
+outputUnionDecoder :: FieldName -> Text -> [Constructor] -> Text
+outputUnionDecoder (FieldName tag) unionName constructors =
+  let constructorDecodersOutput =
+        constructors & fmap (outputConstructorDecoder unionName) & Text.intercalate "\n\n"
+      tagAndDecoderOutput =
+        constructors
+          & fmap
+            ( \(Constructor (ConstructorName name) _payload) ->
+                mconcat ["                \"", name, "\", ", unionName, ".", name, "Decoder\n"]
+            )
+          & mconcat
+   in mconcat
+        [ mconcat [constructorDecodersOutput, "\n\n"],
+          mconcat ["    static member Decoder: Decoder<", unionName, "> =\n"],
+          mconcat ["        GotynoCoders.decodeWithTypeTag\n"],
+          mconcat ["            \"", tag, "\"\n"],
+          mconcat ["            [|\n"],
+          tagAndDecoderOutput,
+          mconcat ["            |]\n"]
+        ]
+
+outputConstructorDecoder :: Text -> Constructor -> Text
+outputConstructorDecoder unionName (Constructor (ConstructorName name) maybePayload) =
+  let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
+      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", name]
+      decoderWithDataField payload =
+        mconcat
+          [ "Decode.object (fun get -> ",
+            name,
+            "(get.Required.Field \"data\" ",
+            decoderForFieldType payload,
+            "))"
+          ]
+   in mconcat
+        [ mconcat ["    static member ", name, "Decoder: Decoder<", unionName, "> =\n"],
+          mconcat ["        ", decoder]
         ]
 
 newtype FunctionPrefix = FunctionPrefix Text
