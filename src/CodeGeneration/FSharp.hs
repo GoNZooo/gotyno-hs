@@ -520,27 +520,32 @@ outputStructEncoder name fields typeVariables =
                 ]
 
 outputDecoderForField :: StructField -> Text
+outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalType fieldType))) =
+  mconcat
+    [ sanitizeName fieldName,
+      " = ",
+      "get.Optional.Field",
+      " \"",
+      fieldName,
+      "\" ",
+      decoderForFieldType fieldType
+    ]
 outputDecoderForField (StructField (FieldName fieldName) fieldType) =
-  let accessor = accessorForFieldType fieldType
-   in mconcat
-        [ sanitizeName fieldName,
-          " = ",
-          accessor,
-          " \"",
-          fieldName,
-          "\" ",
-          decoderForFieldType fieldType
-        ]
+  mconcat
+    [ sanitizeName fieldName,
+      " = ",
+      "get.Required.Field",
+      " \"",
+      fieldName,
+      "\" ",
+      decoderForFieldType fieldType
+    ]
 
 outputEncoderForField :: StructField -> Text
 outputEncoderForField (StructField (FieldName fieldName) fieldType@(LiteralType _)) =
   mconcat ["\"", fieldName, "\", ", encoderForFieldType ("", "") fieldType]
 outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat ["\"", fieldName, "\", ", encoderForFieldType ("", "") fieldType, " value.", fieldName]
-
-accessorForFieldType :: FieldType -> Text
-accessorForFieldType (ComplexType (OptionalType _)) = "get.Optional.Field"
-accessorForFieldType _other = "get.Required.Field"
 
 decoderForFieldType :: FieldType -> Text
 decoderForFieldType (LiteralType literalType) = decoderForLiteralType literalType
