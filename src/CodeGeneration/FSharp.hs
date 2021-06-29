@@ -1030,13 +1030,13 @@ outputCaseUnion name constructors typeVariables =
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat [constructorName, payload]
+                 in mconcat ["    | ", constructorName, payload, "\n"]
                       <> maybe
                         ""
                         (typeVariablesFrom >>> maybeJoinTypeVariables)
                         maybePayload
             )
-          & Text.intercalate " | "
+          & mconcat
       _maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
    in mconcat
         [ mconcat ["type ", name, " =\n"],
