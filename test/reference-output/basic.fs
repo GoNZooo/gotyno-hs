@@ -80,7 +80,7 @@ type SearchesParameters =
     static member Encoder value =
         Encode.object
             [
-                "filters", (GotynoCoders.encodeList GetSearchesFilter.Encoder value.filters)
+                "filters", GotynoCoders.encodeList GetSearchesFilter.Encoder value.filters
             ]
 
 type StillSize =

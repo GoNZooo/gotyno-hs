@@ -1,14 +1,15 @@
 module CodeGeneration.FSharp where
 
 import RIO
+import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
 outputModule Module {name = ModuleName name, definitions, imports} =
   let definitionOutput = definitions & fmap outputDefinition & Text.intercalate "\n\n"
-      importsOutput = imports & fmap outputImport & mconcat
-      outputImport (Import Module {name = ModuleName name}) =
+      _importsOutput = imports & fmap outputImport & mconcat
+      outputImport (Import Module {name = ModuleName _name}) =
         mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
    in mconcat [modulePrelude (fsharpifyModuleName name), definitionOutput]
 
@@ -47,9 +48,7 @@ outputEmbeddedUnion unionName typeTag constructors =
       tagEnumerationOutput = outputUnionTagEnumeration unionName constructorsAsConstructors
       constructorTypesOutput = outputEmbeddedConstructorTypes unionName typeTag constructors
       caseConstructorsOutput = outputEmbeddedCaseConstructors unionName typeTag constructors
-      unionTypeGuardOutput = outputUnionTypeGuard typeTag [] unionName constructorsAsConstructors
       caseTypeGuardOutput = outputEmbeddedCaseTypeGuards typeTag unionName constructors
-      unionValidatorOutput = outputUnionValidator [] typeTag unionName constructorsAsConstructors
       caseValidatorOutput = outputEmbeddedCaseValidators typeTag unionName constructors
    in Text.intercalate
         "\n\n"
@@ -57,9 +56,7 @@ outputEmbeddedUnion unionName typeTag constructors =
           tagEnumerationOutput,
           constructorTypesOutput,
           caseConstructorsOutput,
-          unionTypeGuardOutput,
           caseTypeGuardOutput,
-          unionValidatorOutput,
           caseValidatorOutput
         ]
 
@@ -203,69 +200,75 @@ outputUntaggedUnionValidator name cases =
 outputEnumeration :: Text -> [EnumerationValue] -> Text
 outputEnumeration name values =
   let typeOutput = outputEnumerationType name values
-      typeGuardOutput = outputEnumerationTypeGuard name values
-      validatorOutput = outputEnumerationValidator name values
-   in mconcat [typeOutput, "\n\n", typeGuardOutput, "\n\n", validatorOutput]
+      decoderOutput = outputEnumerationDecoder name values
+      encoderOutput = outputEnumerationEncoder values
+   in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
 
 outputEnumerationType :: Text -> [EnumerationValue] -> Text
 outputEnumerationType name values =
   let valuesOutput =
         values
           & fmap
-            ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                mconcat ["    ", i, " = ", outputLiteral literal, ",\n"]
+            ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
+                mconcat ["    | ", fsharpifyConstructorName i]
             )
-          & mconcat
-      outputLiteral (LiteralString s) = mconcat ["\"", s, "\""]
+          & Text.intercalate "\n"
+   in mconcat [mconcat ["type ", name, " =\n"], valuesOutput]
+
+fsharpifyConstructorName :: Text -> Text
+fsharpifyConstructorName = Text.toTitle
+
+outputEnumerationDecoder :: Text -> [EnumerationValue] -> Text
+outputEnumerationDecoder unionName values =
+  let valuesOutput =
+        values
+          & fmap
+            ( \(EnumerationValue (EnumerationIdentifier i) value) ->
+                mconcat [outputLiteral value, ", ", fsharpifyConstructorName i]
+            )
+          & Text.intercalate "; "
+      outputLiteral (LiteralString s) = "\"" <> s <> "\""
+      outputLiteral (LiteralBoolean b) = bool "false" "true" b
       outputLiteral (LiteralInteger i) = tshow i
       outputLiteral (LiteralFloat f) = tshow f
-      outputLiteral (LiteralBoolean b) = bool "false" "true" b
+      valuesDecoder =
+        values
+          & PartialList.head
+          & ( \case
+                (EnumerationValue _identifier (LiteralString _s)) ->
+                  decoderForBasicType BasicString
+                (EnumerationValue _identifier (LiteralBoolean _s)) ->
+                  decoderForBasicType Boolean
+                (EnumerationValue _identifier (LiteralInteger _s)) ->
+                  decoderForBasicType I32
+                (EnumerationValue _identifier (LiteralFloat _s)) ->
+                  decoderForBasicType F32
+            )
    in mconcat
-        [ mconcat ["export enum ", name, " {\n"],
-          valuesOutput,
-          "}"
+        [ mconcat ["    static member Decoder: Decoder<", unionName, "> =\n"],
+          mconcat ["        GotynoCoders.decodeOneOf ", valuesDecoder, " [|", valuesOutput, "|]"]
         ]
 
-outputEnumerationFunction ::
-  FunctionPrefix ->
-  ReturnType ->
-  (Text -> [EnumerationValue] -> Text) ->
-  Text ->
-  [EnumerationValue] ->
-  Text
-outputEnumerationFunction
-  (FunctionPrefix prefix)
-  (ReturnType returnType)
-  returnExpression
-  name
-  values =
-    mconcat
-      [ mconcat ["export function ", prefix, name, "(value: unknown): ", returnType name, " {\n"],
-        mconcat ["    return ", returnExpression name values, ";\n"],
-        "}"
-      ]
-
-outputEnumerationTypeGuard :: Text -> [EnumerationValue] -> Text
-outputEnumerationTypeGuard =
-  let returnExpression name values =
-        let valuesOutput =
-              values
-                & fmap (\(EnumerationValue (EnumerationIdentifier i) _value) -> name <> "." <> i)
-                & Text.intercalate ", "
-         in mconcat ["[", valuesOutput, "].some((v) => v === value)"]
-      returnType name = "value is " <> name
-   in outputEnumerationFunction (FunctionPrefix "is") (ReturnType returnType) returnExpression
-
-outputEnumerationValidator :: Text -> [EnumerationValue] -> Text
-outputEnumerationValidator =
-  let returnExpression name values =
-        let valuesOutput =
-              values
-                & fmap (\(EnumerationValue (EnumerationIdentifier i) _value) -> name <> "." <> i)
-                & Text.intercalate ", "
-         in mconcat ["svt.validateOneOfLiterals<", name, ">(value, ", "[", valuesOutput, "])"]
-      returnType name = "svt.ValidationResult<" <> name <> ">"
-   in outputEnumerationFunction (FunctionPrefix "validate") (ReturnType returnType) returnExpression
+outputEnumerationEncoder :: [EnumerationValue] -> Text
+outputEnumerationEncoder values =
+  let caseOutput =
+        values
+          & fmap caseEncoder
+          & Text.intercalate "\n"
+      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralString s)) =
+        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.string \"", s, "\""]
+      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralBoolean b)) =
+        let value = bool "false" "true" b
+         in mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.boolean ", value]
+      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralInteger integer)) =
+        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.int32 ", tshow integer]
+      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralFloat f)) =
+        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.float32 ", tshow f]
+   in mconcat
+        [ mconcat ["    static member Encoder =\n"],
+          mconcat ["        function\n"],
+          caseOutput
+        ]
 
 outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
@@ -689,20 +692,15 @@ outputUnion name typeTag unionType =
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType)
-      caseTypesOutput = outputCaseTypes name typeTag (constructorsFrom unionType)
-      caseConstructorOutput = outputCaseConstructors name typeTag (constructorsFrom unionType)
-      unionTypeGuardOutput = outputUnionTypeGuard typeTag typeVariables name (constructorsFrom unionType)
-      caseTypeGuardOutput = outputCaseTypeGuards name typeTag (constructorsFrom unionType)
-      unionValidatorOutput =
-        outputUnionValidator typeVariables typeTag name (constructorsFrom unionType)
-      caseValidatorOutput = outputCaseValidators typeTag name (constructorsFrom unionType)
+      encoderOutput = outputUnionEncoder typeTag (constructorsFrom unionType)
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
    in Text.intercalate
         "\n\n"
         [ caseUnionOutput,
-          decoderOutput
+          decoderOutput,
+          encoderOutput
         ]
 
 outputUnionDecoder :: FieldName -> Text -> [Constructor] -> Text
@@ -723,7 +721,7 @@ outputUnionDecoder (FieldName tag) unionName constructors =
           mconcat ["            \"", tag, "\"\n"],
           mconcat ["            [|\n"],
           tagAndDecoderOutput,
-          mconcat ["            |]\n"]
+          mconcat ["            |]"]
         ]
 
 outputConstructorDecoder :: Text -> Constructor -> Text
@@ -741,6 +739,30 @@ outputConstructorDecoder unionName (Constructor (ConstructorName name) maybePayl
    in mconcat
         [ mconcat ["    static member ", name, "Decoder: Decoder<", unionName, "> =\n"],
           mconcat ["        ", decoder]
+        ]
+
+outputUnionEncoder :: FieldName -> [Constructor] -> Text
+outputUnionEncoder typeTag constructors =
+  let caseEncodingOutput =
+        constructors & fmap (outputConstructorEncoder typeTag) & Text.intercalate "\n\n"
+   in mconcat
+        [ mconcat ["    static member Encoder =\n"],
+          mconcat ["        function\n"],
+          caseEncodingOutput
+        ]
+
+outputConstructorEncoder :: FieldName -> Constructor -> Text
+outputConstructorEncoder (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
+  let dataPart = maybe "" encoderWithDataField maybePayload
+      typeTagPart = mconcat ["\"", tag, "\", Encode.string \"", name, "\""]
+      dataIndentation = "                            "
+      encoderWithDataField payload =
+        mconcat ["\n", dataIndentation, "\"data\", ", encoderForFieldType ("", "") payload, " payload"]
+      interface = mconcat ["[ ", typeTagPart, dataPart, " ]"]
+      maybePayloadPart = maybe "" (const " payload") maybePayload
+   in mconcat
+        [ mconcat ["        | ", name, maybePayloadPart, " ->\n"],
+          mconcat ["            Encode.object ", interface]
         ]
 
 newtype FunctionPrefix = FunctionPrefix Text
@@ -776,201 +798,6 @@ outputUnionFunction
         mconcat ["    return ", returnExpression unionName typeTag constructors, ";\n"],
         "}"
       ]
-
-outputUnionTypeGuard :: FieldName -> [TypeVariable] -> Text -> [Constructor] -> Text
-outputUnionTypeGuard typeTag typeVariables unionName constructors =
-  if null typeVariables
-    then
-      let returnExpression _unionName' _tagType constructors' =
-            let constructorTypeGuards =
-                  constructors'
-                    & fmap
-                      (\(Constructor (ConstructorName constructorName) _payload) -> "is" <> constructorName)
-                    & Text.intercalate ", "
-             in mconcat ["[", constructorTypeGuards, "].some((typePredicate) => typePredicate(value))"]
-       in outputUnionFunction
-            (FunctionPrefix "is")
-            (ReturnType ("value is " <>))
-            (ReturnExpression returnExpression)
-            typeTag
-            unionName
-            constructors
-    else
-      let fullName = unionName <> joinTypeVariables typeVariables
-          typeVariablePredicates =
-            typeVariables
-              & fmap (\(TypeVariable t) -> mconcat ["is", t, ": svt.TypePredicate<", t, ">"])
-              & Text.intercalate ", "
-          returnedFunctionName = "is" <> Text.filter ((`elem` ("<>, " :: String)) >>> not) fullName
-          constructorPredicates =
-            constructors
-              & fmap
-                ( \(Constructor (ConstructorName name) maybePayload) ->
-                    let constructorTypeVariables =
-                          fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-                        maybeParameters =
-                          if null constructorTypeVariables
-                            then ""
-                            else "(" <> predicates <> ")"
-                        predicates =
-                          constructorTypeVariables
-                            & fmap (\(TypeVariable t) -> "is" <> t)
-                            & Text.intercalate ", "
-                     in mconcat ["is", name, maybeParameters]
-                )
-              & Text.intercalate ", "
-       in mconcat
-            [ mconcat
-                [ "export function is",
-                  fullName,
-                  "(",
-                  typeVariablePredicates,
-                  "): svt.TypePredicate<",
-                  fullName,
-                  "> {\n"
-                ],
-              mconcat
-                [ "    return function ",
-                  returnedFunctionName,
-                  "(value: unknown): value is ",
-                  fullName,
-                  " {\n"
-                ],
-              mconcat
-                [ "        return [",
-                  constructorPredicates,
-                  "].some((typePredicate) => typePredicate(value));\n"
-                ],
-              "    };\n",
-              "}"
-            ]
-
-outputUnionValidator :: [TypeVariable] -> FieldName -> Text -> [Constructor] -> Text
-outputUnionValidator typeVariables typeTag@(FieldName tag) unionName constructors =
-  let constructorTagValidators =
-        constructors
-          & fmap
-            ( \(Constructor (ConstructorName constructorName) maybePayload) ->
-                let tagName = unionEnumConstructorTag unionName constructorName
-                    constructorTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-                    name =
-                      if null constructorTypeVariables
-                        then constructorName
-                        else
-                          mconcat
-                            [ constructorName,
-                              "(",
-                              typeVariableValidatorNames constructorTypeVariables,
-                              ")"
-                            ]
-                 in mconcat ["[", tagName, "]: ", "validate", name]
-            )
-          & Text.intercalate ", "
-   in if null typeVariables
-        then
-          let returnExpression unionName' (FieldName tag') _constructors' =
-                mconcat
-                  [ "svt.validateWithTypeTag<",
-                    unionName',
-                    ">(value, {",
-                    constructorTagValidators,
-                    "}, \"",
-                    tag',
-                    "\")"
-                  ]
-           in outputUnionFunction
-                (FunctionPrefix "validate")
-                (ReturnType (\n -> "svt.ValidationResult<" <> n <> ">"))
-                (ReturnExpression returnExpression)
-                typeTag
-                unionName
-                constructors
-        else
-          let fullName = unionName <> joinTypeVariables typeVariables
-              returnedFunctionName =
-                "validate" <> Text.filter ((`elem` ("<>, " :: String)) >>> not) fullName
-           in mconcat
-                [ mconcat
-                    [ "export function validate",
-                      fullName,
-                      "(",
-                      typeVariableValidatorParameters typeVariables,
-                      "): svt.Validator<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "    return function ",
-                      returnedFunctionName,
-                      "(value: unknown): svt.ValidationResult<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "        return svt.validateWithTypeTag<",
-                      fullName,
-                      ">(value, {",
-                      constructorTagValidators,
-                      "}, \"",
-                      tag,
-                      "\");\n"
-                    ],
-                  "    };\n",
-                  "}"
-                ]
-
-outputCaseTypeGuards :: Text -> FieldName -> [Constructor] -> Text
-outputCaseTypeGuards unionName typeTag =
-  fmap (outputCaseTypeGuard unionName typeTag) >>> Text.intercalate "\n\n"
-
-outputCaseTypeGuard :: Text -> FieldName -> Constructor -> Text
-outputCaseTypeGuard
-  unionName
-  (FieldName tag)
-  (Constructor (ConstructorName name) maybePayload) =
-    let tagValue = unionEnumConstructorTag unionName name
-        typeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-        interface =
-          mconcat $
-            ["{", tag, ": ", tagValue]
-              <> maybe ["}"] (\p -> [", data: ", decoderForFieldType p, "}"]) maybePayload
-     in if null typeVariables
-          then
-            mconcat
-              [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
-                mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"],
-                "}"
-              ]
-          else
-            let fullName = name <> joinTypeVariables typeVariables
-                returnedFunctionName = "is" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
-             in mconcat
-                  [ mconcat
-                      [ "export function is",
-                        fullName,
-                        "(",
-                        typeVariablePredicateParameters typeVariables,
-                        "): svt.TypePredicate<",
-                        fullName,
-                        "> {\n"
-                      ],
-                    mconcat
-                      [ "    return function ",
-                        returnedFunctionName,
-                        "(value: unknown): value is ",
-                        fullName,
-                        " {\n"
-                      ],
-                    mconcat
-                      [ "        return svt.isInterface<",
-                        fullName,
-                        ">(value, ",
-                        interface,
-                        ");\n"
-                      ],
-                    "    };\n",
-                    "}"
-                  ]
 
 typeVariablePredicateNames :: [TypeVariable] -> Text
 typeVariablePredicateNames =
@@ -1056,13 +883,13 @@ outputCaseUnion name constructors typeVariables =
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", constructorName, payload, "\n"]
+                 in mconcat ["    | ", constructorName, payload]
                       <> maybe
                         ""
                         (typeVariablesFrom >>> maybeJoinTypeVariables)
                         maybePayload
             )
-          & mconcat
+          & Text.intercalate "\n"
       _maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
    in mconcat
         [ mconcat ["type ", name, " =\n"],
@@ -1142,11 +969,6 @@ outputCaseType
             payloadLine,
             "};"
           ]
-
--- outputCaseConstructorAsStruct :: DefinitionName -> Maybe FieldType -> Text
--- outputCaseConstructorAsStruct name maybePayload =
---   let fields :: [StructField] = maybe [] maybePayload
---    in ""
 
 outputCaseConstructors :: Text -> FieldName -> [Constructor] -> Text
 outputCaseConstructors unionName typeTag constructors =
