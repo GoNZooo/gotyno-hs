@@ -1,6 +1,7 @@
 module CodeGeneration.FSharp where
 
 import RIO
+import qualified RIO.Char as Char
 import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Types
@@ -14,7 +15,7 @@ outputModule Module {name = ModuleName name, definitions, imports} =
    in mconcat [modulePrelude (fsharpifyModuleName name), definitionOutput]
 
 fsharpifyModuleName :: Text -> Text
-fsharpifyModuleName = Text.toTitle
+fsharpifyModuleName = upperCaseFirstCharacter
 
 modulePrelude :: Text -> Text
 modulePrelude name =
@@ -216,7 +217,7 @@ outputEnumerationType name values =
    in mconcat [mconcat ["type ", name, " =\n"], valuesOutput]
 
 fsharpifyConstructorName :: Text -> Text
-fsharpifyConstructorName = Text.toTitle
+fsharpifyConstructorName = upperCaseFirstCharacter
 
 outputEnumerationDecoder :: Text -> [EnumerationValue] -> Text
 outputEnumerationDecoder unionName values =
@@ -374,7 +375,7 @@ outputValidatorForDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [moduleName, ".validate", name]
+    mconcat [fsharpifyModuleName moduleName, ".validate", name]
 outputValidatorForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -389,7 +390,7 @@ outputValidatorForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedValidators = appliedTypes & fmap outputValidatorForFieldType & Text.intercalate ", "
-     in mconcat [moduleName, ".validate", name, "(", appliedValidators, ")"]
+     in mconcat [fsharpifyModuleName moduleName, ".validate", name, "(", appliedValidators, ")"]
 
 outputValidatorForBasicType :: BasicTypeValue -> Text
 outputValidatorForBasicType BasicString = "svt.validateString"
@@ -1047,7 +1048,7 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [moduleName, ".", name]
+    mconcat [fsharpifyModuleName moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -1062,7 +1063,7 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [moduleName, ".", name, "<", appliedFieldTypes, ">"]
+     in mconcat [fsharpifyModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"
@@ -1086,3 +1087,9 @@ maybeJoinTypeVariables = maybe "" joinTypeVariables
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =
   typeVariables & fmap (\(TypeVariable t) -> t) & Text.intercalate ", " & (\o -> "<" <> o <> ">")
+
+upperCaseFirstCharacter :: Text -> Text
+upperCaseFirstCharacter t =
+  case Text.uncons t of
+    Just (c, rest) -> Text.cons (Char.toUpper c) rest
+    Nothing -> t

@@ -2,8 +2,6 @@ module ImportExample
 
 open Thoth.Json.Net
 
-
-
 type UsesImport =
     {
         ``type``: string
