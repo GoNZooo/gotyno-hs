@@ -2,8 +2,6 @@ module Generics
 
 open Thoth.Json.Net
 
-
-
 type Holder<'t> =
     {
         value: 't
@@ -37,7 +35,7 @@ type MaybeHolder<'t> =
     static member Encoder encodeT value =
         Encode.object
             [
-                "value", (Encode.option encodeT value.value)
+                "value", Encode.option encodeT value.value
             ]
 
 type Either<'l, 'r> =
@@ -135,11 +133,11 @@ type KnownForMovie =
         Encode.object
             [
                 "media_type", Encode.string "movie"
-                "poster_path", (Encode.option Encode.string value.poster_path)
+                "poster_path", Encode.option Encode.string value.poster_path
                 "id", Encode.uint32 value.id
-                "title", (Encode.option Encode.string value.title)
+                "title", Encode.option Encode.string value.title
                 "vote_average", Encode.float32 value.vote_average
-                "release_date", (Encode.option Encode.string value.release_date)
+                "release_date", Encode.option Encode.string value.release_date
                 "overview", Encode.string value.overview
             ]
 
@@ -171,12 +169,12 @@ type KnownForShow =
         Encode.object
             [
                 "media_type", Encode.string "tv"
-                "poster_path", (Encode.option Encode.string value.poster_path)
+                "poster_path", Encode.option Encode.string value.poster_path
                 "id", Encode.uint32 value.id
                 "vote_average", Encode.float32 value.vote_average
                 "overview", Encode.string value.overview
-                "first_air_date", (Encode.option Encode.string value.first_air_date)
-                "name", (Encode.option Encode.string value.name)
+                "first_air_date", Encode.option Encode.string value.first_air_date
+                "name", Encode.option Encode.string value.name
             ]
 
 type KnownFor =
@@ -245,11 +243,11 @@ type KnownForMovieWithoutTypeTag =
     static member Encoder value =
         Encode.object
             [
-                "poster_path", (Encode.option Encode.string value.poster_path)
+                "poster_path", Encode.option Encode.string value.poster_path
                 "id", Encode.uint32 value.id
-                "title", (Encode.option Encode.string value.title)
+                "title", Encode.option Encode.string value.title
                 "vote_average", Encode.float32 value.vote_average
-                "release_date", (Encode.option Encode.string value.release_date)
+                "release_date", Encode.option Encode.string value.release_date
                 "overview", Encode.string value.overview
             ]
 
@@ -278,12 +276,12 @@ type KnownForShowWithoutTypeTag =
     static member Encoder value =
         Encode.object
             [
-                "poster_path", (Encode.option Encode.string value.poster_path)
+                "poster_path", Encode.option Encode.string value.poster_path
                 "id", Encode.uint32 value.id
                 "vote_average", Encode.float32 value.vote_average
                 "overview", Encode.string value.overview
-                "first_air_date", (Encode.option Encode.string value.first_air_date)
-                "name", (Encode.option Encode.string value.name)
+                "first_air_date", Encode.option Encode.string value.first_air_date
+                "name", Encode.option Encode.string value.name
             ]
 
 type KnownForEmbedded =
@@ -328,11 +326,11 @@ type KnownForEmbedded =
             Encode.object
                 [
                     "media_type", Encode.string "Movie"
-                    "poster_path", (Encode.option Encode.string payload.poster_path)
+                    "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
-                    "title", (Encode.option Encode.string payload.title)
+                    "title", Encode.option Encode.string payload.title
                     "vote_average", Encode.float32 payload.vote_average
-                    "release_date", (Encode.option Encode.string payload.release_date)
+                    "release_date", Encode.option Encode.string payload.release_date
                     "overview", Encode.string payload.overview
                 ]
 
@@ -340,10 +338,10 @@ type KnownForEmbedded =
             Encode.object
                 [
                     "media_type", Encode.string "TV"
-                    "poster_path", (Encode.option Encode.string payload.poster_path)
+                    "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "vote_average", Encode.float32 payload.vote_average
                     "overview", Encode.string payload.overview
-                    "first_air_date", (Encode.option Encode.string payload.first_air_date)
-                    "name", (Encode.option Encode.string payload.name)
+                    "first_air_date", Encode.option Encode.string payload.first_air_date
+                    "name", Encode.option Encode.string payload.name
                 ]
