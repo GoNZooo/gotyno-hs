@@ -2,42 +2,6 @@ module Generics
 
 open Thoth.Json.Net
 
-type Holder<'t> =
-    {
-        value: 't
-    }
-
-    static member Decoder decodeT: Decoder<Holder<'t>> =
-        Decode.object (fun get ->
-            {
-                value = get.Required.Field "value" decodeT
-            }
-        )
-
-    static member Encoder encodeT value =
-        Encode.object
-            [
-                "value", encodeT value.value
-            ]
-
-type MaybeHolder<'t> =
-    {
-        value: option<'t>
-    }
-
-    static member Decoder decodeT: Decoder<MaybeHolder<'t>> =
-        Decode.object (fun get ->
-            {
-                value = get.Optional.Field "value" decodeT
-            }
-        )
-
-    static member Encoder encodeT value =
-        Encode.object
-            [
-                "value", Encode.option encodeT value.value
-            ]
-
 type Either<'l, 'r> =
     | Left of 'l
     | Right of 'r

@@ -7,3 +7,11 @@ union Result <T, E>{
     Success: T
     Failure: E
 }
+
+struct Holder <T>{
+    value: T
+}
+
+struct MaybeHolder <T>{
+    value: ?T
+}

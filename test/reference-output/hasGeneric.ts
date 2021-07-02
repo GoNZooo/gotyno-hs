@@ -116,3 +116,35 @@ export function validateFailure<E>(validateE: svt.Validator<E>): svt.Validator<F
         return svt.validate<Failure<E>>(value, {type: ResultTag.Failure, data: validateE});
     };
 }
+
+export type Holder<T> = {
+    value: T;
+};
+
+export function isHolder<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<Holder<T>> {
+    return function isHolderT(value: unknown): value is Holder<T> {
+        return svt.isInterface<Holder<T>>(value, {value: isT});
+    };
+}
+
+export function validateHolder<T>(validateT: svt.Validator<T>): svt.Validator<Holder<T>> {
+    return function validateHolderT(value: unknown): svt.ValidationResult<Holder<T>> {
+        return svt.validate<Holder<T>>(value, {value: validateT});
+    };
+}
+
+export type MaybeHolder<T> = {
+    value: T | null | undefined;
+};
+
+export function isMaybeHolder<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<MaybeHolder<T>> {
+    return function isMaybeHolderT(value: unknown): value is MaybeHolder<T> {
+        return svt.isInterface<MaybeHolder<T>>(value, {value: svt.optional(isT)});
+    };
+}
+
+export function validateMaybeHolder<T>(validateT: svt.Validator<T>): svt.Validator<MaybeHolder<T>> {
+    return function validateMaybeHolderT(value: unknown): svt.ValidationResult<MaybeHolder<T>> {
+        return svt.validate<MaybeHolder<T>>(value, {value: svt.validateOptional(validateT)});
+    };
+}

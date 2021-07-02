@@ -692,8 +692,8 @@ outputUnion name typeTag unionType =
   let caseUnionOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
-      decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType)
-      encoderOutput = outputUnionEncoder typeTag (constructorsFrom unionType)
+      decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType) typeVariables
+      encoderOutput = outputUnionEncoder typeTag (constructorsFrom unionType) typeVariables
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
@@ -704,20 +704,39 @@ outputUnion name typeTag unionType =
           encoderOutput
         ]
 
-outputUnionDecoder :: FieldName -> Text -> [Constructor] -> Text
-outputUnionDecoder (FieldName tag) unionName constructors =
+outputUnionDecoder :: FieldName -> Text -> [Constructor] -> [TypeVariable] -> Text
+outputUnionDecoder (FieldName tag) unionName constructors typeVariables =
   let constructorDecodersOutput =
-        constructors & fmap (outputConstructorDecoder unionName) & Text.intercalate "\n\n"
+        constructors
+          & fmap (outputConstructorDecoder unionName typeVariables)
+          & Text.intercalate "\n\n"
       tagAndDecoderOutput =
         constructors
           & fmap
-            ( \(Constructor (ConstructorName name) _payload) ->
-                mconcat ["                \"", name, "\", ", unionName, ".", name, "Decoder\n"]
+            ( \(Constructor (ConstructorName name) payload) ->
+                let payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom payload
+                    maybeDecoderArguments = typeVariableDecodersAsArguments payloadTypeVariables
+                 in mconcat
+                      [ "                \"",
+                        name,
+                        "\", ",
+                        unionName,
+                        ".",
+                        name,
+                        "Decoder",
+                        maybeDecoderArguments,
+                        "\n"
+                      ]
             )
           & mconcat
+      fullName =
+        if null typeVariables
+          then unionName
+          else mconcat [unionName, joinTypeVariables typeVariables]
+      maybeArguments = typeVariableDecodersAsArguments typeVariables
    in mconcat
         [ mconcat [constructorDecodersOutput, "\n\n"],
-          mconcat ["    static member Decoder: Decoder<", unionName, "> =\n"],
+          mconcat ["    static member Decoder", maybeArguments, ": Decoder<", fullName, "> =\n"],
           mconcat ["        GotynoCoders.decodeWithTypeTag\n"],
           mconcat ["            \"", tag, "\"\n"],
           mconcat ["            [|\n"],
@@ -725,10 +744,32 @@ outputUnionDecoder (FieldName tag) unionName constructors =
           mconcat ["            |]"]
         ]
 
-outputConstructorDecoder :: Text -> Constructor -> Text
-outputConstructorDecoder unionName (Constructor (ConstructorName name) maybePayload) =
+typeVariableDecodersAsArguments :: [TypeVariable] -> Text
+typeVariableDecodersAsArguments [] = ""
+typeVariableDecodersAsArguments typeVariables =
+  " " <> (decodersForTypeVariables typeVariables & Text.intercalate " ")
+
+decodersForTypeVariables :: [TypeVariable] -> [Text]
+decodersForTypeVariables = fmap (TypeVariableReferenceType >>> decoderForFieldType)
+
+typeVariableEncodersAsArguments :: [TypeVariable] -> Text
+typeVariableEncodersAsArguments [] = ""
+typeVariableEncodersAsArguments typeVariables =
+  " " <> (encodersForTypeVariables typeVariables & Text.intercalate " ")
+
+encodersForTypeVariables :: [TypeVariable] -> [Text]
+encodersForTypeVariables = fmap (TypeVariableReferenceType >>> encoderForFieldType ("", ""))
+
+outputConstructorDecoder :: Text -> [TypeVariable] -> Constructor -> Text
+outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName name) maybePayload) =
   let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
       alwaysSucceedingDecoder = mconcat ["Decode.succeed ", name]
+      payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
+      maybeArguments = typeVariableDecodersAsArguments payloadTypeVariables
+      fullName =
+        if null typeVariables
+          then unionName
+          else mconcat [unionName, joinTypeVariables typeVariables]
       decoderWithDataField payload =
         mconcat
           [ "Decode.object (fun get -> ",
@@ -738,16 +779,25 @@ outputConstructorDecoder unionName (Constructor (ConstructorName name) maybePayl
             "))"
           ]
    in mconcat
-        [ mconcat ["    static member ", name, "Decoder: Decoder<", unionName, "> =\n"],
+        [ mconcat
+            [ "    static member ",
+              name,
+              "Decoder",
+              maybeArguments,
+              ": Decoder<",
+              fullName,
+              "> =\n"
+            ],
           mconcat ["        ", decoder]
         ]
 
-outputUnionEncoder :: FieldName -> [Constructor] -> Text
-outputUnionEncoder typeTag constructors =
+outputUnionEncoder :: FieldName -> [Constructor] -> [TypeVariable] -> Text
+outputUnionEncoder typeTag constructors typeVariables =
   let caseEncodingOutput =
         constructors & fmap (outputConstructorEncoder typeTag) & Text.intercalate "\n\n"
+      maybeArguments = typeVariableEncodersAsArguments typeVariables
    in mconcat
-        [ mconcat ["    static member Encoder =\n"],
+        [ mconcat ["    static member Encoder", maybeArguments, " =\n"],
           mconcat ["        function\n"],
           caseEncodingOutput
         ]
@@ -885,15 +935,11 @@ outputCaseUnion name constructors typeVariables =
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
                  in mconcat ["    | ", constructorName, payload]
-                      <> maybe
-                        ""
-                        (typeVariablesFrom >>> maybeJoinTypeVariables)
-                        maybePayload
             )
           & Text.intercalate "\n"
-      _maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
+      maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
    in mconcat
-        [ mconcat ["type ", name, " =\n"],
+        [ mconcat ["type ", name, maybeTypeVariables, " =\n"],
           cases
         ]
 
@@ -1086,7 +1132,10 @@ maybeJoinTypeVariables = maybe "" joinTypeVariables
 
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =
-  typeVariables & fmap (\(TypeVariable t) -> t) & Text.intercalate ", " & (\o -> "<" <> o <> ">")
+  typeVariables
+    & fmap (\(TypeVariable t) -> fsharpifyTypeVariable t)
+    & Text.intercalate ", "
+    & (\o -> "<" <> o <> ">")
 
 upperCaseFirstCharacter :: Text -> Text
 upperCaseFirstCharacter t =

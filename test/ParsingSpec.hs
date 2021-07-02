@@ -56,7 +56,7 @@ genericsReferenceOutput extension =
 spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics)
-  (FSharpReferenceOutput fsBasic fsImport _fsHasGeneric _fsGenerics) = do
+  (FSharpReferenceOutput fsBasic fsImport fsHasGeneric _fsGenerics) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- parseModules ["basic.gotyno"]
@@ -95,9 +95,11 @@ spec
         importFSharpOutput `shouldBe` fsImport
 
       it "Mirrors reference output for `hasGeneric.gotyno`" $ do
-        hasGenericModuleText <-
-          (PartialList.head >>> TypeScript.outputModule) <$> parseModules ["hasGeneric.gotyno"]
-        hasGenericModuleText `shouldBe` tsHasGeneric
+        hasGenericModule <- PartialList.head <$> parseModules ["hasGeneric.gotyno"]
+        let hasGenericTypeScriptOutput = TypeScript.outputModule hasGenericModule
+            hasGenericFSharpOutput = FSharp.outputModule hasGenericModule
+        hasGenericTypeScriptOutput `shouldBe` tsHasGeneric
+        hasGenericFSharpOutput `shouldBe` fsHasGeneric
 
       it "Mirrors reference output for `generics.gotyno`" $ do
         genericsModuleText <-

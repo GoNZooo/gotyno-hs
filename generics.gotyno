@@ -1,13 +1,5 @@
 import hasGeneric
 
-struct Holder <T>{
-    value: T
-}
-
-struct MaybeHolder <T>{
-    value: ?T
-}
-
 union Either <L, R>{
     Left: L
     Right: R
