@@ -275,7 +275,7 @@ outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
   let fieldsOutput = fields & fmap (outputField 8) & mconcat
       decoderOutput = outputStructDecoder name fields []
-      encoderOutput = outputStructEncoder name fields []
+      encoderOutput = outputStructEncoder fields []
    in mconcat
         [ mconcat ["type ", name, " =\n"],
           "    {\n",
@@ -291,65 +291,15 @@ outputGenericStruct name typeVariables fields =
   let fullName = name <> joinTypeVariables typeVariables
       typeOutput =
         mconcat
-          [ mconcat ["export type ", fullName, " = {\n"],
+          [ mconcat ["type ", fullName, " =\n"],
+            "    {\n",
             fieldsOutput,
-            "};"
+            "    }"
           ]
       fieldsOutput = fields & fmap (outputField 8) & mconcat
-      typeGuardOutput = outputStructDecoder name fields typeVariables
-      validatorOutput = outputStructValidator name fields typeVariables
-   in mconcat [typeOutput, "\n\n", typeGuardOutput, "\n\n", validatorOutput]
-
-outputStructValidator :: Text -> [StructField] -> [TypeVariable] -> Text
-outputStructValidator name fields typeVariables =
-  let interface =
-        "{" <> (fields & fmap outputValidatorForField & Text.intercalate ", ") <> "}"
-   in if null typeVariables
-        then
-          mconcat
-            [ mconcat
-                [ mconcat
-                    [ "export function validate",
-                      name,
-                      "(value: unknown): svt.ValidationResult<",
-                      name,
-                      "> {\n"
-                    ],
-                  mconcat ["    return svt.validate<", name, ">(value, ", interface, ");\n"]
-                ],
-              "}"
-            ]
-        else
-          let fullName = name <> joinTypeVariables typeVariables
-              returnedFunctionName =
-                ("validate" <> fullName) & Text.filter ((`elem` ("<>, " :: String)) >>> not)
-           in mconcat
-                [ mconcat
-                    [ "export function validate",
-                      fullName,
-                      "(",
-                      typeVariableValidatorParameters typeVariables,
-                      "): svt.Validator<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "    return function ",
-                      returnedFunctionName,
-                      "(value: unknown): svt.ValidationResult<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "        return svt.validate<",
-                      fullName,
-                      ">(value, ",
-                      interface,
-                      ");\n"
-                    ],
-                  "    };\n",
-                  "}"
-                ]
+      decoderOutput = outputStructDecoder name fields typeVariables
+      encoderOutput = outputStructEncoder fields typeVariables
+   in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
 
 outputValidatorForField :: StructField -> Text
 outputValidatorForField (StructField (FieldName fieldName) fieldType) =
@@ -421,103 +371,41 @@ outputValidatorForComplexType (OptionalType typeData) =
 outputStructDecoder :: Text -> [StructField] -> [TypeVariable] -> Text
 outputStructDecoder name fields typeVariables =
   let prelude =
-        mconcat ["    static member Decoder: Decoder<", name, "> =\n"]
+        mconcat ["    static member Decoder", maybeArguments, ": Decoder<", fullName, "> =\n"]
+      fullName =
+        if null typeVariables then name else mconcat [name, joinTypeVariables typeVariables]
+      maybeArguments = typeVariableDecodersAsArguments typeVariables
       interface =
         fields & fmap (outputDecoderForField >>> addIndentation) & Text.intercalate "\n"
       addIndentation = ("                " <>)
-   in if null typeVariables
-        then
-          mconcat
-            [ mconcat
-                [ prelude,
-                  "        Decode.object (fun get ->\n",
-                  "            {\n",
-                  mconcat [interface, "\n"],
-                  "            }\n",
-                  "        )"
-                ]
+   in mconcat
+        [ mconcat
+            [ prelude,
+              "        Decode.object (fun get ->\n",
+              "            {\n",
+              mconcat [interface, "\n"],
+              "            }\n",
+              "        )"
             ]
-        else
-          let fullName = name <> joinTypeVariables typeVariables
-              returnedFunctionName =
-                ("is" <> fullName) & Text.filter ((`elem` ("<>, " :: String)) >>> not)
-           in mconcat
-                [ mconcat
-                    [ "export function is",
-                      fullName,
-                      "(",
-                      typeVariablePredicateParameters typeVariables,
-                      "): svt.TypePredicate<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "    return function ",
-                      returnedFunctionName,
-                      "(value: unknown): value is ",
-                      fullName,
-                      " {\n"
-                    ],
-                  mconcat
-                    [ "        return svt.isInterface<",
-                      fullName,
-                      ">(value, ",
-                      interface,
-                      ");\n"
-                    ],
-                  "    };\n",
-                  "}"
-                ]
+        ]
 
-outputStructEncoder :: Text -> [StructField] -> [TypeVariable] -> Text
-outputStructEncoder name fields typeVariables =
+outputStructEncoder :: [StructField] -> [TypeVariable] -> Text
+outputStructEncoder fields typeVariables =
   let prelude =
-        mconcat ["    static member Encoder value =\n"]
+        mconcat ["    static member Encoder", maybeArguments, " value =\n"]
+      maybeArguments = typeVariableEncodersAsArguments typeVariables
       interface =
         fields & fmap (outputEncoderForField >>> addIndentation) & Text.intercalate "\n"
       addIndentation = ("                " <>)
-   in if null typeVariables
-        then
-          mconcat
-            [ mconcat
-                [ prelude,
-                  "        Encode.object\n",
-                  "            [\n",
-                  mconcat [interface, "\n"],
-                  "            ]"
-                ]
+   in mconcat
+        [ mconcat
+            [ prelude,
+              "        Encode.object\n",
+              "            [\n",
+              mconcat [interface, "\n"],
+              "            ]"
             ]
-        else
-          let fullName = name <> joinTypeVariables typeVariables
-              returnedFunctionName =
-                ("is" <> fullName) & Text.filter ((`elem` ("<>, " :: String)) >>> not)
-           in mconcat
-                [ mconcat
-                    [ "export function is",
-                      fullName,
-                      "(",
-                      typeVariablePredicateParameters typeVariables,
-                      "): svt.TypePredicate<",
-                      fullName,
-                      "> {\n"
-                    ],
-                  mconcat
-                    [ "    return function ",
-                      returnedFunctionName,
-                      "(value: unknown): value is ",
-                      fullName,
-                      " {\n"
-                    ],
-                  mconcat
-                    [ "        return svt.isInterface<",
-                      fullName,
-                      ">(value, ",
-                      interface,
-                      ");\n"
-                    ],
-                  "    };\n",
-                  "}"
-                ]
+        ]
 
 outputDecoderForField :: StructField -> Text
 outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalType fieldType))) =
