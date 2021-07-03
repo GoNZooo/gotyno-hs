@@ -1,5 +1,6 @@
 module CodeGeneration.TypeScript where
 
+import CodeGeneration.Utilities (upperCaseFirstCharacter)
 import RIO
 import qualified RIO.Text as Text
 import Types
@@ -71,7 +72,13 @@ outputEmbeddedCaseTypeGuard
         interface = mconcat ["{", tag, ": ", tagName, ", ", fieldTypeGuards, "}"]
         fieldTypeGuards = fields & fmap outputStructTypeGuardForField & Text.intercalate ", "
      in mconcat
-          [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
+          [ mconcat
+              [ "export function is",
+                upperCaseFirstCharacter name,
+                "(value: unknown): value is ",
+                name,
+                " {\n"
+              ],
             mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"],
             "}"
           ]
@@ -93,7 +100,7 @@ outputEmbeddedCaseValidator
      in mconcat
           [ mconcat
               [ "export function validate",
-                name,
+                upperCaseFirstCharacter name,
                 "(value: unknown): svt.ValidationResult<",
                 name,
                 "> {\n"
@@ -584,7 +591,9 @@ outputUnionTypeGuard typeTag typeVariables unionName constructors =
             let constructorTypeGuards =
                   constructors'
                     & fmap
-                      (\(Constructor (ConstructorName constructorName) _payload) -> "is" <> constructorName)
+                      ( \(Constructor (ConstructorName constructorName) _payload) ->
+                          "is" <> upperCaseFirstCharacter constructorName
+                      )
                     & Text.intercalate ", "
              in mconcat ["[", constructorTypeGuards, "].some((typePredicate) => typePredicate(value))"]
        in outputUnionFunction
@@ -662,7 +671,7 @@ outputUnionValidator typeVariables typeTag@(FieldName tag) unionName constructor
                               typeVariableValidatorNames constructorTypeVariables,
                               ")"
                             ]
-                 in mconcat ["[", tagName, "]: ", "validate", name]
+                 in mconcat ["[", tagName, "]: ", "validate", upperCaseFirstCharacter name]
             )
           & Text.intercalate ", "
    in if null typeVariables

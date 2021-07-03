@@ -60,6 +60,6 @@ struct KnownForShowWithoutTypeTag {
 }
 
 union(tag = media_type, embedded) KnownForEmbedded {
-    Movie: KnownForMovieWithoutTypeTag
-    TV: KnownForShowWithoutTypeTag
+    movie: KnownForMovieWithoutTypeTag
+    tv: KnownForShowWithoutTypeTag
 }

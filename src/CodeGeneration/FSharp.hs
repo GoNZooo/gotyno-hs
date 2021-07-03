@@ -1,7 +1,7 @@
 module CodeGeneration.FSharp where
 
+import CodeGeneration.Utilities (upperCaseFirstCharacter)
 import RIO
-import qualified RIO.Char as Char
 import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Types
@@ -51,7 +51,15 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
         constructors
           & fmap
             ( \(EmbeddedConstructor (ConstructorName name) _reference) ->
-                mconcat ["                \"", name, "\", ", unionName, ".", name, "Decoder\n"]
+                mconcat
+                  [ "                \"",
+                    name,
+                    "\", ",
+                    unionName,
+                    ".",
+                    upperCaseFirstCharacter name,
+                    "Decoder\n"
+                  ]
             )
           & mconcat
       decoderOutput =
@@ -77,7 +85,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
                           )
                         & mconcat
                  in mconcat
-                      [ mconcat ["        | ", name, " payload ->\n"],
+                      [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
                         "            Encode.object\n",
                         "                [\n",
                         mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
@@ -111,60 +119,16 @@ outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName
         structFields
           & fmap (outputDecoderForField >>> ("                " <>) >>> (<> "\n"))
           & mconcat
+      constructorName = upperCaseFirstCharacter name
    in mconcat
-        [ mconcat ["    static member ", name, "Decoder: Decoder<", unionName, "> =\n"],
+        [ mconcat
+            ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
           "        Decode.object (fun get ->\n",
-          mconcat ["            ", name, " {\n"],
+          mconcat ["            ", constructorName, " {\n"],
           structFieldDecoders,
           "            }\n",
           "        )"
         ]
-
-outputEmbeddedCaseTypeGuards :: FieldName -> Text -> [EmbeddedConstructor] -> Text
-outputEmbeddedCaseTypeGuards typeTag unionName =
-  fmap (outputEmbeddedCaseTypeGuard typeTag unionName)
-    >>> Text.intercalate "\n\n"
-
-outputEmbeddedCaseTypeGuard :: FieldName -> Text -> EmbeddedConstructor -> Text
-outputEmbeddedCaseTypeGuard
-  (FieldName tag)
-  unionName
-  (EmbeddedConstructor (ConstructorName name) reference) =
-    let fields = structFieldsFromReference reference
-        tagName = unionEnumConstructorTag unionName name
-        interface = mconcat ["{", tag, ": ", tagName, ", ", fieldTypeGuards, "}"]
-        fieldTypeGuards = fields & fmap outputDecoderForField & Text.intercalate ", "
-     in mconcat
-          [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
-            mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"],
-            "}"
-          ]
-
-outputEmbeddedCaseValidators :: FieldName -> Text -> [EmbeddedConstructor] -> Text
-outputEmbeddedCaseValidators typeTag unionName =
-  fmap (outputEmbeddedCaseValidator typeTag unionName)
-    >>> Text.intercalate "\n\n"
-
-outputEmbeddedCaseValidator :: FieldName -> Text -> EmbeddedConstructor -> Text
-outputEmbeddedCaseValidator
-  (FieldName tag)
-  unionName
-  (EmbeddedConstructor (ConstructorName name) reference) =
-    let fields = structFieldsFromReference reference
-        tagName = unionEnumConstructorTag unionName name
-        interface = mconcat ["{", tag, ": ", tagName, ", ", fieldValidators, "}"]
-        fieldValidators = fields & fmap outputValidatorForField & Text.intercalate ", "
-     in mconcat
-          [ mconcat
-              [ "export function validate",
-                name,
-                "(value: unknown): svt.ValidationResult<",
-                name,
-                "> {\n"
-              ],
-            mconcat ["    return svt.validate<", name, ">(value, ", interface, ");\n"],
-            "}"
-          ]
 
 outputEmbeddedConstructorTypes :: Text -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedConstructorTypes unionName fieldName constructors =
@@ -382,73 +346,6 @@ outputGenericStruct name typeVariables fields =
       decoderOutput = outputStructDecoder name fields typeVariables
       encoderOutput = outputStructEncoder fields typeVariables
    in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
-
-outputValidatorForField :: StructField -> Text
-outputValidatorForField (StructField (FieldName fieldName) fieldType) =
-  mconcat [fieldName, ": ", outputValidatorForFieldType fieldType]
-
-outputValidatorForFieldType :: FieldType -> Text
-outputValidatorForFieldType (LiteralType (LiteralString text)) = mconcat ["\"", text, "\""]
-outputValidatorForFieldType (LiteralType (LiteralInteger x)) = tshow x
-outputValidatorForFieldType (LiteralType (LiteralFloat f)) = tshow f
-outputValidatorForFieldType (LiteralType (LiteralBoolean b)) = bool "false" "true" b
-outputValidatorForFieldType (BasicType basicType) = outputValidatorForBasicType basicType
-outputValidatorForFieldType (ComplexType complexType) = outputValidatorForComplexType complexType
-outputValidatorForFieldType (DefinitionReferenceType definitionReference) =
-  outputValidatorForDefinitionReference definitionReference
-outputValidatorForFieldType (RecursiveReferenceType (DefinitionName name)) = "validate" <> name
-outputValidatorForFieldType (TypeVariableReferenceType (TypeVariable name)) = "validate" <> name
-
-outputValidatorForDefinitionReference :: DefinitionReference -> Text
-outputValidatorForDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
-  "validate" <> name
-outputValidatorForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [fsharpifyModuleName moduleName, ".validate", name]
-outputValidatorForDefinitionReference
-  ( AppliedGenericReference
-      appliedTypes
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    let appliedValidators = appliedTypes & fmap outputValidatorForFieldType & Text.intercalate ", "
-     in mconcat ["validate", name, "(", appliedValidators, ")"]
-outputValidatorForDefinitionReference
-  ( AppliedImportedGenericReference
-      (ModuleName moduleName)
-      (AppliedTypes appliedTypes)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    let appliedValidators = appliedTypes & fmap outputValidatorForFieldType & Text.intercalate ", "
-     in mconcat [fsharpifyModuleName moduleName, ".validate", name, "(", appliedValidators, ")"]
-
-outputValidatorForBasicType :: BasicTypeValue -> Text
-outputValidatorForBasicType BasicString = "svt.validateString"
-outputValidatorForBasicType U8 = "svt.validateNumber"
-outputValidatorForBasicType U16 = "svt.validateNumber"
-outputValidatorForBasicType U32 = "svt.validateNumber"
-outputValidatorForBasicType U64 = "svt.validateNumber"
-outputValidatorForBasicType U128 = "svt.validateNumber"
-outputValidatorForBasicType I8 = "svt.validateNumber"
-outputValidatorForBasicType I16 = "svt.validateNumber"
-outputValidatorForBasicType I32 = "svt.validateNumber"
-outputValidatorForBasicType I64 = "svt.validateNumber"
-outputValidatorForBasicType I128 = "svt.validateNumber"
-outputValidatorForBasicType F32 = "svt.validateNumber"
-outputValidatorForBasicType F64 = "svt.validateNumber"
-outputValidatorForBasicType Boolean = "svt.validateBoolean"
-
-outputValidatorForComplexType :: ComplexTypeValue -> Text
-outputValidatorForComplexType (ArrayType _size typeData) =
-  mconcat ["svt.validateArray(", outputValidatorForFieldType typeData, ")"]
-outputValidatorForComplexType (SliceType typeData) =
-  mconcat ["svt.validateArray(", outputValidatorForFieldType typeData, ")"]
-outputValidatorForComplexType (PointerType typeData) =
-  outputValidatorForFieldType typeData
-outputValidatorForComplexType (OptionalType typeData) =
-  mconcat ["svt.validateOptional(", outputValidatorForFieldType typeData, ")"]
 
 outputStructDecoder :: Text -> [StructField] -> [TypeVariable] -> Text
 outputStructDecoder name fields typeVariables =
@@ -800,117 +697,6 @@ outputConstructorEncoder (FieldName tag) (Constructor (ConstructorName name) may
           mconcat ["            Encode.object ", interface]
         ]
 
-newtype FunctionPrefix = FunctionPrefix Text
-
-newtype ReturnType = ReturnType (Text -> Text)
-
-newtype ReturnExpression = ReturnExpression (Text -> FieldName -> [Constructor] -> Text)
-
-outputUnionFunction ::
-  FunctionPrefix ->
-  ReturnType ->
-  ReturnExpression ->
-  FieldName ->
-  Text ->
-  [Constructor] ->
-  Text
-outputUnionFunction
-  (FunctionPrefix prefix)
-  (ReturnType returnType)
-  (ReturnExpression returnExpression)
-  typeTag
-  unionName
-  constructors =
-    mconcat
-      [ mconcat
-          [ "export function ",
-            prefix,
-            unionName,
-            "(value: unknown): ",
-            returnType unionName,
-            " {\n"
-          ],
-        mconcat ["    return ", returnExpression unionName typeTag constructors, ";\n"],
-        "}"
-      ]
-
-typeVariablePredicateNames :: [TypeVariable] -> Text
-typeVariablePredicateNames =
-  fmap (\(TypeVariable t) -> "is" <> t) >>> Text.intercalate ", "
-
-typeVariablePredicateParameters :: [TypeVariable] -> Text
-typeVariablePredicateParameters =
-  fmap (\(TypeVariable t) -> mconcat ["is", t, ": svt.TypePredicate<", t, ">"])
-    >>> Text.intercalate ", "
-
-typeVariableValidatorNames :: [TypeVariable] -> Text
-typeVariableValidatorNames =
-  fmap (\(TypeVariable t) -> "validate" <> t) >>> Text.intercalate ", "
-
-typeVariableValidatorParameters :: [TypeVariable] -> Text
-typeVariableValidatorParameters =
-  fmap (\(TypeVariable t) -> mconcat ["validate", t, ": svt.Validator<", t, ">"])
-    >>> Text.intercalate ", "
-
-outputCaseValidators :: FieldName -> Text -> [Constructor] -> Text
-outputCaseValidators typeTag unionName =
-  fmap (outputCaseValidator typeTag unionName) >>> Text.intercalate "\n\n"
-
-outputCaseValidator :: FieldName -> Text -> Constructor -> Text
-outputCaseValidator
-  (FieldName tag)
-  unionName
-  (Constructor (ConstructorName name) maybePayload) =
-    let tagValue = unionEnumConstructorTag unionName name
-        typeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-        interface =
-          mconcat $
-            ["{", tag, ": ", tagValue]
-              <> maybe ["}"] (\p -> [", data: ", outputValidatorForFieldType p, "}"]) maybePayload
-     in if null typeVariables
-          then
-            mconcat
-              [ mconcat
-                  [ "export function validate",
-                    name,
-                    "(value: unknown): svt.ValidationResult<",
-                    name,
-                    "> {\n"
-                  ],
-                mconcat ["    return svt.validate<", name, ">(value, ", interface, ");\n"],
-                "}"
-              ]
-          else
-            let fullName = name <> joinTypeVariables typeVariables
-                returnedFunctionName = "validate" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
-             in mconcat
-                  [ mconcat
-                      [ "export function validate",
-                        fullName,
-                        "(",
-                        typeVariableValidatorParameters typeVariables,
-                        "): svt.Validator<",
-                        fullName,
-                        "> {\n"
-                      ],
-                    mconcat
-                      [ "    return function ",
-                        returnedFunctionName,
-                        "(value: unknown): svt.ValidationResult<",
-                        fullName,
-                        "> {\n"
-                      ],
-                    mconcat
-                      [ "        return svt.validate<",
-                        fullName,
-                        ">(value, ",
-                        interface,
-                        ");\n"
-                      ],
-                    "    };\n",
-                    "}"
-                  ]
-
 outputCaseUnion :: Text -> [Constructor] -> [TypeVariable] -> Text
 outputCaseUnion name constructors typeVariables =
   let cases =
@@ -918,7 +704,7 @@ outputCaseUnion name constructors typeVariables =
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", constructorName, payload]
+                 in mconcat ["    | ", upperCaseFirstCharacter constructorName, payload]
             )
           & Text.intercalate "\n"
       maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
@@ -1048,6 +834,9 @@ outputField indentation (StructField (FieldName name) fieldType) =
 
 sanitizeName :: Text -> Text
 sanitizeName "type" = "``type``"
+sanitizeName "private" = "``private``"
+sanitizeName "class" = "``class``"
+sanitizeName "public" = "``public``"
 sanitizeName name = name
 
 outputFieldType :: FieldType -> Text
@@ -1174,9 +963,3 @@ joinTypeVariables typeVariables =
     & fmap (\(TypeVariable t) -> fsharpifyTypeVariable t)
     & Text.intercalate ", "
     & (\o -> "<" <> o <> ">")
-
-upperCaseFirstCharacter :: Text -> Text
-upperCaseFirstCharacter t =
-  case Text.uncons t of
-    Just (c, rest) -> Text.cons (Char.toUpper c) rest
-    Nothing -> t

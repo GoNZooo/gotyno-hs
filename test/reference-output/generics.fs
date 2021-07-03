@@ -250,7 +250,7 @@ type KnownForShowWithoutTypeTag =
 
 type KnownForEmbedded =
     | Movie of KnownForMovieWithoutTypeTag
-    | TV of KnownForShowWithoutTypeTag
+    | Tv of KnownForShowWithoutTypeTag
 
     static member MovieDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
@@ -264,9 +264,9 @@ type KnownForEmbedded =
             }
         )
 
-    static member TVDecoder: Decoder<KnownForEmbedded> =
+    static member TvDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
-            TV {
+            Tv {
                 poster_path = get.Optional.Field "poster_path" Decode.string
                 id = get.Required.Field "id" Decode.uint32
                 vote_average = get.Required.Field "vote_average" Decode.float32
@@ -280,8 +280,8 @@ type KnownForEmbedded =
         GotynoCoders.decodeWithTypeTag
             "media_type"
             [|
-                "Movie", KnownForEmbedded.MovieDecoder
-                "TV", KnownForEmbedded.TVDecoder
+                "movie", KnownForEmbedded.MovieDecoder
+                "tv", KnownForEmbedded.TvDecoder
             |]
 
     static member Encoder =
@@ -289,7 +289,7 @@ type KnownForEmbedded =
         | Movie payload ->
             Encode.object
                 [
-                    "media_type", Encode.string "Movie"
+                    "media_type", Encode.string "movie"
                     "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "title", Encode.option Encode.string payload.title
@@ -298,10 +298,10 @@ type KnownForEmbedded =
                     "overview", Encode.string payload.overview
                 ]
 
-        | TV payload ->
+        | Tv payload ->
             Encode.object
                 [
-                    "media_type", Encode.string "TV"
+                    "media_type", Encode.string "tv"
                     "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "vote_average", Encode.float32 payload.vote_average
