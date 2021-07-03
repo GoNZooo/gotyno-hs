@@ -78,7 +78,7 @@ spec
         Module {name, imports, definitions} <- PartialList.head <$> parseModules ["basic.gotyno"]
         name `shouldBe` ModuleName "basic"
         imports `shouldBe` []
-        length definitions `shouldBe` 4
+        length definitions `shouldBe` 12
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- PartialList.head <$> parseModules ["basic.gotyno"]
@@ -102,7 +102,8 @@ spec
         hasGenericFSharpOutput `shouldBe` fsHasGeneric
 
       it "Mirrors reference output for `generics.gotyno`" $ do
-        genericsModule <- PartialList.head <$> parseModules ["hasGeneric.gotyno", "generics.gotyno"]
+        genericsModule <-
+          PartialList.head <$> parseModules ["basic.gotyno", "hasGeneric.gotyno", "generics.gotyno"]
         let genericsTypeScriptOutput = TypeScript.outputModule genericsModule
             genericsFSharpOutput = FSharp.outputModule genericsModule
         genericsTypeScriptOutput `shouldBe` tsGenerics

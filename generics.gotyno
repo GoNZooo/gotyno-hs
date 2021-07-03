@@ -1,17 +1,13 @@
+import basic
 import hasGeneric
 
-union Either <L, R>{
-    Left: L
-    Right: R
-}
-
 struct UsingGenerics {
-    field1: hasGeneric.Maybe<String>
-    field2: Either<String, U32>
+    field1: basic.Maybe<String>
+    field2: basic.Either<String, U32>
 }
 
 struct UsingOwnGenerics <T>{
-    field1: hasGeneric.Maybe<T>
+    field1: basic.Maybe<T>
 }
 
 struct KnownForMovie {
@@ -62,4 +58,9 @@ struct KnownForShowWithoutTypeTag {
 union(tag = media_type, embedded) KnownForEmbedded {
     movie: KnownForMovieWithoutTypeTag
     tv: KnownForShowWithoutTypeTag
+}
+
+union(tag = media_type, embedded) KnownForEmbeddedWithUpperCase {
+    Movie: KnownForMovieWithoutTypeTag
+    Tv: KnownForShowWithoutTypeTag
 }

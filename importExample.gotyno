@@ -4,3 +4,20 @@ struct UsesImport {
     type: "UsesImport"
     recruiter: basic.Recruiter
 }
+
+struct HoldsSomething <T>{
+    holdingField: T
+}
+
+struct StructureUsingImport {
+    event: basic.Event
+}
+
+union UnionUsingImport {
+    CoolEvent: basic.Event
+    Other: basic.Person
+}
+
+struct AllConcrete {
+    field: HoldsSomething<basic.Either<basic.Maybe<StructureUsingImport>, UnionUsingImport>>
+}

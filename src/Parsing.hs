@@ -80,7 +80,7 @@ parseModules files = do
     let (moduleName', _extension) = FilePath.splitExtension f
         moduleName = ModuleName $ pack moduleName'
     fileContents <- readFileUtf8 f
-    maybeModule <- run state fileContents $moduleP moduleName
+    maybeModule <- run state fileContents $ moduleP moduleName
     case maybeModule of
       Right module' -> addModule module' modulesReference
       Left e -> error $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]

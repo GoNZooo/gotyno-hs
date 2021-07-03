@@ -22,3 +22,49 @@ enum StillSize {
     h632 = "h632"
     original = "original"
 }
+
+struct LogInData {
+    username: String
+    password: String
+}
+
+struct UserId {
+    value: String
+}
+
+struct Channel {
+    name: String
+    private: Boolean
+}
+
+struct Email {
+    value: String
+}
+
+union Event {
+    LogIn: LogInData
+    LogOut: UserId
+    JoinChannels: []Channel
+    SetEmails: [5]Email
+}
+
+union Maybe <T>{
+    Nothing
+    Just: T
+}
+
+union Either <L, R>{
+    Left: L
+    Right: R
+}
+
+struct Person {
+    name: String
+    age: U8
+    efficiency: F32
+    on_vacation: Boolean
+    hobbies: []String
+    last_fifteen_comments: [15]String
+    recruiter: Recruiter
+    spouse: Maybe<Person>
+}

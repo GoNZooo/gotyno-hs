@@ -2,71 +2,43 @@ module Generics
 
 open Thoth.Json.Net
 
-type Either<'l, 'r> =
-    | Left of 'l
-    | Right of 'r
-
-    static member LeftDecoder decodeL: Decoder<Either<'l, 'r>> =
-        Decode.object (fun get -> Left(get.Required.Field "data" decodeL))
-
-    static member RightDecoder decodeR: Decoder<Either<'l, 'r>> =
-        Decode.object (fun get -> Right(get.Required.Field "data" decodeR))
-
-    static member Decoder decodeL decodeR: Decoder<Either<'l, 'r>> =
-        GotynoCoders.decodeWithTypeTag
-            "type"
-            [|
-                "Left", Either.LeftDecoder decodeL
-                "Right", Either.RightDecoder decodeR
-            |]
-
-    static member Encoder encodeL encodeR =
-        function
-        | Left payload ->
-            Encode.object [ "type", Encode.string "Left"
-                            "data", encodeL payload ]
-
-        | Right payload ->
-            Encode.object [ "type", Encode.string "Right"
-                            "data", encodeR payload ]
-
 type UsingGenerics =
     {
-        field1: HasGeneric.Maybe<string>
-        field2: Either<string, uint32>
+        field1: Basic.Maybe<string>
+        field2: Basic.Either<string, uint32>
     }
 
     static member Decoder: Decoder<UsingGenerics> =
         Decode.object (fun get ->
             {
-                field1 = get.Required.Field "field1" (HasGeneric.Maybe.Decoder Decode.string)
-                field2 = get.Required.Field "field2" (Either.Decoder Decode.string Decode.uint32)
+                field1 = get.Required.Field "field1" (Basic.Maybe.Decoder Decode.string)
+                field2 = get.Required.Field "field2" (Basic.Either.Decoder Decode.string Decode.uint32)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "field1", (HasGeneric.Maybe.Encoder Encode.string) value.field1
-                "field2", (Either.Encoder Encode.string Encode.uint32) value.field2
+                "field1", (Basic.Maybe.Encoder Encode.string) value.field1
+                "field2", (Basic.Either.Encoder Encode.string Encode.uint32) value.field2
             ]
 
 type UsingOwnGenerics<'t> =
     {
-        field1: HasGeneric.Maybe<'t>
+        field1: Basic.Maybe<'t>
     }
 
     static member Decoder decodeT: Decoder<UsingOwnGenerics<'t>> =
         Decode.object (fun get ->
             {
-                field1 = get.Required.Field "field1" (HasGeneric.Maybe.Decoder decodeT)
+                field1 = get.Required.Field "field1" (Basic.Maybe.Decoder decodeT)
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "field1", (HasGeneric.Maybe.Encoder encodeT) value.field1
+                "field1", (Basic.Maybe.Encoder encodeT) value.field1
             ]
 
 type KnownForMovie =
@@ -302,6 +274,68 @@ type KnownForEmbedded =
             Encode.object
                 [
                     "media_type", Encode.string "tv"
+                    "poster_path", Encode.option Encode.string payload.poster_path
+                    "id", Encode.uint32 payload.id
+                    "vote_average", Encode.float32 payload.vote_average
+                    "overview", Encode.string payload.overview
+                    "first_air_date", Encode.option Encode.string payload.first_air_date
+                    "name", Encode.option Encode.string payload.name
+                ]
+
+type KnownForEmbeddedWithUpperCase =
+    | Movie of KnownForMovieWithoutTypeTag
+    | Tv of KnownForShowWithoutTypeTag
+
+    static member MovieDecoder: Decoder<KnownForEmbeddedWithUpperCase> =
+        Decode.object (fun get ->
+            Movie {
+                poster_path = get.Optional.Field "poster_path" Decode.string
+                id = get.Required.Field "id" Decode.uint32
+                title = get.Optional.Field "title" Decode.string
+                vote_average = get.Required.Field "vote_average" Decode.float32
+                release_date = get.Optional.Field "release_date" Decode.string
+                overview = get.Required.Field "overview" Decode.string
+            }
+        )
+
+    static member TvDecoder: Decoder<KnownForEmbeddedWithUpperCase> =
+        Decode.object (fun get ->
+            Tv {
+                poster_path = get.Optional.Field "poster_path" Decode.string
+                id = get.Required.Field "id" Decode.uint32
+                vote_average = get.Required.Field "vote_average" Decode.float32
+                overview = get.Required.Field "overview" Decode.string
+                first_air_date = get.Optional.Field "first_air_date" Decode.string
+                name = get.Optional.Field "name" Decode.string
+            }
+        )
+
+    static member Decoder: Decoder<KnownForEmbeddedWithUpperCase> =
+        GotynoCoders.decodeWithTypeTag
+            "media_type"
+            [|
+                "Movie", KnownForEmbeddedWithUpperCase.MovieDecoder
+                "Tv", KnownForEmbeddedWithUpperCase.TvDecoder
+            |]
+
+    static member Encoder =
+        function
+        | Movie payload ->
+            Encode.object
+                [
+                    "media_type", Encode.string "Movie"
+                    "poster_path", Encode.option Encode.string payload.poster_path
+                    "id", Encode.uint32 payload.id
+                    "title", Encode.option Encode.string payload.title
+                    "vote_average", Encode.float32 payload.vote_average
+                    "release_date", Encode.option Encode.string payload.release_date
+                    "overview", Encode.string payload.overview
+                ]
+
+        | Tv payload ->
+            Encode.object
+                [
+                    "media_type", Encode.string "Tv"
                     "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "vote_average", Encode.float32 payload.vote_average

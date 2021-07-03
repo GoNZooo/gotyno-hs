@@ -1,94 +1,35 @@
 import * as svt from "simple-validation-tools";
 
+import * as basic from "./basic";
+
 import * as hasGeneric from "./hasGeneric";
 
-export type Either<L, R> = Left<L> | Right<R>;
-
-export enum EitherTag {
-    Left = "Left",
-    Right = "Right",
-}
-
-export type Left<L> = {
-    type: EitherTag.Left;
-    data: L;
-};
-
-export type Right<R> = {
-    type: EitherTag.Right;
-    data: R;
-};
-
-export function Left<L>(data: L): Left<L> {
-    return {type: EitherTag.Left, data};
-}
-
-export function Right<R>(data: R): Right<R> {
-    return {type: EitherTag.Right, data};
-}
-
-export function isEither<L, R>(isL: svt.TypePredicate<L>, isR: svt.TypePredicate<R>): svt.TypePredicate<Either<L, R>> {
-    return function isEitherLR(value: unknown): value is Either<L, R> {
-        return [isLeft(isL), isRight(isR)].some((typePredicate) => typePredicate(value));
-    };
-}
-
-export function isLeft<L>(isL: svt.TypePredicate<L>): svt.TypePredicate<Left<L>> {
-    return function isLeftL(value: unknown): value is Left<L> {
-        return svt.isInterface<Left<L>>(value, {type: EitherTag.Left, data: isL});
-    };
-}
-
-export function isRight<R>(isR: svt.TypePredicate<R>): svt.TypePredicate<Right<R>> {
-    return function isRightR(value: unknown): value is Right<R> {
-        return svt.isInterface<Right<R>>(value, {type: EitherTag.Right, data: isR});
-    };
-}
-
-export function validateEither<L, R>(validateL: svt.Validator<L>, validateR: svt.Validator<R>): svt.Validator<Either<L, R>> {
-    return function validateEitherLR(value: unknown): svt.ValidationResult<Either<L, R>> {
-        return svt.validateWithTypeTag<Either<L, R>>(value, {[EitherTag.Left]: validateLeft(validateL), [EitherTag.Right]: validateRight(validateR)}, "type");
-    };
-}
-
-export function validateLeft<L>(validateL: svt.Validator<L>): svt.Validator<Left<L>> {
-    return function validateLeftL(value: unknown): svt.ValidationResult<Left<L>> {
-        return svt.validate<Left<L>>(value, {type: EitherTag.Left, data: validateL});
-    };
-}
-
-export function validateRight<R>(validateR: svt.Validator<R>): svt.Validator<Right<R>> {
-    return function validateRightR(value: unknown): svt.ValidationResult<Right<R>> {
-        return svt.validate<Right<R>>(value, {type: EitherTag.Right, data: validateR});
-    };
-}
-
 export type UsingGenerics = {
-    field1: hasGeneric.Maybe<string>;
-    field2: Either<string, number>;
+    field1: basic.Maybe<string>;
+    field2: basic.Either<string, number>;
 };
 
 export function isUsingGenerics(value: unknown): value is UsingGenerics {
-    return svt.isInterface<UsingGenerics>(value, {field1: hasGeneric.isMaybe(svt.isString), field2: isEither(svt.isString, svt.isNumber)});
+    return svt.isInterface<UsingGenerics>(value, {field1: basic.isMaybe(svt.isString), field2: basic.isEither(svt.isString, svt.isNumber)});
 }
 
 export function validateUsingGenerics(value: unknown): svt.ValidationResult<UsingGenerics> {
-    return svt.validate<UsingGenerics>(value, {field1: hasGeneric.validateMaybe(svt.validateString), field2: validateEither(svt.validateString, svt.validateNumber)});
+    return svt.validate<UsingGenerics>(value, {field1: basic.validateMaybe(svt.validateString), field2: basic.validateEither(svt.validateString, svt.validateNumber)});
 }
 
 export type UsingOwnGenerics<T> = {
-    field1: hasGeneric.Maybe<T>;
+    field1: basic.Maybe<T>;
 };
 
 export function isUsingOwnGenerics<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<UsingOwnGenerics<T>> {
     return function isUsingOwnGenericsT(value: unknown): value is UsingOwnGenerics<T> {
-        return svt.isInterface<UsingOwnGenerics<T>>(value, {field1: hasGeneric.isMaybe(isT)});
+        return svt.isInterface<UsingOwnGenerics<T>>(value, {field1: basic.isMaybe(isT)});
     };
 }
 
 export function validateUsingOwnGenerics<T>(validateT: svt.Validator<T>): svt.Validator<UsingOwnGenerics<T>> {
     return function validateUsingOwnGenericsT(value: unknown): svt.ValidationResult<UsingOwnGenerics<T>> {
-        return svt.validate<UsingOwnGenerics<T>>(value, {field1: hasGeneric.validateMaybe(validateT)});
+        return svt.validate<UsingOwnGenerics<T>>(value, {field1: basic.validateMaybe(validateT)});
     };
 }
 
@@ -229,4 +170,63 @@ export function validateMovie(value: unknown): svt.ValidationResult<movie> {
 
 export function validateTv(value: unknown): svt.ValidationResult<tv> {
     return svt.validate<tv>(value, {media_type: KnownForEmbeddedTag.tv, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, vote_average: svt.validateNumber, overview: svt.validateString, first_air_date: svt.validateOptional(svt.validateString), name: svt.validateOptional(svt.validateString)});
+}
+
+export type KnownForEmbeddedWithUpperCase = Movie | Tv;
+
+export enum KnownForEmbeddedWithUpperCaseTag {
+    Movie = "Movie",
+    Tv = "Tv",
+}
+
+export type Movie = {
+    media_type: KnownForEmbeddedWithUpperCaseTag.Movie;
+    poster_path: string | null | undefined;
+    id: number;
+    title: string | null | undefined;
+    vote_average: number;
+    release_date: string | null | undefined;
+    overview: string;
+};
+
+export type Tv = {
+    media_type: KnownForEmbeddedWithUpperCaseTag.Tv;
+    poster_path: string | null | undefined;
+    id: number;
+    vote_average: number;
+    overview: string;
+    first_air_date: string | null | undefined;
+    name: string | null | undefined;
+};
+
+export function Movie(data: KnownForMovieWithoutTypeTag): Movie {
+    return {media_type: KnownForEmbeddedWithUpperCaseTag.Movie, ...data};
+}
+
+export function Tv(data: KnownForShowWithoutTypeTag): Tv {
+    return {media_type: KnownForEmbeddedWithUpperCaseTag.Tv, ...data};
+}
+
+export function isKnownForEmbeddedWithUpperCase(value: unknown): value is KnownForEmbeddedWithUpperCase {
+    return [isMovie, isTv].some((typePredicate) => typePredicate(value));
+}
+
+export function isMovie(value: unknown): value is Movie {
+    return svt.isInterface<Movie>(value, {media_type: KnownForEmbeddedWithUpperCaseTag.Movie, poster_path: svt.optional(svt.isString), id: svt.isNumber, title: svt.optional(svt.isString), vote_average: svt.isNumber, release_date: svt.optional(svt.isString), overview: svt.isString});
+}
+
+export function isTv(value: unknown): value is Tv {
+    return svt.isInterface<Tv>(value, {media_type: KnownForEmbeddedWithUpperCaseTag.Tv, poster_path: svt.optional(svt.isString), id: svt.isNumber, vote_average: svt.isNumber, overview: svt.isString, first_air_date: svt.optional(svt.isString), name: svt.optional(svt.isString)});
+}
+
+export function validateKnownForEmbeddedWithUpperCase(value: unknown): svt.ValidationResult<KnownForEmbeddedWithUpperCase> {
+    return svt.validateWithTypeTag<KnownForEmbeddedWithUpperCase>(value, {[KnownForEmbeddedWithUpperCaseTag.Movie]: validateMovie, [KnownForEmbeddedWithUpperCaseTag.Tv]: validateTv}, "media_type");
+}
+
+export function validateMovie(value: unknown): svt.ValidationResult<Movie> {
+    return svt.validate<Movie>(value, {media_type: KnownForEmbeddedWithUpperCaseTag.Movie, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, title: svt.validateOptional(svt.validateString), vote_average: svt.validateNumber, release_date: svt.validateOptional(svt.validateString), overview: svt.validateString});
+}
+
+export function validateTv(value: unknown): svt.ValidationResult<Tv> {
+    return svt.validate<Tv>(value, {media_type: KnownForEmbeddedWithUpperCaseTag.Tv, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, vote_average: svt.validateNumber, overview: svt.validateString, first_air_date: svt.validateOptional(svt.validateString), name: svt.validateOptional(svt.validateString)});
 }

@@ -425,7 +425,7 @@ outputEncoderForFieldWithValueName valueName (StructField (FieldName fieldName) 
       " ",
       valueName,
       ".",
-      fieldName
+      sanitizeName fieldName
     ]
 
 decoderForFieldType :: FieldType -> Text
@@ -439,7 +439,7 @@ decoderForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".D
 
 decoderForBasicType :: BasicTypeValue -> Text
 decoderForBasicType BasicString = "Decode.string"
-decoderForBasicType U8 = "Decode.uint8"
+decoderForBasicType U8 = "Decode.byte"
 decoderForBasicType U16 = "Decode.uint16"
 decoderForBasicType U32 = "Decode.uint32"
 decoderForBasicType U64 = "Decode.uint64"
@@ -451,7 +451,7 @@ decoderForBasicType I64 = "Decode.int64"
 decoderForBasicType I128 = "Decode.int128"
 decoderForBasicType F32 = "Decode.float32"
 decoderForBasicType F64 = "Decode.float64"
-decoderForBasicType Boolean = "Decode.boolean"
+decoderForBasicType Boolean = "Decode.bool"
 
 decoderForLiteralType :: LiteralTypeValue -> Text
 decoderForLiteralType (LiteralString s) = "(GotynoCoders.decodeLiteralString \"" <> s <> "\")"
@@ -510,7 +510,7 @@ encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = na
 
 encoderForBasicType :: BasicTypeValue -> Text
 encoderForBasicType BasicString = "Encode.string"
-encoderForBasicType U8 = "Encode.uint8"
+encoderForBasicType U8 = "Encode.byte"
 encoderForBasicType U16 = "Encode.uint16"
 encoderForBasicType U32 = "Encode.uint32"
 encoderForBasicType U64 = "Encode.uint64"
@@ -522,14 +522,14 @@ encoderForBasicType I64 = "Encode.int64"
 encoderForBasicType I128 = "Encode.int128"
 encoderForBasicType F32 = "Encode.float32"
 encoderForBasicType F64 = "Encode.float64"
-encoderForBasicType Boolean = "Encode.boolean"
+encoderForBasicType Boolean = "Encode.bool"
 
 encoderForLiteralType :: LiteralTypeValue -> Text
 encoderForLiteralType (LiteralString s) = "Encode.string \"" <> s <> "\""
 encoderForLiteralType (LiteralInteger i) = "Encode.int32 " <> tshow i
 encoderForLiteralType (LiteralFloat f) = "Encode.float32 " <> tshow f
 encoderForLiteralType (LiteralBoolean b) =
-  "Encode.boolean " <> bool "false" "true" b
+  "Encode.bool " <> bool "false" "true" b
 
 encoderForComplexType :: ComplexTypeValue -> Text
 encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
@@ -898,7 +898,7 @@ outputBasicType I64 = "int64"
 outputBasicType I128 = "int128"
 outputBasicType F32 = "float32"
 outputBasicType F64 = "float64"
-outputBasicType Boolean = "boolean"
+outputBasicType Boolean = "bool"
 
 fieldTypeName :: FieldType -> Text
 fieldTypeName (LiteralType _) = error "Just don't use literals in untagged unions"
