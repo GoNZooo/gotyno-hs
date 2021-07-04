@@ -4,7 +4,8 @@
 
 The help text for the compiler illustrates most of what you can do.
 
-```
+```bash
+$ gotyno-hs --help
 gotyno - Compile type definitions into encoders/decoders for languages
 
 Usage: gotyno-hs [--ts|--typescript =|-|PATH] [--fs|--fsharp =|-|PATH] 

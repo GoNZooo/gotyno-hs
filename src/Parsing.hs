@@ -18,8 +18,9 @@ import RIO
     compare,
     const,
     error,
-    forM_,
+    for,
     fromMaybe,
+    isLeft,
     maybe,
     mconcat,
     modifyIORef,
@@ -63,7 +64,7 @@ data AppState = AppState
 
 type Parser = ParsecT Void Text (RIO AppState)
 
-parseModules :: [FilePath] -> IO [Module]
+parseModules :: [FilePath] -> IO (Either [String] [Module])
 parseModules files = do
   modulesReference <- newIORef []
   currentDefinitionsReference <- newIORef []
@@ -76,16 +77,21 @@ parseModules files = do
             currentImportsReference,
             modulesReference
           }
-  forM_ files $ \f -> do
-    let (moduleName', _extension) = FilePath.splitExtension f
-        moduleName = ModuleName $ pack moduleName'
+  results <- for files $ \f -> do
+    let moduleName = f & FilePath.takeBaseName & pack & ModuleName
     fileContents <- readFileUtf8 f
     maybeModule <- run state fileContents $ moduleP moduleName f
     case maybeModule of
-      Right module' -> addModule module' modulesReference
-      Left e -> error $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
+      Right module' -> do
+        addModule module' modulesReference
+        pure $ Right module'
+      Left e -> pure $ Left $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
 
-  readIORef modulesReference
+  case List.partition isLeft results of
+    ([], maybeModules) ->
+      pure $ Right $ List.map partialFromRight maybeModules
+    (errors, _modules) ->
+      pure $ Left $ List.map partialFromLeft errors
 
 run :: AppState -> Text -> Parser a -> IO (Either (ParseErrorBundle Text Void) a)
 run state text parser = do
@@ -546,3 +552,11 @@ trueP = string "true" $> True
 
 falseP :: Parser Bool
 falseP = string "false" $> False
+
+partialFromRight :: Either l r -> r
+partialFromRight (Right r) = r
+partialFromRight (Left _l) = error "Unable to get `Right` from `Left`"
+
+partialFromLeft :: Either l r -> l
+partialFromLeft (Left l) = l
+partialFromLeft (Right _r) = error "Unable to get `Left` from `Right`"

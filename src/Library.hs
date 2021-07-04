@@ -7,7 +7,10 @@ import qualified Parsing
 import RIO
 import qualified RIO.Directory as Directory
 import qualified RIO.FilePath as FilePath
+import qualified RIO.List as List
+import qualified System.FSNotify as FSNotify
 import Types
+import Prelude (putStrLn)
 
 data OutputDestination
   = SameAsInput
@@ -30,11 +33,17 @@ data Options = Options
   deriving (Eq, Show)
 
 runMain :: Options -> IO ()
-runMain Options {languages = Languages {typescript, fsharp}, inputs} = do
-  modules <- Parsing.parseModules inputs
+runMain Options {languages = languages@Languages {typescript, fsharp}, inputs, watchMode} = do
+  when watchMode $ do
+    watchInputs inputs languages
 
-  forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
-  forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
+  maybeModules <- Parsing.parseModules inputs
+
+  case maybeModules of
+    Right modules -> do
+      forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
+      forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
+    Left errors -> forM_ errors putStrLn
 
 outputLanguage :: [Module] -> (Module -> Text) -> FilePath -> OutputDestination -> IO ()
 outputLanguage modules outputFunction extension outputDestination = do
@@ -54,3 +63,28 @@ outputLanguage modules outputFunction extension outputDestination = do
             basePath = FilePath.takeDirectory pathForOutput
         Directory.createDirectoryIfMissing True basePath
         writeFileUtf8 pathForOutput output
+
+watchInputs :: [FilePath] -> Languages -> IO ()
+watchInputs relativeInputs Languages {typescript, fsharp} = do
+  inputs <- traverse Directory.makeAbsolute relativeInputs
+  let compileEverything = do
+        maybeModules <- Parsing.parseModules relativeInputs
+        case maybeModules of
+          Right modules -> do
+            forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
+            forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
+          Left errors ->
+            forM_ errors putStrLn
+
+  compileEverything
+
+  FSNotify.withManager $ \watchManager -> do
+    let inputDirectories = inputs & fmap FilePath.takeDirectory & List.nub
+        eventPredicate (FSNotify.Modified modifiedInput _modificationTime _someBool) =
+          modifiedInput `elem` inputs
+        eventPredicate _otherEvents = False
+    forM_ inputDirectories $ \inputDirectory -> do
+      putStrLn $ "Watching directory: '" <> inputDirectory <> "'"
+      FSNotify.watchDir watchManager inputDirectory eventPredicate (const compileEverything)
+
+    forever $ threadDelay 1000000
