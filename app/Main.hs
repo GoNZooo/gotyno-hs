@@ -31,10 +31,20 @@ parseLanguages =
   Library.Languages
     <$> option
       (maybeReader parseOutputDestination)
-      (long "typescript" <> long "ts" <> help "Set TypeScript output" <> value Nothing)
+      ( long "typescript"
+          <> long "ts"
+          <> help "Set TypeScript output"
+          <> value Nothing
+          <> metavar "=|-|PATH"
+      )
     <*> option
       (maybeReader parseOutputDestination)
-      (long "fsharp" <> long "fs" <> help "Set FSharp output" <> value Nothing)
+      ( long "fsharp"
+          <> long "fs"
+          <> help "Set FSharp output"
+          <> value Nothing
+          <> metavar "=|-|PATH"
+      )
 
 parseLanguageSetting :: Parser (Maybe Library.OutputDestination)
 parseLanguageSetting = undefined
