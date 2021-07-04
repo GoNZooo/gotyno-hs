@@ -7,6 +7,8 @@ dependencies:
 - rio
 - megaparsec
 - pretty-show
+- fsnotify
+- text
 
 default-extensions:
 - ApplicativeDo
@@ -78,6 +80,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - gotyno-hs
+    - optparse-applicative
 
 # Test suite
 tests:

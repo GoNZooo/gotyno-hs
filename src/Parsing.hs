@@ -80,7 +80,7 @@ parseModules files = do
     let (moduleName', _extension) = FilePath.splitExtension f
         moduleName = ModuleName $ pack moduleName'
     fileContents <- readFileUtf8 f
-    maybeModule <- run state fileContents $ moduleP moduleName
+    maybeModule <- run state fileContents $ moduleP moduleName f
     case maybeModule of
       Right module' -> addModule module' modulesReference
       Left e -> error $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
@@ -99,12 +99,12 @@ test state text parser = do
     Right successValue -> pPrint successValue
     Left e -> putStrLn $ errorBundlePretty e
 
-moduleP :: ModuleName -> Parser Module
-moduleP name = do
+moduleP :: ModuleName -> FilePath -> Parser Module
+moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP newline <* newline)
   addImports imports
   definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
-  pure Module {name, imports, definitions}
+  pure Module {name, imports, definitions, sourceFile}
 
 addImports :: [Import] -> Parser ()
 addImports imports = do

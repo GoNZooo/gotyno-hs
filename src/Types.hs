@@ -5,7 +5,8 @@ import RIO
 data Module = Module
   { name :: !ModuleName,
     imports :: ![Import],
-    definitions :: ![TypeDefinition]
+    definitions :: ![TypeDefinition],
+    sourceFile :: !FilePath
   }
   deriving (Eq, Show)
 
