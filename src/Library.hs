@@ -8,6 +8,7 @@ import RIO
 import qualified RIO.Directory as Directory
 import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
+import qualified RIO.Time as Time
 import qualified System.FSNotify as FSNotify
 import Types
 import Prelude (putStrLn)
@@ -33,17 +34,40 @@ data Options = Options
   deriving (Eq, Show)
 
 runMain :: Options -> IO ()
-runMain Options {languages = languages@Languages {typescript, fsharp}, inputs, watchMode} = do
-  when watchMode $ do
-    watchInputs inputs languages
+runMain
+  Options
+    { languages = languages@Languages {typescript, fsharp},
+      inputs,
+      watchMode,
+      verbose
+    } = do
+    when watchMode $ do
+      watchInputs inputs languages
 
-  maybeModules <- Parsing.parseModules inputs
+    start <- Time.getCurrentTime
+    maybeModules <- Parsing.parseModules inputs
+    postParsing <- Time.getCurrentTime
 
-  case maybeModules of
-    Right modules -> do
-      forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
-      forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
-    Left errors -> forM_ errors putStrLn
+    case maybeModules of
+      Right modules -> do
+        startTS <- Time.getCurrentTime
+        forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
+        endTS <- Time.getCurrentTime
+
+        startFS <- Time.getCurrentTime
+        forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
+        endFS <- Time.getCurrentTime
+        end <- Time.getCurrentTime
+        let diff = Time.diffUTCTime end start
+            diffParsing = Time.diffUTCTime postParsing start
+            diffTS = Time.diffUTCTime endTS startTS
+            diffFS = Time.diffUTCTime endFS startFS
+        when verbose $ do
+          putStrLn $ "Parsing took: " <> show diffParsing
+          putStrLn $ "Outputting TypeScript took: " <> show diffTS
+          putStrLn $ "Outputting FSharp took: " <> show diffFS
+          putStrLn $ "Entire compilation took: " <> show diff
+      Left errors -> forM_ errors putStrLn
 
 outputLanguage :: [Module] -> (Module -> Text) -> FilePath -> OutputDestination -> IO ()
 outputLanguage modules outputFunction extension outputDestination = do
