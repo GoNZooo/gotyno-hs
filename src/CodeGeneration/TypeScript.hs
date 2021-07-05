@@ -624,7 +624,7 @@ outputUnionTypeGuard typeTag typeVariables unionName constructors =
                           constructorTypeVariables
                             & fmap (\(TypeVariable t) -> "is" <> t)
                             & Text.intercalate ", "
-                     in mconcat ["is", name, maybeParameters]
+                     in mconcat ["is", upperCaseFirstCharacter name, maybeParameters]
                 )
               & Text.intercalate ", "
        in mconcat
@@ -745,12 +745,12 @@ outputCaseTypeGuard
      in if null typeVariables
           then
             mconcat
-              [ mconcat ["export function is", name, "(value: unknown): value is ", name, " {\n"],
+              [ mconcat ["export function is", upperCaseFirstCharacter name, "(value: unknown): value is ", name, " {\n"],
                 mconcat ["    return svt.isInterface<", name, ">(value, ", interface, ");\n"],
                 "}"
               ]
           else
-            let fullName = name <> joinTypeVariables typeVariables
+            let fullName = upperCaseFirstCharacter name <> joinTypeVariables typeVariables
                 returnedFunctionName = "is" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
              in mconcat
                   [ mconcat
@@ -818,7 +818,7 @@ outputCaseValidator
             mconcat
               [ mconcat
                   [ "export function validate",
-                    name,
+                    upperCaseFirstCharacter name,
                     "(value: unknown): svt.ValidationResult<",
                     name,
                     "> {\n"
@@ -827,7 +827,7 @@ outputCaseValidator
                 "}"
               ]
           else
-            let fullName = name <> joinTypeVariables typeVariables
+            let fullName = upperCaseFirstCharacter name <> joinTypeVariables typeVariables
                 returnedFunctionName = "validate" <> Text.filter (\c -> c /= '<' && c /= '>') fullName
              in mconcat
                   [ mconcat

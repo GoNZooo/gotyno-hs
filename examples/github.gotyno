@@ -1,0 +1,140 @@
+struct UserData {
+    login: String
+    id: U32
+    avatar_url: String
+    url: String
+    html_url: String
+    followers_url: String
+    gists_url: String
+    repos_url: String
+    site_admin: Boolean
+    bio: String
+    public_repos: U32
+    followers: U32
+    following: U32
+    created_at: String
+    updated_at: String
+    location: ?String
+    blog: ?String
+}
+
+struct OwnerData {
+    id: U32
+    login: String
+    url: String
+    html_url: String
+    followers_url: String
+    gists_url: String
+    repos_url: String
+    site_admin: Boolean
+}
+
+struct OrganizationData {
+    login: String
+    id: U32
+    avatar_url: String
+    members_url: ?String
+    repos_url: String
+    description: ?String
+}
+
+union(tag = type, embedded) Owner {
+    User: OwnerData
+    Organization: OrganizationData
+}
+
+struct Repository {
+    id: U32
+    name: String
+    full_name: String
+    private: Boolean
+    fork: Boolean
+    created_at: String
+    updated_at: String
+    description: ?String
+    owner: Owner
+    url: String
+    html_url: String
+    language: ?String
+}
+
+struct Pusher {
+    name: String
+    email: String
+}
+
+struct Author {
+    name: String
+    email: String
+    username: String
+}
+
+struct Label {
+    id: U32
+    url: String
+    name: String
+    color: String
+    default: Boolean
+    description: String
+}
+
+struct Issue {
+    id: U32
+    url: String
+    html_url: String
+    repository_url: String
+    number: U32
+    title: String
+    user: UserData
+    labels: []Label
+    state: String
+    locked: Boolean
+    assignee: ?UserData
+    assignees: []UserData
+    comments: U32
+    created_at: String
+    updated_at: String
+    closed_at: ?String
+    author_association: String
+    body: String
+}
+
+struct Commit {
+    id: String
+    tree_id: String
+    distinct: Boolean
+    message: String
+    timestamp: String
+    url: String
+    author: Author
+    committer: Author
+    added: []String
+    removed: []String
+    modified: []String
+}
+
+struct PushData {
+    repository: Repository
+    ref: String
+    before: String
+    after: String
+    pusher: Pusher
+    organization: OrganizationData
+    sender: UserData
+    created: Boolean
+    deleted: Boolean
+    forced: Boolean
+    compare: String
+    commits: []Commit
+    head_commit: Commit
+}
+
+union WebhookEvent {
+    push: PushData
+}
+
+struct RepositorySearchData {
+    total_count: U32
+    incomplete_results: Boolean
+    items: []Repository
+}

@@ -2,6 +2,7 @@ module Parsing where
 
 import RIO
   ( Bool (..),
+    Char,
     Either (..),
     FilePath,
     IO,
@@ -220,13 +221,19 @@ constructorsP = some . constructorP
 constructorP :: [TypeVariable] -> Parser Constructor
 constructorP typeVariables = do
   string "    "
-  (DefinitionName name) <- definitionNameP
+  name <- constructorNameP
   maybeColon <- optional $ string ": "
   payload <- case maybeColon of
     Just _ -> Just <$> fieldTypeP typeVariables
     Nothing -> pure Nothing
   newline
   pure $ Constructor (ConstructorName name) payload
+
+constructorNameP :: Parser Text
+constructorNameP = do
+  firstLetter <- alphaNumChar
+  rest <- many alphaNumChar
+  pure $ pack $ firstLetter : rest
 
 unionP :: FieldName -> Parser TypeDefinition
 unionP typeTag = do
@@ -536,7 +543,10 @@ literalP :: Parser LiteralTypeValue
 literalP = choice [literalStringP, literalIntegerP, literalFloatP, literalBooleanP]
 
 literalStringP :: Parser LiteralTypeValue
-literalStringP = (pack >>> LiteralString) <$> between (char '"') (char '"') (many alphaNumChar)
+literalStringP = (pack >>> LiteralString) <$> between (char '"') (char '"') (many stringCharacterP)
+
+stringCharacterP :: Parser Char
+stringCharacterP = alphaNumChar <|> spaceChar
 
 literalIntegerP :: Parser LiteralTypeValue
 literalIntegerP = LiteralInteger <$> decimal

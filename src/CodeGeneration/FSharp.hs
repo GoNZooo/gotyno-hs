@@ -603,7 +603,7 @@ outputUnionDecoder (FieldName tag) unionName constructors typeVariables =
                         "\", ",
                         unionName,
                         ".",
-                        name,
+                        upperCaseFirstCharacter name,
                         "Decoder",
                         maybeDecoderArguments,
                         "\n"
@@ -644,7 +644,8 @@ encodersForTypeVariables = fmap (TypeVariableReferenceType >>> encoderForFieldTy
 outputConstructorDecoder :: Text -> [TypeVariable] -> Constructor -> Text
 outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName name) maybePayload) =
   let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
-      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", name]
+      constructorName = upperCaseFirstCharacter name
+      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", constructorName]
       payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
       maybeArguments = typeVariableDecodersAsArguments payloadTypeVariables
       fullName =
@@ -654,7 +655,7 @@ outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName n
       decoderWithDataField payload =
         mconcat
           [ "Decode.object (fun get -> ",
-            name,
+            constructorName,
             "(get.Required.Field \"data\" ",
             decoderForFieldType payload,
             "))"
@@ -662,7 +663,7 @@ outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName n
    in mconcat
         [ mconcat
             [ "    static member ",
-              name,
+              constructorName,
               "Decoder",
               maybeArguments,
               ": Decoder<",
@@ -693,7 +694,7 @@ outputConstructorEncoder (FieldName tag) (Constructor (ConstructorName name) may
       interface = mconcat ["[ ", typeTagPart, dataPart, " ]"]
       maybePayloadPart = maybe "" (const " payload") maybePayload
    in mconcat
-        [ mconcat ["        | ", name, maybePayloadPart, " ->\n"],
+        [ mconcat ["        | ", upperCaseFirstCharacter name, maybePayloadPart, " ->\n"],
           mconcat ["            Encode.object ", interface]
         ]
 
