@@ -267,19 +267,19 @@ export function validatePushData(value: unknown): svt.ValidationResult<PushData>
     return svt.validate<PushData>(value, {repository: validateRepository, ref: svt.validateString, before: svt.validateString, after: svt.validateString, pusher: validatePusher, organization: validateOrganizationData, sender: validateUserData, created: svt.validateBoolean, deleted: svt.validateBoolean, forced: svt.validateBoolean, compare: svt.validateString, commits: svt.validateArray(validateCommit), head_commit: validateCommit});
 }
 
-export type WebhookEvent = push;
+export type WebhookEvent = Push;
 
 export enum WebhookEventTag {
-    push = "push",
+    Push = "push",
 }
 
-export type push = {
-    type: WebhookEventTag.push;
+export type Push = {
+    type: WebhookEventTag.Push;
     data: PushData;
 };
 
 export function push(data: PushData): push {
-    return {type: WebhookEventTag.push, data};
+    return {type: WebhookEventTag.Push, data};
 }
 
 export function isWebhookEvent(value: unknown): value is WebhookEvent {
@@ -287,15 +287,15 @@ export function isWebhookEvent(value: unknown): value is WebhookEvent {
 }
 
 export function isPush(value: unknown): value is push {
-    return svt.isInterface<push>(value, {type: WebhookEventTag.push, data: isPushData});
+    return svt.isInterface<push>(value, {type: WebhookEventTag.Push, data: isPushData});
 }
 
 export function validateWebhookEvent(value: unknown): svt.ValidationResult<WebhookEvent> {
-    return svt.validateWithTypeTag<WebhookEvent>(value, {[WebhookEventTag.push]: validatePush}, "type");
+    return svt.validateWithTypeTag<WebhookEvent>(value, {[WebhookEventTag.Push]: validatePush}, "type");
 }
 
 export function validatePush(value: unknown): svt.ValidationResult<push> {
-    return svt.validate<push>(value, {type: WebhookEventTag.push, data: validatePushData});
+    return svt.validate<push>(value, {type: WebhookEventTag.Push, data: validatePushData});
 }
 
 export type RepositorySearchData = {

@@ -221,12 +221,12 @@ type KnownForShowWithoutTypeTag =
             ]
 
 type KnownForEmbedded =
-    | Movie of KnownForMovieWithoutTypeTag
-    | Tv of KnownForShowWithoutTypeTag
+    | MovieStartingWithLowercase of KnownForMovieWithoutTypeTag
+    | TvStartingWithLowercase of KnownForShowWithoutTypeTag
 
-    static member MovieDecoder: Decoder<KnownForEmbedded> =
+    static member MovieStartingWithLowercaseDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
-            Movie {
+            MovieStartingWithLowercase {
                 poster_path = get.Optional.Field "poster_path" Decode.string
                 id = get.Required.Field "id" Decode.uint32
                 title = get.Optional.Field "title" Decode.string
@@ -236,9 +236,9 @@ type KnownForEmbedded =
             }
         )
 
-    static member TvDecoder: Decoder<KnownForEmbedded> =
+    static member TvStartingWithLowercaseDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
-            Tv {
+            TvStartingWithLowercase {
                 poster_path = get.Optional.Field "poster_path" Decode.string
                 id = get.Required.Field "id" Decode.uint32
                 vote_average = get.Required.Field "vote_average" Decode.float32
@@ -252,16 +252,16 @@ type KnownForEmbedded =
         GotynoCoders.decodeWithTypeTag
             "media_type"
             [|
-                "movie", KnownForEmbedded.MovieDecoder
-                "tv", KnownForEmbedded.TvDecoder
+                "movieStartingWithLowercase", KnownForEmbedded.MovieStartingWithLowercaseDecoder
+                "tvStartingWithLowercase", KnownForEmbedded.TvStartingWithLowercaseDecoder
             |]
 
     static member Encoder =
         function
-        | Movie payload ->
+        | MovieStartingWithLowercase payload ->
             Encode.object
                 [
-                    "media_type", Encode.string "movie"
+                    "media_type", Encode.string "movieStartingWithLowercase"
                     "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "title", Encode.option Encode.string payload.title
@@ -270,10 +270,10 @@ type KnownForEmbedded =
                     "overview", Encode.string payload.overview
                 ]
 
-        | Tv payload ->
+        | TvStartingWithLowercase payload ->
             Encode.object
                 [
-                    "media_type", Encode.string "tv"
+                    "media_type", Encode.string "tvStartingWithLowercase"
                     "poster_path", Encode.option Encode.string payload.poster_path
                     "id", Encode.uint32 payload.id
                     "vote_average", Encode.float32 payload.vote_average

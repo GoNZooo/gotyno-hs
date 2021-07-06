@@ -1,0 +1,9 @@
+{
+  "name": "reference-output",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "simple-validation-tools": "^1.4.5"
+  }
+}

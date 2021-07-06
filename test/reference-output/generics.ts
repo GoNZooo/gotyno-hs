@@ -113,15 +113,15 @@ export function validateKnownForShowWithoutTypeTag(value: unknown): svt.Validati
     return svt.validate<KnownForShowWithoutTypeTag>(value, {poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, vote_average: svt.validateNumber, overview: svt.validateString, first_air_date: svt.validateOptional(svt.validateString), name: svt.validateOptional(svt.validateString)});
 }
 
-export type KnownForEmbedded = movie | tv;
+export type KnownForEmbedded = MovieStartingWithLowercase | TvStartingWithLowercase;
 
 export enum KnownForEmbeddedTag {
-    movie = "movie",
-    tv = "tv",
+    MovieStartingWithLowercase = "movieStartingWithLowercase",
+    TvStartingWithLowercase = "tvStartingWithLowercase",
 }
 
-export type movie = {
-    media_type: KnownForEmbeddedTag.movie;
+export type MovieStartingWithLowercase = {
+    media_type: KnownForEmbeddedTag.MovieStartingWithLowercase;
     poster_path: string | null | undefined;
     id: number;
     title: string | null | undefined;
@@ -130,8 +130,8 @@ export type movie = {
     overview: string;
 };
 
-export type tv = {
-    media_type: KnownForEmbeddedTag.tv;
+export type TvStartingWithLowercase = {
+    media_type: KnownForEmbeddedTag.TvStartingWithLowercase;
     poster_path: string | null | undefined;
     id: number;
     vote_average: number;
@@ -140,36 +140,36 @@ export type tv = {
     name: string | null | undefined;
 };
 
-export function movie(data: KnownForMovieWithoutTypeTag): movie {
-    return {media_type: KnownForEmbeddedTag.movie, ...data};
+export function MovieStartingWithLowercase(data: KnownForMovieWithoutTypeTag): MovieStartingWithLowercase {
+    return {media_type: KnownForEmbeddedTag.MovieStartingWithLowercase, ...data};
 }
 
-export function tv(data: KnownForShowWithoutTypeTag): tv {
-    return {media_type: KnownForEmbeddedTag.tv, ...data};
+export function TvStartingWithLowercase(data: KnownForShowWithoutTypeTag): TvStartingWithLowercase {
+    return {media_type: KnownForEmbeddedTag.TvStartingWithLowercase, ...data};
 }
 
 export function isKnownForEmbedded(value: unknown): value is KnownForEmbedded {
-    return [isMovie, isTv].some((typePredicate) => typePredicate(value));
+    return [isMovieStartingWithLowercase, isTvStartingWithLowercase].some((typePredicate) => typePredicate(value));
 }
 
-export function isMovie(value: unknown): value is movie {
-    return svt.isInterface<movie>(value, {media_type: KnownForEmbeddedTag.movie, poster_path: svt.optional(svt.isString), id: svt.isNumber, title: svt.optional(svt.isString), vote_average: svt.isNumber, release_date: svt.optional(svt.isString), overview: svt.isString});
+export function isMovieStartingWithLowercase(value: unknown): value is MovieStartingWithLowercase {
+    return svt.isInterface<MovieStartingWithLowercase>(value, {media_type: KnownForEmbeddedTag.MovieStartingWithLowercase, poster_path: svt.optional(svt.isString), id: svt.isNumber, title: svt.optional(svt.isString), vote_average: svt.isNumber, release_date: svt.optional(svt.isString), overview: svt.isString});
 }
 
-export function isTv(value: unknown): value is tv {
-    return svt.isInterface<tv>(value, {media_type: KnownForEmbeddedTag.tv, poster_path: svt.optional(svt.isString), id: svt.isNumber, vote_average: svt.isNumber, overview: svt.isString, first_air_date: svt.optional(svt.isString), name: svt.optional(svt.isString)});
+export function isTvStartingWithLowercase(value: unknown): value is TvStartingWithLowercase {
+    return svt.isInterface<TvStartingWithLowercase>(value, {media_type: KnownForEmbeddedTag.TvStartingWithLowercase, poster_path: svt.optional(svt.isString), id: svt.isNumber, vote_average: svt.isNumber, overview: svt.isString, first_air_date: svt.optional(svt.isString), name: svt.optional(svt.isString)});
 }
 
 export function validateKnownForEmbedded(value: unknown): svt.ValidationResult<KnownForEmbedded> {
-    return svt.validateWithTypeTag<KnownForEmbedded>(value, {[KnownForEmbeddedTag.movie]: validateMovie, [KnownForEmbeddedTag.tv]: validateTv}, "media_type");
+    return svt.validateWithTypeTag<KnownForEmbedded>(value, {[KnownForEmbeddedTag.MovieStartingWithLowercase]: validateMovieStartingWithLowercase, [KnownForEmbeddedTag.TvStartingWithLowercase]: validateTvStartingWithLowercase}, "media_type");
 }
 
-export function validateMovie(value: unknown): svt.ValidationResult<movie> {
-    return svt.validate<movie>(value, {media_type: KnownForEmbeddedTag.movie, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, title: svt.validateOptional(svt.validateString), vote_average: svt.validateNumber, release_date: svt.validateOptional(svt.validateString), overview: svt.validateString});
+export function validateMovieStartingWithLowercase(value: unknown): svt.ValidationResult<MovieStartingWithLowercase> {
+    return svt.validate<MovieStartingWithLowercase>(value, {media_type: KnownForEmbeddedTag.MovieStartingWithLowercase, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, title: svt.validateOptional(svt.validateString), vote_average: svt.validateNumber, release_date: svt.validateOptional(svt.validateString), overview: svt.validateString});
 }
 
-export function validateTv(value: unknown): svt.ValidationResult<tv> {
-    return svt.validate<tv>(value, {media_type: KnownForEmbeddedTag.tv, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, vote_average: svt.validateNumber, overview: svt.validateString, first_air_date: svt.validateOptional(svt.validateString), name: svt.validateOptional(svt.validateString)});
+export function validateTvStartingWithLowercase(value: unknown): svt.ValidationResult<TvStartingWithLowercase> {
+    return svt.validate<TvStartingWithLowercase>(value, {media_type: KnownForEmbeddedTag.TvStartingWithLowercase, poster_path: svt.validateOptional(svt.validateString), id: svt.validateNumber, vote_average: svt.validateNumber, overview: svt.validateString, first_air_date: svt.validateOptional(svt.validateString), name: svt.validateOptional(svt.validateString)});
 }
 
 export type KnownForEmbeddedWithUpperCase = Movie | Tv;

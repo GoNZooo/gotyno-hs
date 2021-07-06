@@ -1,3 +1,7 @@
+declare external.Option<T>
+
+declare other.Plain
+
 union Result <T, E>{
     Success: T
     Failure: E
@@ -8,5 +12,11 @@ struct Holder <T>{
 }
 
 struct MaybeHolder <T>{
-    value: ?T
+    value: Option<T>
+    otherValue: Plain
+}
+
+union HasGenericEvent <T>{
+    PlainEvent: Plain
+    GenericEvent: Option<T>
 }

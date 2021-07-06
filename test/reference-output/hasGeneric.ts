@@ -1,5 +1,8 @@
 import * as svt from "simple-validation-tools";
 
+import * as external from "./external";
+import * as other from "./other";
+
 export type Result<T, E> = Success<T> | Failure<E>;
 
 export enum ResultTag {
@@ -78,17 +81,75 @@ export function validateHolder<T>(validateT: svt.Validator<T>): svt.Validator<Ho
 }
 
 export type MaybeHolder<T> = {
-    value: T | null | undefined;
+    value: external.Option<T>;
+    otherValue: other.Plain;
 };
 
 export function isMaybeHolder<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<MaybeHolder<T>> {
     return function isMaybeHolderT(value: unknown): value is MaybeHolder<T> {
-        return svt.isInterface<MaybeHolder<T>>(value, {value: svt.optional(isT)});
+        return svt.isInterface<MaybeHolder<T>>(value, {value: external.isOption(isT), otherValue: other.isPlain});
     };
 }
 
 export function validateMaybeHolder<T>(validateT: svt.Validator<T>): svt.Validator<MaybeHolder<T>> {
     return function validateMaybeHolderT(value: unknown): svt.ValidationResult<MaybeHolder<T>> {
-        return svt.validate<MaybeHolder<T>>(value, {value: svt.validateOptional(validateT)});
+        return svt.validate<MaybeHolder<T>>(value, {value: external.validateOption(validateT), otherValue: other.validatePlain});
+    };
+}
+
+export type HasGenericEvent<T> = PlainEvent | GenericEvent<T>;
+
+export enum HasGenericEventTag {
+    PlainEvent = "PlainEvent",
+    GenericEvent = "GenericEvent",
+}
+
+export type PlainEvent = {
+    type: HasGenericEventTag.PlainEvent;
+    data: other.Plain;
+};
+
+export type GenericEvent<T> = {
+    type: HasGenericEventTag.GenericEvent;
+    data: external.Option<T>;
+};
+
+export function PlainEvent(data: other.Plain): PlainEvent {
+    return {type: HasGenericEventTag.PlainEvent, data};
+}
+
+export function GenericEvent<T>(data: external.Option<T>): GenericEvent<T> {
+    return {type: HasGenericEventTag.GenericEvent, data};
+}
+
+export function isHasGenericEvent<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<HasGenericEvent<T>> {
+    return function isHasGenericEventT(value: unknown): value is HasGenericEvent<T> {
+        return [isPlainEvent, isGenericEvent(isT)].some((typePredicate) => typePredicate(value));
+    };
+}
+
+export function isPlainEvent(value: unknown): value is PlainEvent {
+    return svt.isInterface<PlainEvent>(value, {type: HasGenericEventTag.PlainEvent, data: other.isPlain});
+}
+
+export function isGenericEvent<T>(isT: svt.TypePredicate<T>): svt.TypePredicate<GenericEvent<T>> {
+    return function isGenericEventT(value: unknown): value is GenericEvent<T> {
+        return svt.isInterface<GenericEvent<T>>(value, {type: HasGenericEventTag.GenericEvent, data: external.isOption(isT)});
+    };
+}
+
+export function validateHasGenericEvent<T>(validateT: svt.Validator<T>): svt.Validator<HasGenericEvent<T>> {
+    return function validateHasGenericEventT(value: unknown): svt.ValidationResult<HasGenericEvent<T>> {
+        return svt.validateWithTypeTag<HasGenericEvent<T>>(value, {[HasGenericEventTag.PlainEvent]: validatePlainEvent, [HasGenericEventTag.GenericEvent]: validateGenericEvent(validateT)}, "type");
+    };
+}
+
+export function validatePlainEvent(value: unknown): svt.ValidationResult<PlainEvent> {
+    return svt.validate<PlainEvent>(value, {type: HasGenericEventTag.PlainEvent, data: other.validatePlain});
+}
+
+export function validateGenericEvent<T>(validateT: svt.Validator<T>): svt.Validator<GenericEvent<T>> {
+    return function validateGenericEventT(value: unknown): svt.ValidationResult<GenericEvent<T>> {
+        return svt.validate<GenericEvent<T>>(value, {type: HasGenericEventTag.GenericEvent, data: external.validateOption(validateT)});
     };
 }

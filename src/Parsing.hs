@@ -10,6 +10,7 @@ import RIO
     Int,
     Maybe (..),
     RIO,
+    Set,
     Show,
     String,
     Text,
@@ -59,6 +60,7 @@ import Types
 data AppState = AppState
   { modulesReference :: !(IORef [Module]),
     currentImportsReference :: !(IORef [Import]),
+    currentDeclarationNamesReference :: !(IORef (Set ModuleName)),
     currentDefinitionsReference :: !(IORef [TypeDefinition]),
     currentDefinitionNameReference :: !(IORef (Maybe DefinitionName))
   }
@@ -70,12 +72,14 @@ parseModules files = do
   modulesReference <- newIORef []
   currentDefinitionsReference <- newIORef []
   currentImportsReference <- newIORef []
+  currentDeclarationNamesReference <- newIORef Set.empty
   currentDefinitionNameReference <- newIORef Nothing
   let state =
         AppState
           { currentDefinitionsReference,
             currentDefinitionNameReference,
             currentImportsReference,
+            currentDeclarationNamesReference,
             modulesReference
           }
   results <- for files $ \f -> do
@@ -111,12 +115,29 @@ moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP newline <* newline)
   addImports imports
   definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
-  pure Module {name, imports, definitions, sourceFile}
+  declarationNames <- Set.toList <$> getDeclarationNames
+  clearDeclarationNames
+  pure Module {name, imports, definitions, sourceFile, declarationNames}
 
 addImports :: [Import] -> Parser ()
 addImports imports = do
   AppState {currentImportsReference} <- ask
   writeIORef currentImportsReference imports
+
+addDeclarationName :: ModuleName -> Parser ()
+addDeclarationName moduleName = do
+  AppState {currentDeclarationNamesReference} <- ask
+  modifyIORef currentDeclarationNamesReference (Set.insert moduleName)
+
+getDeclarationNames :: Parser (Set ModuleName)
+getDeclarationNames = do
+  AppState {currentDeclarationNamesReference} <- ask
+  readIORef currentDeclarationNamesReference
+
+clearDeclarationNames :: Parser ()
+clearDeclarationNames = do
+  AppState {currentDeclarationNamesReference} <- ask
+  writeIORef currentDeclarationNamesReference Set.empty
 
 importP :: Parser Import
 importP = do
@@ -141,7 +162,7 @@ addModule module' modulesReference = do
 
 typeDefinitionP :: Parser TypeDefinition
 typeDefinitionP = do
-  keyword <- choice $ List.map string ["struct", "untagged union", "union", "enum"]
+  keyword <- choice $ List.map string ["struct", "untagged union", "union", "enum", "declare"]
   definition <- case keyword of
     "struct" ->
       char ' ' *> structP
@@ -160,10 +181,22 @@ typeDefinitionP = do
       char ' ' *> untaggedUnionP
     "enum" ->
       char ' ' *> enumerationP
+    "declare" ->
+      char ' ' *> declarationP
     other ->
       reportError $ "Unknown type definition keyword: " <> unpack other
   addDefinition definition
   pure definition
+
+declarationP :: Parser TypeDefinition
+declarationP = do
+  externalModule <- (pack >>> ModuleName) <$> some (alphaNumChar <|> char '_') <* char '.'
+  name <- readCurrentDefinitionName
+  typeVariables <-
+    (fromMaybe [] >>> List.map TypeVariable)
+      <$> optional (between (char '<') (char '>') typeVariablesP)
+  addDeclarationName externalModule
+  pure $ TypeDefinition name $ DeclaredType externalModule typeVariables
 
 untaggedUnionP :: Parser TypeDefinition
 untaggedUnionP = do
@@ -369,10 +402,16 @@ definitionReferenceP typeVariables = do
           & List.sortBy (\n1 n2 -> compare (Text.length n2) (Text.length n1))
   soughtName@(DefinitionName n) <- DefinitionName <$> choice (List.map string definitionNames)
   maybeDefinition <- getDefinition soughtName
+  maybeTypeVariables <-
+    optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
   case maybeDefinition of
+    Just (TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
+      case maybeTypeVariables of
+        Nothing ->
+          pure $ DeclarationReference moduleName name'
+        Just appliedTypes ->
+          pure $ GenericDeclarationReference moduleName name' (AppliedTypes appliedTypes)
     Just definition -> do
-      maybeTypeVariables <-
-        optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
       case maybeTypeVariables of
         Just appliedTypeVariables ->
           pure $ AppliedGenericReference appliedTypeVariables definition

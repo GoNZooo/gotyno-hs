@@ -8,7 +8,7 @@ import Types
 
 outputModule :: Module -> Text
 outputModule Module {name = ModuleName name, definitions, imports} =
-  let definitionOutput = definitions & fmap outputDefinition & Text.intercalate "\n\n"
+  let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
       _importsOutput = imports & fmap outputImport & mconcat
       outputImport (Import Module {name = ModuleName _name}) =
         mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
@@ -24,19 +24,20 @@ modulePrelude name =
       "open Thoth.Json.Net\n\n"
     ]
 
-outputDefinition :: TypeDefinition -> Text
+outputDefinition :: TypeDefinition -> Maybe Text
 outputDefinition (TypeDefinition (DefinitionName name) (Struct (PlainStruct fields))) =
-  outputPlainStruct name fields
+  pure $ outputPlainStruct name fields
 outputDefinition (TypeDefinition (DefinitionName name) (Struct (GenericStruct typeVariables fields))) =
-  outputGenericStruct name typeVariables fields
+  pure $ outputGenericStruct name typeVariables fields
 outputDefinition (TypeDefinition (DefinitionName name) (Union typeTag unionType)) =
-  outputUnion name typeTag unionType
+  pure $ outputUnion name typeTag unionType
 outputDefinition (TypeDefinition (DefinitionName name) (Enumeration enumerationValues)) =
-  outputEnumeration name enumerationValues
+  pure $ outputEnumeration name enumerationValues
 outputDefinition (TypeDefinition (DefinitionName name) (UntaggedUnion unionCases)) =
-  outputUntaggedUnion name unionCases
+  pure $ outputUntaggedUnion name unionCases
 outputDefinition (TypeDefinition (DefinitionName name) (EmbeddedUnion typeTag constructors)) =
-  outputEmbeddedUnion name typeTag constructors
+  pure $ outputEmbeddedUnion name typeTag constructors
+outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: Text -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName (FieldName tag) constructors =
@@ -496,6 +497,17 @@ decoderForDefinitionReference
     ) =
     let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
      in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+decoderForDefinitionReference
+  ( GenericDeclarationReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      (AppliedTypes appliedTypes)
+    ) =
+    let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+decoderForDefinitionReference
+  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
 
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
@@ -567,6 +579,17 @@ encoderForDefinitionReference
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
      in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+encoderForDefinitionReference
+  ( GenericDeclarationReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      (AppliedTypes appliedTypes)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+encoderForDefinitionReference
+  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
@@ -741,6 +764,16 @@ typeVariablesFromReference
     ) =
     let typeVariables = fieldTypes & fmap typeVariablesFrom & catMaybes & join
      in if null typeVariables then Nothing else Just typeVariables
+typeVariablesFromReference
+  ( GenericDeclarationReference
+      _moduleName
+      _definitionName
+      (AppliedTypes fieldTypes)
+    ) =
+    let typeVariables = fieldTypes & fmap typeVariablesFrom & catMaybes & join
+     in if null typeVariables then Nothing else Just typeVariables
+typeVariablesFromReference (DeclarationReference _moduleName _definitionName) =
+  Nothing
 
 typeVariablesFromDefinition :: TypeDefinition -> Maybe [TypeVariable]
 typeVariablesFromDefinition (TypeDefinition _name (Struct (PlainStruct _))) = Nothing
@@ -751,6 +784,8 @@ typeVariablesFromDefinition (TypeDefinition _name (EmbeddedUnion _tagType _const
 typeVariablesFromDefinition (TypeDefinition _name (Struct (GenericStruct typeVariables _))) =
   pure typeVariables
 typeVariablesFromDefinition (TypeDefinition _name (Union _tagType (GenericUnion typeVariables _))) =
+  pure typeVariables
+typeVariablesFromDefinition (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
   pure typeVariables
 
 outputUnionTagEnumeration :: Text -> [Constructor] -> Text
@@ -884,6 +919,17 @@ outputDefinitionReference
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
      in mconcat [fsharpifyModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
+outputDefinitionReference
+  ( GenericDeclarationReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      (AppliedTypes appliedTypes)
+    ) =
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
+        maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
+     in mconcat [fsharpifyModuleName moduleName, ".", name, maybeAppliedOutput]
+outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
+  mconcat [fsharpifyModuleName moduleName, ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"
@@ -954,6 +1000,18 @@ fieldTypeName
         )
     ) =
     mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
+fieldTypeName
+  ( DefinitionReferenceType
+      ( GenericDeclarationReference
+          (ModuleName _moduleName)
+          (DefinitionName definitionName)
+          (AppliedTypes fieldTypes)
+        )
+    ) =
+    mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
+fieldTypeName
+  (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
+    definitionName
 
 maybeJoinTypeVariables :: Maybe [TypeVariable] -> Text
 maybeJoinTypeVariables = maybe "" joinTypeVariables

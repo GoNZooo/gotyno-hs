@@ -5,13 +5,14 @@ import RIO
 data Module = Module
   { name :: !ModuleName,
     imports :: ![Import],
+    declarationNames :: ![ModuleName],
     definitions :: ![TypeDefinition],
     sourceFile :: !FilePath
   }
   deriving (Eq, Show)
 
 newtype ModuleName = ModuleName Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 newtype Import = Import Module
   deriving (Eq, Show)
@@ -60,6 +61,7 @@ data TypeData
   | EmbeddedUnion !FieldName ![EmbeddedConstructor]
   | UntaggedUnion ![FieldType]
   | Enumeration ![EnumerationValue]
+  | DeclaredType !ModuleName ![TypeVariable]
   deriving (Eq, Show)
 
 data EmbeddedConstructor = EmbeddedConstructor !ConstructorName !DefinitionReference
@@ -98,6 +100,8 @@ data DefinitionReference
   | ImportedDefinitionReference !ModuleName !TypeDefinition
   | AppliedGenericReference ![FieldType] !TypeDefinition
   | AppliedImportedGenericReference !ModuleName !AppliedTypes !TypeDefinition
+  | DeclarationReference !ModuleName !DefinitionName
+  | GenericDeclarationReference !ModuleName !DefinitionName !AppliedTypes
   deriving (Eq, Show)
 
 newtype AppliedTypes = AppliedTypes [FieldType]

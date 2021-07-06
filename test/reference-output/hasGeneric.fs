@@ -50,18 +50,49 @@ type Holder<'t> =
 
 type MaybeHolder<'t> =
     {
-        value: option<'t>
+        value: External.Option<'t>
+        otherValue: Other.Plain
     }
 
     static member Decoder decodeT: Decoder<MaybeHolder<'t>> =
         Decode.object (fun get ->
             {
-                value = get.Optional.Field "value" decodeT
+                value = get.Required.Field "value" (External.Option.Decoder decodeT)
+                otherValue = get.Required.Field "otherValue" Other.Plain.Decoder
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "value", Encode.option encodeT value.value
+                "value", (External.Option.Encoder encodeT) value.value
+                "otherValue", Other.Plain.Encoder value.otherValue
             ]
+
+type HasGenericEvent<'t> =
+    | PlainEvent of Other.Plain
+    | GenericEvent of External.Option<'t>
+
+    static member PlainEventDecoder: Decoder<HasGenericEvent<'t>> =
+        Decode.object (fun get -> PlainEvent(get.Required.Field "data" Other.Plain.Decoder))
+
+    static member GenericEventDecoder decodeT: Decoder<HasGenericEvent<'t>> =
+        Decode.object (fun get -> GenericEvent(get.Required.Field "data" (External.Option.Decoder decodeT)))
+
+    static member Decoder decodeT: Decoder<HasGenericEvent<'t>> =
+        GotynoCoders.decodeWithTypeTag
+            "type"
+            [|
+                "PlainEvent", HasGenericEvent.PlainEventDecoder
+                "GenericEvent", HasGenericEvent.GenericEventDecoder decodeT
+            |]
+
+    static member Encoder encodeT =
+        function
+        | PlainEvent payload ->
+            Encode.object [ "type", Encode.string "PlainEvent"
+                            "data", Other.Plain.Encoder payload ]
+
+        | GenericEvent payload ->
+            Encode.object [ "type", Encode.string "GenericEvent"
+                            "data", (External.Option.Encoder encodeT) payload ]
