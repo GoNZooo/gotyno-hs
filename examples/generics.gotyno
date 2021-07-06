@@ -56,8 +56,8 @@ struct KnownForShowWithoutTypeTag {
 }
 
 union(tag = media_type, embedded) KnownForEmbedded {
-    movie: KnownForMovieWithoutTypeTag
-    tv: KnownForShowWithoutTypeTag
+    movieStartingWithLowercase: KnownForMovieWithoutTypeTag
+    tvStartingWithLowercase: KnownForShowWithoutTypeTag
 }
 
 union(tag = media_type, embedded) KnownForEmbeddedWithUpperCase {
