@@ -193,3 +193,26 @@ into.
 
 Both checks for existence of the referenced payload types and checks that they
 are structures are done during compilation.
+
+### Declarations
+
+When a type that is outside of Gotyno files is needed, we can use a declaration
+to assert that it exists. It will function much like an import in the generated
+code and it's up to the user to supply the required functionality for each
+language in the required file:
+
+```
+declare external.Option<T>
+
+declare otherExternalModule.Plain
+
+struct HasOption<T> {
+    field: Option<T>
+    field2: Plain
+}
+```
+
+Note that the above code will generate an import for each unique source module
+(on the left of the '.') and each usage is automatically recognized as a
+reference to a declaration. The code output will rely on this module being
+present in the same output directory as the generated code.
