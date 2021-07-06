@@ -11,3 +11,4 @@ cabal.sandbox.config
 \#*
 gotyno-hs.cabal
 .devcontainer/build
+**/node_modules
