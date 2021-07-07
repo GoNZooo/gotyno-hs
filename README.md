@@ -50,6 +50,13 @@ F# output from this file.
 The F# version uses `Thoth` for JSON decoding, as well as an additional
 extension library to it for some custom decoding helpers that I wrote.
 
+Import names (and by extension declaration source names) are automatically
+converted to use an initial uppercase letter for F#. Note, however, that
+PascalCase is not automatically converted to. If import names are written in
+snake_case the output will be Snake_case. For the most part camelCase will work
+well for Gotyno file names, since the output will be "CamelCase" for that
+particular example.
+
 ## The Language
 
 All supported type names are uppercase and type definitions currently are
