@@ -34,8 +34,8 @@ stack install
 
 ## TypeScript example
 
-[basic.gotyno](./test_files/basic.gotyno) has an example of some types being
-defined and [basic.ts](./test_files/basic.ts) is the automatically generated
+[basic.gotyno](./examples/basic.gotyno) has an example of some types being
+defined and [basic.ts](./examples/basic.ts) is the automatically generated
 TypeScript output from this file.
 
 Behind the scenes it's using a validation library I wrote for validating
@@ -43,8 +43,8 @@ Behind the scenes it's using a validation library I wrote for validating
 
 ## F# example
 
-[basic.gotyno](./test_files/basic.gotyno) has an example of some types being
-defined and [basic.fs](./test_files/basic.fs) is the automatically generated
+[basic.gotyno](./examples/basic.gotyno) has an example of some types being
+defined and [basic.fs](./examples/basic.fs) is the automatically generated
 F# output from this file.
 
 The F# version uses `Thoth` for JSON decoding, as well as an additional
