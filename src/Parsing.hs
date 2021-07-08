@@ -447,10 +447,10 @@ fieldTypeP :: [TypeVariable] -> Parser FieldType
 fieldTypeP typeVariables =
   choice
     [ LiteralType <$> literalP,
-      BasicType <$> basicTypeValueP,
       ComplexType <$> complexTypeP typeVariables,
       TypeVariableReferenceType <$> typeVariableReferenceP typeVariables,
       DefinitionReferenceType <$> definitionReferenceP typeVariables,
+      BasicType <$> basicTypeValueP,
       DefinitionReferenceType <$> importedReferenceP typeVariables,
       RecursiveReferenceType <$> recursiveReferenceP
     ]
