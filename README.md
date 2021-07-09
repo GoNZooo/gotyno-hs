@@ -35,8 +35,9 @@ stack install
 ## TypeScript example
 
 [basic.gotyno](./examples/basic.gotyno) has an example of some types being
-defined and [basic.ts](./examples/basic.ts) is the automatically generated
-TypeScript output from this file.
+defined and [basic.ts](./test/reference-output/basic.ts) is the automatically
+generated TypeScript output from this file. This directory contains other
+examples, used primarily for testing purposes.
 
 Behind the scenes it's using a validation library I wrote for validating
 `unknown` values (for the most part against given interface definitions).
@@ -44,8 +45,9 @@ Behind the scenes it's using a validation library I wrote for validating
 ## F# example
 
 [basic.gotyno](./examples/basic.gotyno) has an example of some types being
-defined and [basic.fs](./examples/basic.fs) is the automatically generated
-F# output from this file.
+defined and [basic.fs](./test/reference-output/basic.fs) is the automatically
+generated F# output from this file. This directory contains other examples, used
+primarily for testing purposes.
 
 The F# version uses `Thoth` for JSON decoding, as well as an additional
 extension library to it for some custom decoding helpers that I wrote.
