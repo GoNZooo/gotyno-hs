@@ -8,3 +8,8 @@ struct SomeType {
 struct Holder <T>{
     value: T
 }
+
+union Event {
+    Notification: String
+    Launch
+}

@@ -655,59 +655,100 @@ encoderForDefinitionReference
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
-  let caseUnionOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
+  let baseClassOutput = outputUnionBaseClass name typeTag (constructorsFrom unionType) typeVariables
+      casesOutput = outputUnionCases name typeTag (constructorsFrom unionType)
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
-      decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType) typeVariables
-      encoderOutput = outputUnionEncoder typeTag (constructorsFrom unionType) typeVariables
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
-   in Text.intercalate
-        "\n\n"
-        [ caseUnionOutput,
-          decoderOutput,
-          encoderOutput
+   in mconcat [baseClassOutput, "\n\n", casesOutput]
+
+outputUnionBaseClass :: Text -> FieldName -> [Constructor] -> [TypeVariable] -> Text
+outputUnionBaseClass name tag constructors typeVariables =
+  let validatorOutput = outputUnionValidator name tag constructors typeVariables
+      decoderOutput = outputUnionDecoder name typeVariables
+   in mconcat
+        [ mconcat ["class ", name, ":\n"],
+          validatorOutput,
+          "\n\n",
+          decoderOutput
         ]
 
-outputUnionDecoder :: FieldName -> Text -> [Constructor] -> [TypeVariable] -> Text
-outputUnionDecoder (FieldName tag) unionName constructors typeVariables =
-  let constructorDecodersOutput =
-        constructors
-          & fmap (outputConstructorDecoder unionName typeVariables)
-          & Text.intercalate "\n\n"
-      tagAndDecoderOutput =
+outputUnionValidator :: Text -> FieldName -> [Constructor] -> [TypeVariable] -> Text
+outputUnionValidator name (FieldName tag) constructors typeVariables =
+  let taggedValidators =
         constructors
           & fmap
-            ( \(Constructor (ConstructorName name) payload) ->
-                let payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom payload
-                    maybeDecoderArguments = typeVariableValidatorsAsArguments payloadTypeVariables
-                 in mconcat
-                      [ "                \"",
-                        name,
-                        "\", ",
-                        unionName,
-                        ".",
-                        upperCaseFirstCharacter name,
-                        "Decoder",
-                        maybeDecoderArguments,
-                        "\n"
-                      ]
+            ( \(Constructor (ConstructorName constructorName) _payload) ->
+                mconcat ["'", constructorName, "': ", constructorName, ".validate"]
             )
-          & mconcat
-      fullName =
-        if null typeVariables
-          then unionName
-          else mconcat [unionName, joinTypeVariables typeVariables]
-      maybeArguments = typeVariableValidatorsAsArguments typeVariables
+          & Text.intercalate ", "
+      interface = "{" <> taggedValidators <> "}"
    in mconcat
-        [ mconcat [constructorDecodersOutput, "\n\n"],
-          mconcat ["    static member Decoder", maybeArguments, ": Decoder<", fullName, "> =\n"],
-          mconcat ["        GotynoCoders.decodeWithTypeTag\n"],
-          mconcat ["            \"", tag, "\"\n"],
-          mconcat ["            [|\n"],
-          tagAndDecoderOutput,
-          mconcat ["            |]"]
+        [ "    @staticmethod\n",
+          mconcat ["    def validate(value: v.Unknown) -> v.ValidationResult['", name, "']:\n"],
+          mconcat ["        return v.validate_with_type_tags(value, '", tag, "', ", interface, ")"]
+        ]
+
+outputUnionDecoder :: Text -> [TypeVariable] -> Text
+outputUnionDecoder unionName _typeVariables =
+  mconcat
+    [ "    @staticmethod\n",
+      mconcat
+        [ "    def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['",
+          unionName,
+          "']:\n"
+        ],
+      mconcat ["        return v.validate_from_string(string, ", unionName, ".validate)"]
+    ]
+
+outputUnionCases :: Text -> FieldName -> [Constructor] -> Text
+outputUnionCases unionName tag =
+  fmap (outputUnionCase unionName tag) >>> Text.intercalate "\n\n"
+
+outputUnionCase :: Text -> FieldName -> Constructor -> Text
+outputUnionCase unionName (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
+  let maybeDataField =
+        maybePayload & maybe "" (outputFieldType >>> ("    data: " <>) >>> (<> "\n\n"))
+      interface =
+        mconcat ["{", maybePayload & maybe "" (validatorForFieldType >>> ("'data': " <>)), "}"]
+      validatorOutput =
+        mconcat
+          [ "    @staticmethod\n",
+            mconcat ["    def validate(value: v.Unknown) -> v.ValidationResult['", name, "']:\n"],
+            mconcat
+              [ "        return v.validate_with_type_tag(value, '",
+                tag,
+                "', '",
+                name,
+                "', ",
+                interface,
+                ", ",
+                name,
+                ")"
+              ]
+          ]
+      decoderOutput =
+        mconcat
+          [ "    @staticmethod\n",
+            mconcat ["    def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['", name, "']:\n"],
+            mconcat ["        return v.validate_from_string(string, ", name, ".validate)"]
+          ]
+      encoderOutput =
+        mconcat
+          [ "    def encode(self) -> str:\n",
+            mconcat ["        return json.dumps({**self.__dict__, '", tag, "': '", name, "'})"]
+          ]
+   in mconcat
+        [ "@dataclass(frozen=True)\n",
+          mconcat ["class ", name, "(", unionName, "):\n"],
+          maybeDataField,
+          validatorOutput,
+          "\n\n",
+          decoderOutput,
+          "\n\n",
+          encoderOutput
         ]
 
 typeVariableValidatorsAsArguments :: [TypeVariable] -> Text
