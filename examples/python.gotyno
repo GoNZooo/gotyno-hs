@@ -4,3 +4,7 @@ struct SomeType {
     some_other_field: I32
     maybe_some_field: ?String
 }
+
+struct Holder <T>{
+    value: T
+}
