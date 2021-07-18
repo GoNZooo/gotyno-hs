@@ -8,4 +8,5 @@ main :: IO ()
 main = do
   tsReferenceOutput <- ParsingSpec.typeScriptReferenceOutput
   fsReferenceOutput <- ParsingSpec.fSharpReferenceOutput
-  hspec $ ParsingSpec.spec tsReferenceOutput fsReferenceOutput
+  pyReferenceOutput <- ParsingSpec.pythonReferenceOutput
+  hspec $ ParsingSpec.spec tsReferenceOutput fsReferenceOutput pyReferenceOutput

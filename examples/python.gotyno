@@ -1,0 +1,6 @@
+struct SomeType {
+    type: "SomeType"
+    some_field: String
+    some_other_field: I32
+    maybe_some_field: ?String
+}

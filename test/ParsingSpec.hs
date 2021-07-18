@@ -1,6 +1,7 @@
 module ParsingSpec where
 
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Parsing
 import RIO
@@ -22,6 +23,10 @@ data FSharpReferenceOutput = FSharpReferenceOutput
     hasGeneric :: !Text,
     generics :: !Text,
     gitHub :: !Text
+  }
+
+data PythonReferenceOutput = PythonReferenceOutput
+  { python :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -61,10 +66,16 @@ gitHubReferenceOutput :: FilePath -> IO Text
 gitHubReferenceOutput extension =
   readFileUtf8 $ "./test/reference-output/github." <> extension
 
-spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> Spec
+pythonReferenceOutput :: IO PythonReferenceOutput
+pythonReferenceOutput = do
+  python <- readFileUtf8 "./test/reference-output/python.py"
+  pure PythonReferenceOutput {python}
+
+spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> PythonReferenceOutput -> Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
-  (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub) = do
+  (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
+  (PythonReferenceOutput pyPython) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -136,6 +147,12 @@ spec
             gitHubFSharpOutput = FSharp.outputModule gitHubModule
         gitHubTypeScriptOutput `shouldBe` tsGitHub
         gitHubFSharpOutput `shouldBe` fsGitHub
+
+      it "Basic `python.gotyno` module is output correctly" $ do
+        pythonModule <-
+          (getRight >>> PartialList.head) <$> parseModules ["examples/python.gotyno"]
+        let pythonPythonOutput = Python.outputModule pythonModule
+        pythonPythonOutput `shouldBe` pyPython
 
 getRight :: (Show l) => Either l r -> r
 getRight (Right r) = r
