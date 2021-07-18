@@ -325,7 +325,7 @@ outputPlainStruct name fields =
   let fieldsOutput = fields & fmap (outputField 4) & Text.intercalate "\n"
       validatorOutput = outputStructValidator name fields []
       encoderOutput = outputStructEncoder
-      decoderOutput = outputStructDecoder name fields []
+      decoderOutput = outputStructDecoder name []
    in mconcat
         [ mconcat ["@dataclass(frozen=True)\nclass ", name, ":\n"],
           fieldsOutput,
@@ -356,9 +356,9 @@ outputStructValidator :: Text -> [StructField] -> [TypeVariable] -> Text
 outputStructValidator name fields typeVariables =
   let validateFunctionOutput =
         if null typeVariables
-          then plainValidator name
-          else genericValidator name typeVariables
-      plainValidator name =
+          then plainValidator
+          else genericValidator
+      plainValidator =
         mconcat
           [ mconcat
               [ "    def validate(value: v.Unknown) -> v.ValidationResult['",
@@ -367,13 +367,13 @@ outputStructValidator name fields typeVariables =
               ],
             mconcat ["        return v.validate_interface(value, ", interface, ")"]
           ]
-      genericValidator _name _typeVariables = ""
+      genericValidator = ""
       interface =
         mconcat ["{", fields & fmap outputValidatorForField & Text.intercalate ", ", "}"]
    in mconcat ["    @staticmethod\n", validateFunctionOutput]
 
-outputStructDecoder :: Text -> [StructField] -> [TypeVariable] -> Text
-outputStructDecoder name fields typeVariables =
+outputStructDecoder :: Text -> [TypeVariable] -> Text
+outputStructDecoder name typeVariables =
   let decodeFunctionOutput =
         if null typeVariables
           then plainDecoder
