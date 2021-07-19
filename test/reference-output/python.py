@@ -90,3 +90,45 @@ class AnotherEvent(Event):
 
     def encode(self) -> str:
         return json.dumps({**self.__dict__, 'type': 'AnotherEvent'})
+
+T = TypeVar('T')
+class Possibly(Generic[T]):
+    @staticmethod
+    def validate(validate_T: v.Validator[T]) -> v.Validator['Possibly[T]']:
+        def validate_PossiblyT(value: v.Unknown) -> v.ValidationResult['Possibly[T]']:
+            return v.validate_with_type_tags(value, 'type', {'NotReally': NotReally.validate, 'Definitely': Definitely.validate(validate_T)})
+        return validate_PossiblyT
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes], validate_T: v.Validator[T]) -> v.ValidationResult['Possibly[T]']:
+        return v.validate_from_string(string, Possibly.validate(validate_T))
+
+@dataclass(frozen=True)
+class NotReally(Possibly[T]):
+    @staticmethod
+    def validate(value: v.Unknown) -> v.ValidationResult['NotReally']:
+        return v.validate_with_type_tag(value, 'type', 'NotReally', {}, NotReally)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['NotReally']:
+        return v.validate_from_string(string, NotReally.validate)
+
+    def encode(self) -> str:
+        return json.dumps({**self.__dict__, 'type': 'NotReally'})
+
+@dataclass(frozen=True)
+class Definitely(Possibly[T]):
+    data: T
+
+    @staticmethod
+    def validate(validate_T: v.Validator[T]) -> v.Validator['Definitely[T]']:
+        def validate_DefinitelyT(value: v.Unknown) -> v.ValidationResult['Definitely[T]']:
+            return v.validate_with_type_tag(value, 'type', 'Definitely', {'data': validate_T}, Definitely)
+        return validate_DefinitelyT
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes], validate_T: v.Validator[T]) -> v.ValidationResult['Definitely[T]']:
+        return v.validate_from_string(string, Definitely.validate(validate_T))
+
+    def encode(self) -> str:
+        return json.dumps({**self.__dict__, 'type': 'Definitely'})
