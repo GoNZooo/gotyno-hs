@@ -16,6 +16,7 @@ Available options:
   --ts,--typescript =|-|PATH
                            Set TypeScript output
   --fs,--fsharp =|-|PATH   Set FSharp output
+  --py,--python =|-|PATH   Set Python output
   -w,--watch               Watch files and recompile automatically
   -v,--verbose             Output info about compilation
   -h,--help                Show this help text
