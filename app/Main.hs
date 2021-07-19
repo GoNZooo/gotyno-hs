@@ -45,6 +45,14 @@ parseLanguages =
           <> value Nothing
           <> metavar "=|-|PATH"
       )
+    <*> option
+      (maybeReader parseOutputDestination)
+      ( long "python"
+          <> long "py"
+          <> help "Set Python output"
+          <> value Nothing
+          <> metavar "=|-|PATH"
+      )
 
 parseLanguageSetting :: Parser (Maybe Library.OutputDestination)
 parseLanguageSetting = undefined

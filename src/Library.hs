@@ -1,6 +1,7 @@
 module Library where
 
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import qualified Data.Text.IO as TextIO
 import qualified Parsing
@@ -21,7 +22,8 @@ data OutputDestination
 
 data Languages = Languages
   { typescript :: !(Maybe OutputDestination),
-    fsharp :: !(Maybe OutputDestination)
+    fsharp :: !(Maybe OutputDestination),
+    python :: !(Maybe OutputDestination)
   }
   deriving (Eq, Show)
 
@@ -36,7 +38,7 @@ data Options = Options
 runMain :: Options -> IO ()
 runMain
   Options
-    { languages = languages@Languages {typescript, fsharp},
+    { languages = languages@Languages {typescript, fsharp, python},
       inputs,
       watchMode,
       verbose
@@ -57,15 +59,22 @@ runMain
         startFS <- Time.getCurrentTime
         forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
         endFS <- Time.getCurrentTime
+
+        startPython <- Time.getCurrentTime
+        forM_ python $ outputLanguage modules Python.outputModule "py"
+        endPython <- Time.getCurrentTime
+
         end <- Time.getCurrentTime
         let diff = Time.diffUTCTime end start
             diffParsing = Time.diffUTCTime postParsing start
             diffTS = Time.diffUTCTime endTS startTS
             diffFS = Time.diffUTCTime endFS startFS
+            diffPython = Time.diffUTCTime endPython startPython
         when verbose $ do
           putStrLn $ "Parsing took: " <> show diffParsing
           putStrLn $ "Outputting TypeScript took: " <> show diffTS
           putStrLn $ "Outputting FSharp took: " <> show diffFS
+          putStrLn $ "Outputting Python took: " <> show diffPython
           putStrLn $ "Entire compilation took: " <> show diff
       Left errors -> forM_ errors putStrLn
 
