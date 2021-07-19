@@ -12,4 +12,5 @@ struct Holder <T>{
 union Event {
     Notification: String
     Launch
+    AnotherEvent: SomeType
 }

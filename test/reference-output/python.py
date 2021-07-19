@@ -42,7 +42,7 @@ class Holder(typing.Generic[T]):
 class Event:
     @staticmethod
     def validate(value: v.Unknown) -> v.ValidationResult['Event']:
-        return v.validate_with_type_tags(value, 'type', {'Notification': Notification.validate, 'Launch': Launch.validate})
+        return v.validate_with_type_tags(value, 'type', {'Notification': Notification.validate, 'Launch': Launch.validate, 'AnotherEvent': AnotherEvent.validate})
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['Event']:
@@ -75,3 +75,18 @@ class Launch(Event):
 
     def encode(self) -> str:
         return json.dumps({**self.__dict__, 'type': 'Launch'})
+
+@dataclass(frozen=True)
+class AnotherEvent(Event):
+    data: SomeType
+
+    @staticmethod
+    def validate(value: v.Unknown) -> v.ValidationResult['AnotherEvent']:
+        return v.validate_with_type_tag(value, 'type', 'AnotherEvent', {'data': SomeType.validate}, AnotherEvent)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['AnotherEvent']:
+        return v.validate_from_string(string, AnotherEvent.validate)
+
+    def encode(self) -> str:
+        return json.dumps({**self.__dict__, 'type': 'AnotherEvent'})

@@ -537,20 +537,20 @@ decoderForDefinitionReference
   ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    name <> ".Decoder"
+    name <> ".validate"
 decoderForDefinitionReference
   ( ImportedDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".validate"]
 decoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", name, ".validate ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
@@ -558,7 +558,7 @@ decoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".validate ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -566,10 +566,10 @@ decoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".validate ", appliedDecoders, ")"]
 decoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".validate"]
 
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
@@ -676,7 +676,7 @@ outputUnionBaseClass name tag constructors typeVariables =
         ]
 
 outputUnionValidator :: Text -> FieldName -> [Constructor] -> [TypeVariable] -> Text
-outputUnionValidator name (FieldName tag) constructors typeVariables =
+outputUnionValidator name (FieldName tag) constructors _typeVariables =
   let taggedValidators =
         constructors
           & fmap
