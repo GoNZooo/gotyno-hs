@@ -13,14 +13,17 @@ class SomeType:
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['SomeType']:
-        return validation.validate_interface(value, {'type': validation.validate_literal('SomeType'), 'some_field': validation.validate_string, 'some_other_field': validation.validate_int, 'maybe_some_field': validation.validate_optional(validation.validate_string)})
+        return validation.validate_interface(value, {'type': validation.validate_literal('SomeType'), 'some_field': validation.validate_string, 'some_other_field': validation.validate_int, 'maybe_some_field': validation.validate_optional(validation.validate_string)}, SomeType)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['SomeType']:
         return validation.validate_from_string(string, SomeType.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'SomeType', 'some_field': self.some_field, 'some_other_field': self.some_other_field, 'maybe_some_field': encoding.optional_to_json(encoding.basic_to_json)(self.maybe_some_field)}
+
     def encode(self) -> str:
-        return json.dumps({'type': 'SomeType', 'some_field': self.some_field, 'some_other_field': self.some_other_field, 'maybe_some_field': encoding.encode_optional(encoding.encode_basic)(self.maybe_some_field)})
+        return json.dumps(self.to_json())
 
 T = typing.TypeVar('T')
 @dataclass(frozen=True)
@@ -30,15 +33,18 @@ class Holder(typing.Generic[T]):
     @staticmethod
     def validate(validate_T: validation.Validator[T]) -> validation.Validator['Holder[T]']:
         def validate_HolderT(value: validation.Unknown) -> validation.ValidationResult['Holder[T]']:
-            return validation.validate_interface(value, {'value': validate_T})
+            return validation.validate_interface(value, {'value': validate_T}, Holder)
         return validate_HolderT
 
     @staticmethod
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Holder[T]']:
         return validation.validate_from_string(string, Holder.validate(validate_T))
 
-    def encode(self, encode_T: encoding.Encoder[T]) -> str:
-        return json.dumps({'value': encode_T(self.value)})
+    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+        return {'value': T_to_json(self.value)}
+
+    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
+        return json.dumps(self.to_json(T_to_json))
 
 class Event:
     @staticmethod
@@ -61,8 +67,11 @@ class Notification(Event):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Notification']:
         return validation.validate_from_string(string, Notification.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'Notification', 'data': self.data}
+
     def encode(self) -> str:
-        return json.dumps({'type': 'Notification', 'data': self.data})
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class Launch(Event):
@@ -74,8 +83,11 @@ class Launch(Event):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Launch']:
         return validation.validate_from_string(string, Launch.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'Launch'}
+
     def encode(self) -> str:
-        return json.dumps({'type': 'Launch'})
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class AnotherEvent(Event):
@@ -89,8 +101,11 @@ class AnotherEvent(Event):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['AnotherEvent']:
         return validation.validate_from_string(string, AnotherEvent.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'AnotherEvent', 'data': self.data.to_json()}
+
     def encode(self) -> str:
-        return json.dumps({'type': 'AnotherEvent', 'data': self.data.encode()})
+        return json.dumps(self.to_json())
 
 T = typing.TypeVar('T')
 class Possibly(typing.Generic[T]):
@@ -114,8 +129,11 @@ class NotReally(Possibly[T]):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['NotReally']:
         return validation.validate_from_string(string, NotReally.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'NotReally'}
+
     def encode(self) -> str:
-        return json.dumps({'type': 'NotReally'})
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class Definitely(Possibly[T]):
@@ -131,5 +149,8 @@ class Definitely(Possibly[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Definitely[T]']:
         return validation.validate_from_string(string, Definitely.validate(validate_T))
 
-    def encode(self, encode_T: encoding.Encoder[T]) -> str:
-        return json.dumps({'type': 'Definitely', 'data': encode_T(self.data)})
+    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+        return {'type': 'Definitely', 'data': T_to_json(self.data)}
+
+    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
+        return json.dumps(self.to_json(T_to_json))
