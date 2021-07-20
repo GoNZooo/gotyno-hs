@@ -540,9 +540,9 @@ encoderForLiteralType (LiteralBoolean b) = tshow b
 encoderForComplexType :: ComplexTypeValue -> Text
 encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
 encoderForComplexType (ArrayType _size fieldType) =
-  mconcat ["GotynoCoders.encodeList ", encoderForFieldType ("(", ")") fieldType]
+  mconcat ["encoding.encode_list(", encoderForFieldType ("(", ")") fieldType, ")"]
 encoderForComplexType (SliceType fieldType) =
-  mconcat ["GotynoCoders.encodeList ", encoderForFieldType ("(", ")") fieldType]
+  mconcat ["encoding.encode_list(", encoderForFieldType ("(", ")") fieldType, ")"]
 encoderForComplexType (OptionalType fieldType) =
   mconcat ["encoding.encode_optional(", encoderForFieldType ("(", ")") fieldType, ")"]
 
