@@ -7,17 +7,18 @@ import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {name = ModuleName name, definitions, imports} =
+outputModule Module {definitions, imports} =
   let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
       importsOutput = imports & fmap outputImport & mconcat
-      outputImport (Import Module {name = ModuleName _name}) =
-        mconcat ["import ", name, "\n\n"]
+      outputImport (Import Module {name = ModuleName importName}) =
+        mconcat ["from . import ", importName, "\n\n"]
    in mconcat
         [ mconcat
             [ "import json\n",
               "import typing\n",
               "from dataclasses import dataclass\n",
-              "import validation as v\n\n"
+              "from gotyno_validation import validation\n",
+              "from gotyno_validation import encoding\n\n"
             ],
           importsOutput,
           definitionOutput
