@@ -98,7 +98,7 @@ outputLanguage modules outputFunction extension outputDestination = do
         writeFileUtf8 pathForOutput output
 
 watchInputs :: [FilePath] -> Languages -> IO ()
-watchInputs relativeInputs Languages {typescript, fsharp} = do
+watchInputs relativeInputs Languages {typescript, fsharp, python} = do
   inputs <- traverse Directory.makeAbsolute relativeInputs
   let compileEverything = do
         maybeModules <- Parsing.parseModules relativeInputs
@@ -106,6 +106,7 @@ watchInputs relativeInputs Languages {typescript, fsharp} = do
           Right modules -> do
             forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
             forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
+            forM_ python $ outputLanguage modules Python.outputModule "py"
           Left errors ->
             forM_ errors putStrLn
 
