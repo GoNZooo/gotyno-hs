@@ -43,74 +43,8 @@ outputDefinition (TypeDefinition (DefinitionName name) (EmbeddedUnion typeTag co
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: Text -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedUnion unionName (FieldName tag) constructors =
-  let typeOutput =
-        outputCaseUnion
-          unionName
-          constructorsAsConstructors
-          []
-      constructorsAsConstructors = embeddedConstructorsToConstructors constructors
-      constructorDecodersOutput = outputEmbeddedConstructorDecoders unionName constructors
-      tagDecoderPairsOutput =
-        constructors
-          & fmap
-            ( \(EmbeddedConstructor (ConstructorName name) _reference) ->
-                mconcat
-                  [ "                \"",
-                    name,
-                    "\", ",
-                    unionName,
-                    ".",
-                    upperCaseFirstCharacter name,
-                    "Decoder\n"
-                  ]
-            )
-          & mconcat
-      decoderOutput =
-        mconcat
-          [ mconcat ["    static member Decoder: Decoder<", unionName, "> =\n"],
-            "        GotynoCoders.decodeWithTypeTag\n",
-            mconcat ["            \"", tag, "\"\n"],
-            "            [|\n",
-            tagDecoderPairsOutput,
-            "            |]"
-          ]
-      constructorCasesOutput =
-        constructors
-          & fmap
-            ( \(EmbeddedConstructor (ConstructorName name) reference) ->
-                let fields = structFieldsFromReference reference
-                    fieldsEncoderOutput =
-                      fields
-                        & fmap
-                          ( outputEncoderForFieldWithValueName "payload"
-                              >>> ("                    " <>)
-                              >>> (<> "\n")
-                          )
-                        & mconcat
-                 in mconcat
-                      [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
-                        "            Encode.object\n",
-                        "                [\n",
-                        mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
-                        fieldsEncoderOutput,
-                        "                ]"
-                      ]
-            )
-          & Text.intercalate "\n\n"
-      encoderOutput =
-        mconcat
-          [ mconcat ["    static member Encoder =\n"],
-            "        function\n",
-            constructorCasesOutput
-          ]
-   in Text.intercalate
-        "\n\n"
-        [ typeOutput,
-          constructorDecodersOutput,
-          decoderOutput,
-          encoderOutput
-        ]
+outputEmbeddedUnion _unionName (FieldName _tag) _constructors =
+  ""
 
 outputEmbeddedConstructorDecoders :: Text -> [EmbeddedConstructor] -> Text
 outputEmbeddedConstructorDecoders unionName =
