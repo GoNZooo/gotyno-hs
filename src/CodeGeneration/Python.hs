@@ -466,10 +466,9 @@ validatorForBasicType Boolean = "validation.validate_bool"
 
 validatorForLiteralType :: LiteralTypeValue -> Text
 validatorForLiteralType (LiteralString s) = "validation.validate_literal(\'" <> s <> "\')"
-validatorForLiteralType (LiteralInteger i) = "(GotynoCoders.decodeLiteralInteger " <> tshow i <> ")"
-validatorForLiteralType (LiteralFloat f) = "(GotynoCoders.decodeLiteralFloat " <> tshow f <> ")"
-validatorForLiteralType (LiteralBoolean b) =
-  "(GotynoCoders.decodeLiteralBoolean " <> bool "false" "true" b <> ")"
+validatorForLiteralType (LiteralInteger i) = "validation.validate_literal(" <> tshow i <> ")"
+validatorForLiteralType (LiteralFloat f) = "validation.validate_literal(" <> tshow f <> ")"
+validatorForLiteralType (LiteralBoolean b) = "validation.validate_literal(" <> tshow b <> ")"
 
 validatorForComplexType :: ComplexTypeValue -> Text
 validatorForComplexType (PointerType fieldType) = validatorForFieldType fieldType
