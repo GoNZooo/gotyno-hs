@@ -259,7 +259,7 @@ outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
   let fieldsOutput = fields & fmap (outputField 4) & Text.intercalate "\n"
       validatorOutput = outputStructValidator name fields []
-      encoderOutput = outputStructEncoder
+      encoderOutput = outputStructEncoder fields []
       decoderOutput = outputStructDecoder name []
    in mconcat
         [ mconcat ["@dataclass(frozen=True)\nclass ", name, ":\n"],
@@ -283,7 +283,7 @@ outputGenericStruct name typeVariables fields =
       fieldsOutput = fields & fmap (outputField 4) & mconcat
       validatorOutput = outputStructValidator name fields typeVariables
       decoderOutput = outputStructDecoder name typeVariables
-      encoderOutput = outputStructEncoder
+      encoderOutput = outputStructEncoder fields typeVariables
       typeVariableOutput = typeVariables & fmap outputTypeVariableDefinition & Text.intercalate "\n"
       outputTypeVariableDefinition (TypeVariable t) = mconcat [t, " = typing.TypeVar('", t, "')"]
    in mconcat
@@ -311,11 +311,11 @@ outputStructValidator name fields typeVariables =
       plainValidator =
         mconcat
           [ mconcat
-              [ "    def validate(value: v.Unknown) -> v.ValidationResult['",
+              [ "    def validate(value: validation.Unknown) -> validation.ValidationResult['",
                 name,
                 "']:\n"
               ],
-            mconcat ["        return v.validate_interface(value, ", interface, ")"]
+            mconcat ["        return validation.validate_interface(value, ", interface, ")"]
           ]
       genericValidator =
         let validatorName =
@@ -328,18 +328,18 @@ outputStructValidator name fields typeVariables =
               [ mconcat
                   [ "    def validate(",
                     typeVariableValidatorsAsArguments typeVariables,
-                    ") -> v.Validator['",
+                    ") -> validation.Validator['",
                     fullName,
                     "']:\n"
                   ],
                 mconcat
                   [ "        def ",
                     validatorName,
-                    "(value: v.Unknown) -> v.ValidationResult['",
+                    "(value: validation.Unknown) -> validation.ValidationResult['",
                     fullName,
                     "']:\n"
                   ],
-                mconcat ["            return v.validate_interface(value, ", interface, ")\n"],
+                mconcat ["            return validation.validate_interface(value, ", interface, ")\n"],
                 mconcat ["        return ", validatorName]
               ]
       interface =
@@ -360,24 +360,24 @@ outputStructDecoder name typeVariables =
         mconcat
           [ mconcat
               [ mconcat
-                  [ "    def decode(string: typing.Union[str, bytes]) -> v.ValidationResult['",
+                  [ "    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['",
                     name,
                     "']:\n"
                   ]
               ],
-            mconcat ["        return v.validate_from_string(string, ", name, ".validate)"]
+            mconcat ["        return validation.validate_from_string(string, ", name, ".validate)"]
           ]
       genericDecoder =
         mconcat
           [ mconcat
               [ "    def decode(string: typing.Union[str, bytes], ",
                 validatorArguments,
-                ") -> v.ValidationResult['",
+                ") -> validation.ValidationResult['",
                 fullName,
                 "']:\n"
               ],
             mconcat
-              [ "        return v.validate_from_string(string, ",
+              [ "        return validation.validate_from_string(string, ",
                 name,
                 ".validate(",
                 typeVariables
@@ -390,12 +390,27 @@ outputStructDecoder name typeVariables =
         typeVariableValidatorsAsArguments typeVariables
    in mconcat ["    @staticmethod\n", decodeFunctionOutput]
 
-outputStructEncoder :: Text
-outputStructEncoder =
-  mconcat
-    [ mconcat ["    def encode(self) -> str:\n"],
-      mconcat ["        return json.dumps(self.__dict__)"]
-    ]
+outputStructEncoder :: [StructField] -> [TypeVariable] -> Text
+outputStructEncoder fields typeVariables =
+  let interface =
+        mconcat
+          ["{", fields & fmap outputEncoderForField & Text.intercalate ", ", "}"]
+      maybeTypeVariableEncoderArguments =
+        if null typeVariables
+          then ""
+          else
+            ", "
+              <> ( typeVariables
+                     & fmap
+                       ( \(TypeVariable t) ->
+                           mconcat ["encode_", t, ": encoding.Encoder[", t, "]"]
+                       )
+                     & Text.intercalate ", "
+                 )
+   in mconcat
+        [ mconcat ["    def encode(self", maybeTypeVariableEncoderArguments, ") -> str:\n"],
+          mconcat ["        return json.dumps(", interface, ")"]
+        ]
 
 outputValidatorForField :: StructField -> Text
 outputValidatorForField (StructField (FieldName fieldName) fieldType) =
@@ -407,23 +422,21 @@ outputValidatorForField (StructField (FieldName fieldName) fieldType) =
     ]
 
 outputEncoderForField :: StructField -> Text
-outputEncoderForField = outputEncoderForFieldWithValueName "value"
-
-outputEncoderForFieldWithValueName :: Text -> StructField -> Text
-outputEncoderForFieldWithValueName
-  _valueName
+outputEncoderForField
   (StructField (FieldName fieldName) fieldType@(LiteralType _)) =
-    mconcat ["\"", fieldName, "\", ", encoderForFieldType ("", "") fieldType]
-outputEncoderForFieldWithValueName valueName (StructField (FieldName fieldName) fieldType) =
+    mconcat ["'", fieldName, "': ", encoderForFieldType ("", "") fieldType]
+outputEncoderForField
+  (StructField (FieldName fieldName) (BasicType _)) =
+    mconcat ["'", fieldName, "': self.", fieldName]
+outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
-    [ "\"",
+    [ "'",
       fieldName,
-      "\", ",
+      "': ",
       encoderForFieldType ("", "") fieldType,
-      " ",
-      valueName,
-      ".",
-      sanitizeName fieldName
+      "(self.",
+      fieldName,
+      ")"
     ]
 
 validatorForFieldType :: FieldType -> Text
@@ -436,23 +449,23 @@ validatorForFieldType (TypeVariableReferenceType (TypeVariable name)) = "validat
 validatorForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".decode"
 
 validatorForBasicType :: BasicTypeValue -> Text
-validatorForBasicType BasicString = "v.validate_string"
-validatorForBasicType U8 = "v.validate_int"
-validatorForBasicType U16 = "v.validate_int"
-validatorForBasicType U32 = "v.validate_int"
-validatorForBasicType U64 = "v.validate_int"
-validatorForBasicType U128 = "v.validate_int"
-validatorForBasicType I8 = "v.validate_int"
-validatorForBasicType I16 = "v.validate_int"
-validatorForBasicType I32 = "v.validate_int"
-validatorForBasicType I64 = "v.validate_int"
-validatorForBasicType I128 = "v.validate_int"
-validatorForBasicType F32 = "v.validate_float"
-validatorForBasicType F64 = "v.validate_float"
-validatorForBasicType Boolean = "v.validate_bool"
+validatorForBasicType BasicString = "validation.validate_string"
+validatorForBasicType U8 = "validation.validate_int"
+validatorForBasicType U16 = "validation.validate_int"
+validatorForBasicType U32 = "validation.validate_int"
+validatorForBasicType U64 = "validation.validate_int"
+validatorForBasicType U128 = "validation.validate_int"
+validatorForBasicType I8 = "validation.validate_int"
+validatorForBasicType I16 = "validation.validate_int"
+validatorForBasicType I32 = "validation.validate_int"
+validatorForBasicType I64 = "validation.validate_int"
+validatorForBasicType I128 = "validation.validate_int"
+validatorForBasicType F32 = "validation.validate_float"
+validatorForBasicType F64 = "validation.validate_float"
+validatorForBasicType Boolean = "validation.validate_bool"
 
 validatorForLiteralType :: LiteralTypeValue -> Text
-validatorForLiteralType (LiteralString s) = "v.validate_literal(\'" <> s <> "\')"
+validatorForLiteralType (LiteralString s) = "validation.validate_literal(\'" <> s <> "\')"
 validatorForLiteralType (LiteralInteger i) = "(GotynoCoders.decodeLiteralInteger " <> tshow i <> ")"
 validatorForLiteralType (LiteralFloat f) = "(GotynoCoders.decodeLiteralFloat " <> tshow f <> ")"
 validatorForLiteralType (LiteralBoolean b) =
@@ -461,11 +474,11 @@ validatorForLiteralType (LiteralBoolean b) =
 validatorForComplexType :: ComplexTypeValue -> Text
 validatorForComplexType (PointerType fieldType) = validatorForFieldType fieldType
 validatorForComplexType (ArrayType _size fieldType) =
-  mconcat ["v.validate_list(", validatorForFieldType fieldType, ")"]
+  mconcat ["validation.validate_list(", validatorForFieldType fieldType, ")"]
 validatorForComplexType (SliceType fieldType) =
-  mconcat ["v.validate_list(", validatorForFieldType fieldType, ")"]
+  mconcat ["validation.validate_list(", validatorForFieldType fieldType, ")"]
 validatorForComplexType (OptionalType fieldType) =
-  mconcat ["v.validate_optional(", validatorForFieldType fieldType, ")"]
+  mconcat ["validation.validate_optional(", validatorForFieldType fieldType, ")"]
 
 decoderForDefinitionReference :: DefinitionReference -> Text
 decoderForDefinitionReference
@@ -509,36 +522,20 @@ decoderForDefinitionReference
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
 encoderForFieldType (_l, _r) (BasicType basicType) = encoderForBasicType basicType
-encoderForFieldType (_l, _r) (ComplexType complexType@(PointerType _)) =
-  encoderForComplexType complexType
 encoderForFieldType (l, r) (ComplexType complexType) = l <> encoderForComplexType complexType <> r
 encoderForFieldType (_l, _r) (DefinitionReferenceType definitionReference) =
   encoderForDefinitionReference definitionReference
-encoderForFieldType (_l, _r) (TypeVariableReferenceType (TypeVariable name)) = "encode" <> name
-encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = name <> ".Encoder"
+encoderForFieldType (_l, _r) (TypeVariableReferenceType (TypeVariable name)) = "encode_" <> name
+encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = name <> ".encode"
 
 encoderForBasicType :: BasicTypeValue -> Text
-encoderForBasicType BasicString = "Encode.string"
-encoderForBasicType U8 = "Encode.byte"
-encoderForBasicType U16 = "Encode.uint16"
-encoderForBasicType U32 = "Encode.uint32"
-encoderForBasicType U64 = "Encode.uint64"
-encoderForBasicType U128 = "Encode.uint128"
-encoderForBasicType I8 = "Encode.int8"
-encoderForBasicType I16 = "Encode.int16"
-encoderForBasicType I32 = "Encode.int32"
-encoderForBasicType I64 = "Encode.int64"
-encoderForBasicType I128 = "Encode.int128"
-encoderForBasicType F32 = "Encode.float32"
-encoderForBasicType F64 = "Encode.float64"
-encoderForBasicType Boolean = "Encode.bool"
+encoderForBasicType _ = "encoding.encode_basic"
 
 encoderForLiteralType :: LiteralTypeValue -> Text
-encoderForLiteralType (LiteralString s) = "Encode.string \"" <> s <> "\""
-encoderForLiteralType (LiteralInteger i) = "Encode.int32 " <> tshow i
-encoderForLiteralType (LiteralFloat f) = "Encode.float32 " <> tshow f
-encoderForLiteralType (LiteralBoolean b) =
-  "Encode.bool " <> bool "false" "true" b
+encoderForLiteralType (LiteralString s) = "'" <> s <> "'"
+encoderForLiteralType (LiteralInteger i) = tshow i
+encoderForLiteralType (LiteralFloat f) = tshow f
+encoderForLiteralType (LiteralBoolean b) = tshow b
 
 encoderForComplexType :: ComplexTypeValue -> Text
 encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
@@ -547,27 +544,27 @@ encoderForComplexType (ArrayType _size fieldType) =
 encoderForComplexType (SliceType fieldType) =
   mconcat ["GotynoCoders.encodeList ", encoderForFieldType ("(", ")") fieldType]
 encoderForComplexType (OptionalType fieldType) =
-  mconcat ["Encode.option ", encoderForFieldType ("(", ")") fieldType, ""]
+  mconcat ["encoding.encode_optional(", encoderForFieldType ("(", ")") fieldType, ")"]
 
 encoderForDefinitionReference :: DefinitionReference -> Text
 encoderForDefinitionReference
   ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    name <> ".Encoder"
+    name <> ".encode"
 encoderForDefinitionReference
   ( ImportedDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".encode"]
 encoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", name, ".encode ", appliedEncoders, ")"]
 encoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
@@ -575,7 +572,7 @@ encoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".encode ", appliedEncoders, ")"]
 encoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -583,10 +580,10 @@ encoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".encode ", appliedEncoders, ")"]
 encoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
+    mconcat [fsharpifyModuleName moduleName, ".", name, ".encode"]
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
@@ -606,7 +603,7 @@ outputUnion name typeTag unionType =
           then ""
           else
             typeVariables
-              & fmap (\(TypeVariable t) -> mconcat [t, " = TypeVar('", t, "')"])
+              & fmap (\(TypeVariable t) -> mconcat [t, " = typing.TypeVar('", t, "')"])
               & Text.intercalate "\n"
               & (<> "\n")
    in mconcat [maybeTypeVariableOutput, baseClassOutput, "\n\n", casesOutput]
@@ -618,7 +615,7 @@ outputUnionBaseClass name tag constructors typeVariables =
       maybeGenericNotation =
         if null typeVariables
           then ""
-          else mconcat ["(Generic", joinTypeVariables typeVariables, ")"]
+          else mconcat ["(typing.Generic", joinTypeVariables typeVariables, ")"]
    in mconcat
         [ mconcat ["class ", name, maybeGenericNotation, ":\n"],
           validatorOutput,
@@ -658,17 +655,17 @@ outputUnionValidator name (FieldName tag) constructors typeVariables =
           & Text.intercalate ", "
       interface = "{" <> taggedValidators <> "}"
       functionHead [] =
-        mconcat ["    def validate(value: v.Unknown) -> v.ValidationResult['", name, "']:\n"]
+        mconcat ["    def validate(value: validation.Unknown) -> validation.ValidationResult['", name, "']:\n"]
       functionHead typeVariables' =
         mconcat
           [ "    def validate(",
             typeVariableValidatorsAsArguments typeVariables',
-            ") -> v.Validator['",
+            ") -> validation.Validator['",
             fullName,
             "']:\n"
           ]
       functionBody [] =
-        mconcat ["        return v.validate_with_type_tags(value, '", tag, "', ", interface, ")"]
+        mconcat ["        return validation.validate_with_type_tags(value, '", tag, "', ", interface, ")"]
       functionBody typeVariables' =
         let validatorName =
               "validate_" <> name <> (typeVariables' & fmap (\(TypeVariable t) -> t) & mconcat)
@@ -676,12 +673,12 @@ outputUnionValidator name (FieldName tag) constructors typeVariables =
               [ mconcat
                   [ "        def ",
                     validatorName,
-                    "(value: v.Unknown) -> v.ValidationResult['",
+                    "(value: validation.Unknown) -> validation.ValidationResult['",
                     fullName,
                     "']:\n"
                   ],
                 mconcat
-                  [ "            return v.validate_with_type_tags(value, '",
+                  [ "            return validation.validate_with_type_tags(value, '",
                     tag,
                     "', ",
                     interface,
@@ -708,7 +705,7 @@ outputUnionDecoder unionName typeVariables =
             mconcat
               [ ", ",
                 typeVariables
-                  & fmap (\(TypeVariable t) -> mconcat ["validate_" <> t, ": v.Validator[", t, "]"])
+                  & fmap (\(TypeVariable t) -> mconcat ["validate_" <> t, ": validation.Validator[", t, "]"])
                   & Text.intercalate
                     ", "
               ]
@@ -732,12 +729,12 @@ outputUnionDecoder unionName typeVariables =
           mconcat
             [ "    def decode(string: typing.Union[str, bytes]",
               maybeTypeVariableValidatorArguments,
-              ") -> v.ValidationResult['",
+              ") -> validation.ValidationResult['",
               fullName,
               "']:\n"
             ],
           mconcat
-            [ "        return v.validate_from_string(string, ",
+            [ "        return validation.validate_from_string(string, ",
               unionName,
               ".validate",
               maybePassedInValidators,
@@ -750,128 +747,155 @@ outputUnionCases unionName tag =
   fmap (outputUnionCase unionName tag) >>> Text.intercalate "\n\n"
 
 outputUnionCase :: Text -> FieldName -> Constructor -> Text
-outputUnionCase unionName (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
-  let payloadTypeVariables =
-        fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-      fullName =
-        if null payloadTypeVariables
-          then name
-          else mconcat [name, joinTypeVariables payloadTypeVariables]
-      maybeDataField =
-        maybePayload & maybe "" (outputFieldType >>> ("    data: " <>) >>> (<> "\n\n"))
-      interface =
-        mconcat ["{", maybePayload & maybe "" (validatorForFieldType >>> ("'data': " <>)), "}"]
-      validatorOutput =
-        mconcat
-          [ "    @staticmethod\n",
-            validatorFunctionHead payloadTypeVariables,
-            validatorFunctionBody payloadTypeVariables
-          ]
-      validatorFunctionHead [] =
-        mconcat ["    def validate(value: v.Unknown) -> v.ValidationResult['", name, "']:\n"]
-      validatorFunctionHead typeVariables =
-        mconcat
-          [ "    def validate(",
-            typeVariableValidatorsAsArguments typeVariables,
-            ") -> v.Validator['",
-            fullName,
-            "']:\n"
-          ]
-      validatorFunctionBody [] =
-        mconcat
-          [ "        return v.validate_with_type_tag(value, '",
-            tag,
-            "', '",
-            name,
-            "', ",
-            interface,
-            ", ",
-            name,
-            ")"
-          ]
-      validatorFunctionBody typeVariables =
-        let validatorName =
-              "validate_" <> name <> (typeVariables & fmap (\(TypeVariable t) -> t) & mconcat)
-         in mconcat
-              [ mconcat
-                  [ "        def ",
-                    validatorName,
-                    "(value: v.Unknown) -> v.ValidationResult['",
-                    fullName,
-                    "']:\n"
-                  ],
-                mconcat
-                  [ "            return v.validate_with_type_tag(value, '",
-                    tag,
-                    "', '",
-                    name,
-                    "', ",
-                    interface,
-                    ", ",
-                    name,
-                    ")\n"
-                  ],
-                mconcat ["        return ", validatorName]
-              ]
-      decoderOutput =
-        let maybeTypeVariableValidatorArguments =
-              if null payloadTypeVariables
-                then ""
-                else
+outputUnionCase
+  unionName
+  fieldName@(FieldName tag)
+  constructor@(Constructor (ConstructorName name) maybePayload) =
+    let payloadTypeVariables =
+          fromMaybe [] $ foldMap typeVariablesFrom maybePayload
+        fullName =
+          if null payloadTypeVariables
+            then name
+            else mconcat [name, joinTypeVariables payloadTypeVariables]
+        maybeDataField =
+          maybePayload & maybe "" (outputFieldType >>> ("    data: " <>) >>> (<> "\n\n"))
+        interface =
+          mconcat ["{", maybePayload & maybe "" (validatorForFieldType >>> ("'data': " <>)), "}"]
+        validatorOutput =
+          mconcat
+            [ "    @staticmethod\n",
+              validatorFunctionHead payloadTypeVariables,
+              validatorFunctionBody payloadTypeVariables
+            ]
+        validatorFunctionHead [] =
+          mconcat ["    def validate(value: validation.Unknown) -> validation.ValidationResult['", name, "']:\n"]
+        validatorFunctionHead typeVariables =
+          mconcat
+            [ "    def validate(",
+              typeVariableValidatorsAsArguments typeVariables,
+              ") -> validation.Validator['",
+              fullName,
+              "']:\n"
+            ]
+        validatorFunctionBody [] =
+          mconcat
+            [ "        return validation.validate_with_type_tag(value, '",
+              tag,
+              "', '",
+              name,
+              "', ",
+              interface,
+              ", ",
+              name,
+              ")"
+            ]
+        validatorFunctionBody typeVariables =
+          let validatorName =
+                "validate_" <> name <> (typeVariables & fmap (\(TypeVariable t) -> t) & mconcat)
+           in mconcat
+                [ mconcat
+                    [ "        def ",
+                      validatorName,
+                      "(value: validation.Unknown) -> validation.ValidationResult['",
+                      fullName,
+                      "']:\n"
+                    ],
                   mconcat
-                    [ ", ",
-                      payloadTypeVariables
-                        & fmap (\(TypeVariable t) -> mconcat ["validate_" <> t, ": v.Validator[", t, "]"])
-                        & Text.intercalate ", "
-                    ]
-            maybePassedInValidators =
-              if null payloadTypeVariables
-                then ""
-                else
+                    [ "            return validation.validate_with_type_tag(value, '",
+                      tag,
+                      "', '",
+                      name,
+                      "', ",
+                      interface,
+                      ", ",
+                      name,
+                      ")\n"
+                    ],
+                  mconcat ["        return ", validatorName]
+                ]
+        decoderOutput =
+          let maybeTypeVariableValidatorArguments =
+                if null payloadTypeVariables
+                  then ""
+                  else
+                    mconcat
+                      [ ", ",
+                        payloadTypeVariables
+                          & fmap (\(TypeVariable t) -> mconcat ["validate_" <> t, ": validation.Validator[", t, "]"])
+                          & Text.intercalate ", "
+                      ]
+              maybePassedInValidators =
+                if null payloadTypeVariables
+                  then ""
+                  else
+                    mconcat
+                      [ "(",
+                        payloadTypeVariables
+                          & fmap (\(TypeVariable t) -> "validate_" <> t)
+                          & Text.intercalate ", ",
+                        ")"
+                      ]
+           in mconcat
+                [ "    @staticmethod\n",
                   mconcat
-                    [ "(",
-                      payloadTypeVariables
-                        & fmap (\(TypeVariable t) -> "validate_" <> t)
-                        & Text.intercalate ", ",
+                    [ "    def decode(string: typing.Union[str, bytes]",
+                      maybeTypeVariableValidatorArguments,
+                      ") -> validation.ValidationResult['",
+                      fullName,
+                      "']:\n"
+                    ],
+                  mconcat
+                    [ "        return validation.validate_from_string(string, ",
+                      name,
+                      ".validate",
+                      maybePassedInValidators,
                       ")"
                     ]
-         in mconcat
-              [ "    @staticmethod\n",
-                mconcat
-                  [ "    def decode(string: typing.Union[str, bytes]",
-                    maybeTypeVariableValidatorArguments,
-                    ") -> v.ValidationResult['",
-                    fullName,
-                    "']:\n"
-                  ],
-                mconcat
-                  [ "        return v.validate_from_string(string, ",
-                    name,
-                    ".validate",
-                    maybePassedInValidators,
-                    ")"
-                  ]
-              ]
-      encoderOutput =
-        mconcat
-          [ "    def encode(self) -> str:\n",
-            mconcat ["        return json.dumps({**self.__dict__, '", tag, "': '", name, "'})"]
+                ]
+        encoderOutput = outputEncoderForUnionConstructor fieldName constructor
+     in mconcat
+          [ "@dataclass(frozen=True)\n",
+            mconcat ["class ", name, "(", unionName, "):\n"],
+            maybeDataField,
+            validatorOutput,
+            "\n\n",
+            decoderOutput,
+            "\n\n",
+            encoderOutput
           ]
+
+outputEncoderForUnionConstructor :: FieldName -> Constructor -> Text
+outputEncoderForUnionConstructor (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
+  let payloadTypeVariables =
+        fromMaybe [] $ foldMap typeVariablesFrom maybePayload
+      maybeDataField =
+        maybe "" (dataEncoder >>> (", 'data': " <>)) maybePayload
+      dataEncoder (BasicType _) = "self.data"
+      dataEncoder (DefinitionReferenceType _) = "self.data.encode()"
+      dataEncoder fieldType = mconcat [encoderForFieldType ("", "") fieldType, "(self.data)"]
+      maybeTypeVariableEncoderArguments =
+        if null payloadTypeVariables
+          then ""
+          else
+            mconcat
+              [ ", ",
+                payloadTypeVariables
+                  & fmap
+                    ( \(TypeVariable t) ->
+                        mconcat ["encode_" <> t, ": encoding.Encoder[", t, "]"]
+                    )
+                  & Text.intercalate ", "
+              ]
+      interface = mconcat ["{", mconcat ["'", tag, "': '", name, "'", maybeDataField], "}"]
    in mconcat
-        [ "@dataclass(frozen=True)\n",
-          mconcat ["class ", name, "(", unionName, "):\n"],
-          maybeDataField,
-          validatorOutput,
-          "\n\n",
-          decoderOutput,
-          "\n\n",
-          encoderOutput
+        [ mconcat ["    def encode(self", maybeTypeVariableEncoderArguments, ") -> str:\n"],
+          mconcat ["        return json.dumps(", interface, ")"]
         ]
 
 typeVariableValidatorsAsArguments :: [TypeVariable] -> Text
 typeVariableValidatorsAsArguments [] = ""
 typeVariableValidatorsAsArguments typeVariables =
-  let types = fmap (\(TypeVariable t) -> mconcat ["v.Validator[", t, "]"]) typeVariables
+  let types = fmap (\(TypeVariable t) -> mconcat ["validation.Validator[", t, "]"]) typeVariables
    in typeVariables
         & validatorsForTypeVariables
         & zip types
