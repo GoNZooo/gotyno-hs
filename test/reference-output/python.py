@@ -55,6 +55,12 @@ class Event:
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Event']:
         return validation.validate_from_string(string, Event.validate)
 
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        raise NotImplementedError('`to_json` is not implemented for base class `Event`')
+
+    def encode(self) -> str:
+        raise NotImplementedError('`encode` is not implemented for base class `Event`')
+
 @dataclass(frozen=True)
 class Notification(Event):
     data: str
@@ -118,6 +124,12 @@ class Possibly(typing.Generic[T]):
     @staticmethod
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Possibly[T]']:
         return validation.validate_from_string(string, Possibly.validate(validate_T))
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        raise NotImplementedError('`to_json` is not implemented for base class `Possibly`')
+
+    def encode(self) -> str:
+        raise NotImplementedError('`encode` is not implemented for base class `Possibly`')
 
 @dataclass(frozen=True)
 class NotReally(Possibly[T]):

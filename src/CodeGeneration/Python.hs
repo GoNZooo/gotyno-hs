@@ -633,11 +633,28 @@ outputUnionBaseClass name tag constructors typeVariables =
         if null typeVariables
           then ""
           else mconcat ["(typing.Generic", joinTypeVariables typeVariables, ")"]
+      stubsOutput =
+        mconcat
+          [ "    def to_json(self) -> typing.Dict[str, typing.Any]:\n",
+            mconcat
+              [ "        raise NotImplementedError('`to_json` is not implemented for base class `",
+                name,
+                "`')\n\n"
+              ],
+            "    def encode(self) -> str:\n",
+            mconcat
+              [ "        raise NotImplementedError('`encode` is not implemented for base class `",
+                name,
+                "`')"
+              ]
+          ]
    in mconcat
         [ mconcat ["class ", name, maybeGenericNotation, ":\n"],
           validatorOutput,
           "\n\n",
-          decoderOutput
+          decoderOutput,
+          "\n\n",
+          stubsOutput
         ]
 
 outputUnionValidator :: Text -> FieldName -> [Constructor] -> [TypeVariable] -> Text
