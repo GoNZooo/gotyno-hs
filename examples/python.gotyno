@@ -15,6 +15,12 @@ union Event {
     AnotherEvent: SomeType
 }
 
+union(tag = kind) EventWithKind {
+    NotificationWithKind: String
+    LaunchWithKind
+    AnotherEventWithKind: SomeType
+}
+
 union Possibly <T>{
     NotReally
     Definitely: T

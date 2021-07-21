@@ -113,6 +113,73 @@ class AnotherEvent(Event):
     def encode(self) -> str:
         return json.dumps(self.to_json())
 
+class EventWithKind:
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['EventWithKind']:
+        return validation.validate_with_type_tags(value, 'kind', {'NotificationWithKind': NotificationWithKind.validate, 'LaunchWithKind': LaunchWithKind.validate, 'AnotherEventWithKind': AnotherEventWithKind.validate})
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EventWithKind']:
+        return validation.validate_from_string(string, EventWithKind.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        raise NotImplementedError('`to_json` is not implemented for base class `EventWithKind`')
+
+    def encode(self) -> str:
+        raise NotImplementedError('`encode` is not implemented for base class `EventWithKind`')
+
+@dataclass(frozen=True)
+class NotificationWithKind(EventWithKind):
+    data: str
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['NotificationWithKind']:
+        return validation.validate_with_type_tag(value, 'kind', 'NotificationWithKind', {'data': validation.validate_string}, NotificationWithKind)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['NotificationWithKind']:
+        return validation.validate_from_string(string, NotificationWithKind.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'kind': 'NotificationWithKind', 'data': self.data}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class LaunchWithKind(EventWithKind):
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['LaunchWithKind']:
+        return validation.validate_with_type_tag(value, 'kind', 'LaunchWithKind', {}, LaunchWithKind)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['LaunchWithKind']:
+        return validation.validate_from_string(string, LaunchWithKind.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'kind': 'LaunchWithKind'}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class AnotherEventWithKind(EventWithKind):
+    data: SomeType
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['AnotherEventWithKind']:
+        return validation.validate_with_type_tag(value, 'kind', 'AnotherEventWithKind', {'data': SomeType.validate}, AnotherEventWithKind)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['AnotherEventWithKind']:
+        return validation.validate_from_string(string, AnotherEventWithKind.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'kind': 'AnotherEventWithKind', 'data': self.data.to_json()}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
 T = typing.TypeVar('T')
 class Possibly(typing.Generic[T]):
     @staticmethod
