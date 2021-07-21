@@ -233,3 +233,22 @@ class Definitely(Possibly[T]):
 
     def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
         return json.dumps(self.to_json(T_to_json))
+
+class Color(enum.Enum):
+    red = 'ff0000'
+    green = '00ff00'
+    blue = '0000ff'
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['Color']:
+        return validation.validate_enumeration_member(value, Color)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Color']:
+        return validation.validate_from_string(string, Color.validate)
+
+    def to_json(self) -> typing.Any:
+        return self.value
+
+    def encode(self) -> str:
+        return str(self.value)

@@ -2,7 +2,6 @@ module CodeGeneration.Python where
 
 import CodeGeneration.Utilities (upperCaseFirstCharacter)
 import RIO
-import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Types
 
@@ -185,75 +184,61 @@ outputUntaggedUnionEncoder name cases =
 outputEnumeration :: Text -> [EnumerationValue] -> Text
 outputEnumeration name values =
   let typeOutput = outputEnumerationType name values
-      decoderOutput = outputEnumerationDecoder name values
-      encoderOutput = outputEnumerationEncoder values
-   in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
+      validatorOutput = outputEnumerationValidator name
+      decoderOutput = outputEnumerationDecoder name
+      encoderOutput = outputEnumerationEncoder
+   in mconcat [typeOutput, "\n\n", validatorOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
 
 outputEnumerationType :: Text -> [EnumerationValue] -> Text
 outputEnumerationType name values =
   let valuesOutput =
         values
           & fmap
-            ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
-                mconcat ["    | ", fsharpifyConstructorName i]
+            ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
+                mconcat ["    ", i, " = ", literalValue literal]
             )
           & Text.intercalate "\n"
-   in mconcat [mconcat ["type ", name, " =\n"], valuesOutput]
+      literalValue (LiteralString s) = "'" <> s <> "'"
+      literalValue (LiteralInteger i) = tshow i
+      literalValue (LiteralFloat f) = tshow f
+      literalValue (LiteralBoolean b) = tshow b
+   in mconcat [mconcat ["class ", name, "(enum.Enum):\n"], valuesOutput]
 
 fsharpifyConstructorName :: Text -> Text
 fsharpifyConstructorName = upperCaseFirstCharacter
 
-outputEnumerationDecoder :: Text -> [EnumerationValue] -> Text
-outputEnumerationDecoder unionName values =
-  let valuesOutput =
-        values
-          & fmap
-            ( \(EnumerationValue (EnumerationIdentifier i) value) ->
-                mconcat [outputLiteral value, ", ", fsharpifyConstructorName i]
-            )
-          & Text.intercalate "; "
-      outputLiteral (LiteralString s) = "\"" <> s <> "\""
-      outputLiteral (LiteralBoolean b) = bool "false" "true" b
-      outputLiteral (LiteralInteger i) = tshow i
-      outputLiteral (LiteralFloat f) = tshow f
-      valuesDecoder =
-        values
-          & PartialList.head
-          & ( \case
-                (EnumerationValue _identifier (LiteralString _s)) ->
-                  validatorForBasicType BasicString
-                (EnumerationValue _identifier (LiteralBoolean _s)) ->
-                  validatorForBasicType Boolean
-                (EnumerationValue _identifier (LiteralInteger _s)) ->
-                  validatorForBasicType I32
-                (EnumerationValue _identifier (LiteralFloat _s)) ->
-                  validatorForBasicType F32
-            )
-   in mconcat
-        [ mconcat ["    static member Decoder: Decoder<", unionName, "> =\n"],
-          mconcat ["        GotynoCoders.decodeOneOf ", valuesDecoder, " [|", valuesOutput, "|]"]
-        ]
+outputEnumerationValidator :: Text -> Text
+outputEnumerationValidator name =
+  mconcat
+    [ "    @staticmethod\n",
+      mconcat
+        [ "    def validate(value: validation.Unknown) -> validation.ValidationResult['",
+          name,
+          "']:\n"
+        ],
+      mconcat ["        return validation.validate_enumeration_member(value, ", name, ")"]
+    ]
 
-outputEnumerationEncoder :: [EnumerationValue] -> Text
-outputEnumerationEncoder values =
-  let caseOutput =
-        values
-          & fmap caseEncoder
-          & Text.intercalate "\n"
-      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralString s)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.string \"", s, "\""]
-      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralBoolean b)) =
-        let value = bool "false" "true" b
-         in mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.boolean ", value]
-      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralInteger integer)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.int32 ", tshow integer]
-      caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralFloat f)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.float32 ", tshow f]
-   in mconcat
-        [ mconcat ["    static member Encoder =\n"],
-          mconcat ["        function\n"],
-          caseOutput
-        ]
+outputEnumerationDecoder :: Text -> Text
+outputEnumerationDecoder name =
+  mconcat
+    [ "    @staticmethod\n",
+      mconcat
+        [ "    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['",
+          name,
+          "']:\n"
+        ],
+      mconcat ["        return validation.validate_from_string(string, ", name, ".validate)"]
+    ]
+
+outputEnumerationEncoder :: Text
+outputEnumerationEncoder =
+  mconcat
+    [ "    def to_json(self) -> typing.Any:\n",
+      "        return self.value\n\n",
+      "    def encode(self) -> str:\n",
+      "        return str(self.value)"
+    ]
 
 outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
