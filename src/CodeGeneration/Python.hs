@@ -42,30 +42,86 @@ outputDefinition (TypeDefinition (DefinitionName name) (EmbeddedUnion typeTag co
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: Text -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedUnion _unionName (FieldName _tag) _constructors =
-  ""
+outputEmbeddedUnion unionName fieldName constructors =
+  let baseClassOutput =
+        outputUnionBaseClass
+          unionName
+          fieldName
+          (embeddedConstructorsToConstructors constructors)
+          []
+      casesOutput = outputEmbeddedUnionCases unionName fieldName constructors
+   in mconcat [baseClassOutput, "\n\n", casesOutput]
 
-outputEmbeddedConstructorDecoders :: Text -> [EmbeddedConstructor] -> Text
-outputEmbeddedConstructorDecoders unionName =
-  fmap (outputEmbeddedConstructorDecoder unionName) >>> Text.intercalate "\n\n"
+outputEmbeddedUnionCases :: Text -> FieldName -> [EmbeddedConstructor] -> Text
+outputEmbeddedUnionCases unionName fieldName =
+  fmap (outputEmbeddedUnionCase unionName fieldName) >>> Text.intercalate "\n\n"
 
-outputEmbeddedConstructorDecoder :: Text -> EmbeddedConstructor -> Text
-outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName name) reference) =
-  let structFields = structFieldsFromReference reference
-      structFieldDecoders =
-        structFields
-          & fmap (outputValidatorForField >>> ("                " <>) >>> (<> "\n"))
-          & mconcat
-      constructorName = upperCaseFirstCharacter name
-   in mconcat
-        [ mconcat
-            ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
-          "        Decode.object (fun get ->\n",
-          mconcat ["            ", constructorName, " {\n"],
-          structFieldDecoders,
-          "            }\n",
-          "        )"
-        ]
+outputEmbeddedUnionCase :: Text -> FieldName -> EmbeddedConstructor -> Text
+outputEmbeddedUnionCase
+  unionName
+  tag
+  constructor@(EmbeddedConstructor (ConstructorName name) reference) =
+    let structFields = structFieldsFromReference reference
+        typesOutput =
+          structFields
+            & fmap
+              ( \(StructField (FieldName n) fieldType) ->
+                  mconcat ["    ", n, ": ", outputFieldType fieldType]
+              )
+            & Text.intercalate "\n"
+        validatorOutput = outputEmbeddedConstructorDecoder tag constructor
+        encoderOutput = outputEmbeddedConstructorEncoder tag constructor
+     in mconcat
+          [ "@dataclass\n",
+            mconcat ["class ", upperCaseFirstCharacter name, "(", unionName, "):\n"],
+            typesOutput,
+            "\n\n",
+            validatorOutput,
+            "\n\n",
+            encoderOutput
+          ]
+
+outputEmbeddedConstructorDecoder :: FieldName -> EmbeddedConstructor -> Text
+outputEmbeddedConstructorDecoder
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) reference) =
+    let typeName = upperCaseFirstCharacter name
+        DefinitionName referenceName = nameOfReference reference
+     in mconcat
+          [ "    @staticmethod\n",
+            mconcat ["    def validate(value: validation.Unknown) -> validation.ValidationResult['", typeName, "']:\n"],
+            mconcat
+              [ "        return validation.validate_with_type_tag_and_validator(value, '",
+                tag,
+                "', '",
+                name,
+                "', ",
+                referenceName,
+                ".validate, ",
+                typeName,
+                ")\n\n"
+              ],
+            "    @staticmethod\n",
+            mconcat
+              [ "    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['",
+                typeName,
+                "']:\n"
+              ],
+            mconcat ["        return validation.validate_from_string(string, ", typeName, ".validate)"]
+          ]
+
+outputEmbeddedConstructorEncoder :: FieldName -> EmbeddedConstructor -> Text
+outputEmbeddedConstructorEncoder
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) reference) =
+    let DefinitionName referenceName = nameOfReference reference
+        interface = mconcat ["{'", tag, "': '", name, "', **", referenceName, ".to_json(self)}"]
+     in mconcat
+          [ "    def to_json(self) -> typing.Dict[str, typing.Any]:\n",
+            mconcat ["        return ", interface, "\n\n"],
+            "    def encode(self) -> str:\n",
+            "        return json.dumps(self.to_json())"
+          ]
 
 outputEmbeddedConstructorTypes :: Text -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedConstructorTypes unionName fieldName constructors =
@@ -203,9 +259,6 @@ outputEnumerationType name values =
       literalValue (LiteralFloat f) = tshow f
       literalValue (LiteralBoolean b) = tshow b
    in mconcat [mconcat ["class ", name, "(enum.Enum):\n"], valuesOutput]
-
-fsharpifyConstructorName :: Text -> Text
-fsharpifyConstructorName = upperCaseFirstCharacter
 
 outputEnumerationValidator :: Text -> Text
 outputEnumerationValidator name =
@@ -666,7 +719,7 @@ outputUnionValidator name (FieldName tag) constructors typeVariables =
                       [ "'",
                         constructorName,
                         "': ",
-                        constructorName,
+                        upperCaseFirstCharacter constructorName,
                         ".validate",
                         maybeTypeVariableValidatorArguments
                       ]
@@ -1299,3 +1352,12 @@ joinTypeVariables typeVariables =
     & fmap (\(TypeVariable t) -> t)
     & Text.intercalate ", "
     & (\o -> "[" <> o <> "]")
+
+nameOfReference :: DefinitionReference -> DefinitionName
+nameOfReference (DefinitionReference (TypeDefinition name _)) = name
+nameOfReference (ImportedDefinitionReference _moduleName (TypeDefinition name _)) = name
+nameOfReference (AppliedGenericReference _fieldTypes (TypeDefinition name _)) = name
+nameOfReference (AppliedImportedGenericReference _moduleName _fieldTypes (TypeDefinition name _)) =
+  name
+nameOfReference (GenericDeclarationReference _moduleName name _fieldTypes) = name
+nameOfReference (DeclarationReference _moduleName name) = name
