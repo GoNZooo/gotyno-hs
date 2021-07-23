@@ -23,9 +23,6 @@ outputModule Module {definitions, imports} =
           definitionOutput
         ]
 
-fsharpifyModuleName :: Text -> Text
-fsharpifyModuleName = upperCaseFirstCharacter
-
 outputDefinition :: TypeDefinition -> Maybe Text
 outputDefinition (TypeDefinition (DefinitionName name) (Struct (PlainStruct fields))) =
   pure $ outputPlainStruct name fields
@@ -506,7 +503,7 @@ decoderForDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".validate"]
+    mconcat [moduleName, ".", name, ".validate"]
 decoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -521,7 +518,7 @@ decoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".validate ", appliedDecoders, ")"]
+     in mconcat ["(", moduleName, ".", name, ".validate ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -529,10 +526,10 @@ decoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".validate ", appliedDecoders, ")"]
+     in mconcat ["(", moduleName, ".", name, ".validate ", appliedDecoders, ")"]
 decoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".validate"]
+    mconcat [moduleName, ".", name, ".validate"]
 
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
@@ -1027,14 +1024,14 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name]
+    mconcat [moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [name, "<", appliedFieldTypes, ">"]
+     in mconcat [name, "[", appliedFieldTypes, "]"]
 outputDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
@@ -1042,7 +1039,7 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [fsharpifyModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
+     in mconcat [moduleName, ".", name, "[", appliedFieldTypes, "]"]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -1050,10 +1047,10 @@ outputDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-        maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [fsharpifyModuleName moduleName, ".", name, maybeAppliedOutput]
+        maybeAppliedOutput = if null appliedTypes then "" else mconcat ["[", appliedFieldTypes, "]"]
+     in mconcat [moduleName, ".", name, maybeAppliedOutput]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [fsharpifyModuleName moduleName, ".", name]
+  mconcat [moduleName, ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "str"
