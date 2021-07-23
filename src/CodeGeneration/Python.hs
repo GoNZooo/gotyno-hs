@@ -285,7 +285,7 @@ outputGenericStruct name typeVariables fields =
           [ mconcat ["@dataclass(frozen=True)\nclass ", fullName, ":\n"],
             fieldsOutput
           ]
-      fieldsOutput = fields & fmap (outputField 4) & mconcat
+      fieldsOutput = fields & fmap (outputField 4) & Text.intercalate "\n"
       validatorOutput = outputStructValidator name fields typeVariables
       decoderOutput = outputStructDecoder name typeVariables
       encoderOutput = outputStructEncoder fields typeVariables
