@@ -744,7 +744,15 @@ outputUnionDecoder unionName typeVariables =
             mconcat
               [ ", ",
                 typeVariables
-                  & fmap (\(TypeVariable t) -> mconcat ["validate_" <> t, ": validation.Validator[", t, "]"])
+                  & fmap
+                    ( \(TypeVariable t) ->
+                        mconcat
+                          [ "validate_" <> t,
+                            ": validation.Validator[",
+                            t,
+                            "]"
+                          ]
+                    )
                   & Text.intercalate
                     ", "
               ]
