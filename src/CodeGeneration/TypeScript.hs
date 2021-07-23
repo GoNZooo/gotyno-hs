@@ -1,4 +1,4 @@
-module CodeGeneration.TypeScript where
+module CodeGeneration.TypeScript (outputModule) where
 
 import CodeGeneration.Utilities (upperCaseFirstCharacter)
 import RIO
@@ -853,10 +853,6 @@ outputCaseTypeGuard
                     "    };\n",
                     "}"
                   ]
-
-typeVariablePredicateNames :: [TypeVariable] -> Text
-typeVariablePredicateNames =
-  fmap (\(TypeVariable t) -> "is" <> t) >>> Text.intercalate ", "
 
 typeVariablePredicateParameters :: [TypeVariable] -> Text
 typeVariablePredicateParameters =
