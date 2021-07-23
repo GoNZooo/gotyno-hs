@@ -1,4 +1,4 @@
-module CodeGeneration.Python where
+module CodeGeneration.Python (outputModule) where
 
 import CodeGeneration.Utilities (upperCaseFirstCharacter)
 import RIO
@@ -123,53 +123,6 @@ outputEmbeddedConstructorEncoder
             "        return json.dumps(self.to_json())"
           ]
 
-outputEmbeddedConstructorTypes :: Text -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedConstructorTypes unionName fieldName constructors =
-  constructors & fmap (outputEmbeddedConstructorType unionName fieldName) & Text.intercalate "\n\n"
-
-outputEmbeddedConstructorType :: Text -> FieldName -> EmbeddedConstructor -> Text
-outputEmbeddedConstructorType
-  unionName
-  (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) fields) =
-    let fieldsOutput =
-          fields
-            & structFieldsFromReference
-            & fmap (outputField 8)
-            & Text.intercalate ""
-        tagFieldOutput = mconcat ["    ", tag, ": ", tagValue, ";"]
-        tagValue = unionEnumConstructorTag unionName name
-     in mconcat
-          [ mconcat ["export type ", name, " = {\n"],
-            mconcat [tagFieldOutput, "\n"],
-            fieldsOutput,
-            "};"
-          ]
-
-outputEmbeddedCaseConstructors :: Text -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedCaseConstructors unionName typeTag =
-  fmap (outputEmbeddedCaseConstructor unionName typeTag)
-    >>> Text.intercalate "\n\n"
-
-outputEmbeddedCaseConstructor :: Text -> FieldName -> EmbeddedConstructor -> Text
-outputEmbeddedCaseConstructor
-  unionName
-  (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) definitionReference) =
-    mconcat
-      [ mconcat
-          [ "export function ",
-            name,
-            "(data: ",
-            outputDefinitionReference definitionReference,
-            "): ",
-            name,
-            " {\n"
-          ],
-        mconcat ["    return {", tag, ": ", unionEnumConstructorTag unionName name, ", ...data};\n"],
-        "}"
-      ]
-
 structFieldsFromReference :: DefinitionReference -> [StructField]
 structFieldsFromReference
   (DefinitionReference (TypeDefinition _name (Struct (PlainStruct fields)))) = fields
@@ -242,45 +195,6 @@ outputUntaggedUnionInterface unionName cases =
           "    @staticmethod\n",
           "    def encode(value) -> str:\n",
           "        return json.dumps(value.to_json())"
-        ]
-
-outputUntaggedUnionDecoder :: Text -> [FieldType] -> Text
-outputUntaggedUnionDecoder name cases =
-  let caseDecodersOutput = cases & fmap decoderForCase & Text.intercalate "\n\n"
-      decoderForCase fieldType =
-        let caseName = name <> fieldTypeName fieldType
-         in mconcat
-              [ mconcat ["    static member ", caseName, "Decoder: Decoder<", name, "> =\n"],
-                mconcat ["        Decode.map ", caseName, " ", validatorForFieldType fieldType]
-              ]
-      oneOfListOutput =
-        cases & fmap oneOfCaseOutput & mconcat
-      oneOfCaseOutput caseFieldType =
-        mconcat ["                ", name, ".", name, fieldTypeName caseFieldType, "Decoder\n"]
-   in mconcat
-        [ caseDecodersOutput,
-          "\n\n",
-          mconcat ["    static member Decoder: Decoder<", name, "> =\n"],
-          mconcat ["        Decode.oneOf\n"],
-          mconcat ["            [\n"],
-          oneOfListOutput,
-          mconcat ["            ]"]
-        ]
-
-outputUntaggedUnionEncoder :: Text -> [FieldType] -> Text
-outputUntaggedUnionEncoder name cases =
-  let caseEncodersOutput = cases & fmap encoderForCase & Text.intercalate "\n\n"
-      encoderForCase caseFieldType =
-        mconcat
-          [ mconcat
-              ["        | ", name, fieldTypeName caseFieldType, " payload ->\n"],
-            mconcat
-              ["            ", encoderForFieldType ("", "") caseFieldType, " payload"]
-          ]
-   in mconcat
-        [ "    static member Encoder =\n",
-          "        function\n",
-          caseEncodersOutput
         ]
 
 outputEnumeration :: Text -> [EnumerationValue] -> Text
@@ -1032,87 +946,6 @@ typeVariableValidatorsAsArguments typeVariables =
 validatorsForTypeVariables :: [TypeVariable] -> [Text]
 validatorsForTypeVariables = fmap (TypeVariableReferenceType >>> validatorForFieldType)
 
-typeVariableEncodersAsArguments :: [TypeVariable] -> Text
-typeVariableEncodersAsArguments [] = ""
-typeVariableEncodersAsArguments typeVariables =
-  " " <> (encodersForTypeVariables typeVariables & Text.intercalate " ")
-
-encodersForTypeVariables :: [TypeVariable] -> [Text]
-encodersForTypeVariables = fmap (TypeVariableReferenceType >>> encoderForFieldType ("", ""))
-
-outputConstructorDecoder :: Text -> [TypeVariable] -> Constructor -> Text
-outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName name) maybePayload) =
-  let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
-      constructorName = upperCaseFirstCharacter name
-      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", constructorName]
-      payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-      maybeArguments = typeVariableValidatorsAsArguments payloadTypeVariables
-      fullName =
-        if null typeVariables
-          then unionName
-          else mconcat [unionName, joinTypeVariables typeVariables]
-      decoderWithDataField payload =
-        mconcat
-          [ "Decode.object (fun get -> ",
-            constructorName,
-            "(get.Required.Field \"data\" ",
-            validatorForFieldType payload,
-            "))"
-          ]
-   in mconcat
-        [ mconcat
-            [ "    static member ",
-              constructorName,
-              "Decoder",
-              maybeArguments,
-              ": Decoder<",
-              fullName,
-              "> =\n"
-            ],
-          mconcat ["        ", decoder]
-        ]
-
-outputUnionEncoder :: FieldName -> [Constructor] -> [TypeVariable] -> Text
-outputUnionEncoder typeTag constructors typeVariables =
-  let caseEncodingOutput =
-        constructors & fmap (outputConstructorEncoder typeTag) & Text.intercalate "\n\n"
-      maybeArguments = typeVariableEncodersAsArguments typeVariables
-   in mconcat
-        [ mconcat ["    static member Encoder", maybeArguments, " =\n"],
-          mconcat ["        function\n"],
-          caseEncodingOutput
-        ]
-
-outputConstructorEncoder :: FieldName -> Constructor -> Text
-outputConstructorEncoder (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
-  let dataPart = maybe "" encoderWithDataField maybePayload
-      typeTagPart = mconcat ["\"", tag, "\", Encode.string \"", name, "\""]
-      dataIndentation = "                            "
-      encoderWithDataField payload =
-        mconcat ["\n", dataIndentation, "\"data\", ", encoderForFieldType ("", "") payload, " payload"]
-      interface = mconcat ["[ ", typeTagPart, dataPart, " ]"]
-      maybePayloadPart = maybe "" (const " payload") maybePayload
-   in mconcat
-        [ mconcat ["        | ", upperCaseFirstCharacter name, maybePayloadPart, " ->\n"],
-          mconcat ["            Encode.object ", interface]
-        ]
-
-outputCaseUnion :: Text -> [Constructor] -> [TypeVariable] -> Text
-outputCaseUnion name constructors typeVariables =
-  let cases =
-        constructors
-          & fmap
-            ( \(Constructor (ConstructorName constructorName) maybePayload) ->
-                let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", upperCaseFirstCharacter constructorName, payload]
-            )
-          & Text.intercalate "\n"
-      maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
-   in mconcat
-        [ mconcat ["type ", name, maybeTypeVariables, " =\n"],
-          cases
-        ]
-
 typeVariablesFrom :: FieldType -> Maybe [TypeVariable]
 typeVariablesFrom (TypeVariableReferenceType typeVariable) = pure [typeVariable]
 typeVariablesFrom (ComplexType (ArrayType _size fieldType)) = typeVariablesFrom fieldType
@@ -1164,92 +997,10 @@ typeVariablesFromDefinition (TypeDefinition _name (Union _tagType (GenericUnion 
 typeVariablesFromDefinition (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
   pure typeVariables
 
-outputUnionTagEnumeration :: Text -> [Constructor] -> Text
-outputUnionTagEnumeration name constructors =
-  let constructorCasesOutput =
-        constructors
-          & fmap
-            ( \(Constructor (ConstructorName constructorName) _payload) ->
-                mconcat ["    ", constructorName, " = \"", constructorName, "\",\n"]
-            )
-          & mconcat
-   in mconcat
-        [ mconcat ["export enum ", name, "Tag {\n"],
-          constructorCasesOutput,
-          "}"
-        ]
-
-outputCaseTypes :: Text -> FieldName -> [Constructor] -> Text
-outputCaseTypes unionName typeTag constructors =
-  constructors
-    & fmap (outputCaseType unionName typeTag)
-    & Text.intercalate "\n\n"
-
-outputCaseType :: Text -> FieldName -> Constructor -> Text
-outputCaseType
-  unionName
-  (FieldName tag)
-  (Constructor (ConstructorName name) maybePayload) =
-    let payloadLine = maybe "" (\p -> "    data: " <> outputFieldType p <> ";\n") maybePayload
-        maybeTypeVariables = maybe "" (typeVariablesFrom >>> maybeJoinTypeVariables) maybePayload
-     in mconcat
-          [ mconcat ["export type ", name, maybeTypeVariables, " = {\n"],
-            mconcat ["    ", tag, ": ", unionEnumConstructorTag unionName name, ";\n"],
-            payloadLine,
-            "};"
-          ]
-
-outputCaseConstructors :: Text -> FieldName -> [Constructor] -> Text
-outputCaseConstructors unionName typeTag constructors =
-  constructors
-    & fmap (outputCaseConstructor unionName typeTag)
-    & Text.intercalate "\n\n"
-
-outputCaseConstructor :: Text -> FieldName -> Constructor -> Text
-outputCaseConstructor
-  unionName
-  (FieldName tag)
-  (Constructor (ConstructorName name) maybePayload) =
-    let argumentFieldAndType = maybe "" (\p -> "data: " <> outputFieldType p) maybePayload
-        maybeTypeVariables = maybe "" joinTypeVariables (maybePayload >>= typeVariablesFrom)
-     in mconcat
-          [ mconcat
-              [ "export function ",
-                name,
-                maybeTypeVariables,
-                "(",
-                argumentFieldAndType,
-                "): ",
-                name,
-                maybeTypeVariables,
-                " {\n"
-              ],
-            mconcat
-              ( [ "    return {",
-                  tag,
-                  ": ",
-                  unionEnumConstructorTag unionName name
-                ]
-                  <> maybe [] (const [", data"]) maybePayload
-              )
-              <> "};\n",
-            "}"
-          ]
-
-unionEnumConstructorTag :: Text -> Text -> Text
-unionEnumConstructorTag unionName constructorName = mconcat [unionName, "Tag.", constructorName]
-
 outputField :: Int -> StructField -> Text
 outputField indentation (StructField (FieldName name) fieldType) =
   let indent = Text.pack $ replicate indentation ' '
    in indent <> mconcat [name, ": ", outputFieldType fieldType]
-
-sanitizeName :: Text -> Text
-sanitizeName "type" = "``type``"
-sanitizeName "private" = "``private``"
-sanitizeName "class" = "``class``"
-sanitizeName "public" = "``public``"
-sanitizeName name = name
 
 outputFieldType :: FieldType -> Text
 outputFieldType (LiteralType (LiteralString text)) = "typing.Literal['" <> text <> "']"
@@ -1268,9 +1019,6 @@ outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =
   outputDefinitionReference definitionReference
 outputFieldType (TypeVariableReferenceType (TypeVariable t)) = t
-
-fsharpifyTypeVariable :: Text -> Text
-fsharpifyTypeVariable t = t & Text.toLower & ("'" <>)
 
 outputDefinitionReference :: DefinitionReference -> Text
 outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
@@ -1385,9 +1133,6 @@ fieldTypeName
 fieldTypeName
   (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
     definitionName
-
-maybeJoinTypeVariables :: Maybe [TypeVariable] -> Text
-maybeJoinTypeVariables = maybe "" joinTypeVariables
 
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =
