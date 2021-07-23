@@ -59,3 +59,30 @@ union(tag = media_type, embedded) KnownForEmbeddedWithUpperCase {
     Movie: KnownForMovieWithoutTypeTag
     Tv: KnownForShowWithoutTypeTag
 }
+
+struct KnownForMovie {
+    media_type: "movie"
+    poster_path: ?String
+    id: U32
+    title: ?String
+    vote_average: F32
+    release_date: ?String
+    overview: String
+}
+
+struct KnownForShow {
+    media_type: "tv"
+    poster_path: ?String
+    id: U32
+    vote_average: F32
+    overview: String
+    first_air_date: ?String
+    name: ?String
+}
+
+untagged union KnownFor {
+    KnownForShow
+    KnownForMovie
+    String
+    F32
+}

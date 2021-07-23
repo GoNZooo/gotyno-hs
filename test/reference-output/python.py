@@ -420,3 +420,69 @@ class Tv(KnownForEmbeddedWithUpperCase):
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class KnownForMovie:
+    media_type: typing.Literal['movie']
+    poster_path: typing.Optional[str]
+    id: int
+    title: typing.Optional[str]
+    vote_average: float
+    release_date: typing.Optional[str]
+    overview: str
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['KnownForMovie']:
+        return validation.validate_interface(value, {'media_type': validation.validate_literal('movie'), 'poster_path': validation.validate_optional(validation.validate_string), 'id': validation.validate_int, 'title': validation.validate_optional(validation.validate_string), 'vote_average': validation.validate_float, 'release_date': validation.validate_optional(validation.validate_string), 'overview': validation.validate_string}, KnownForMovie)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['KnownForMovie']:
+        return validation.validate_from_string(string, KnownForMovie.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'media_type': 'movie', 'poster_path': encoding.optional_to_json(encoding.basic_to_json)(self.poster_path), 'id': self.id, 'title': encoding.optional_to_json(encoding.basic_to_json)(self.title), 'vote_average': self.vote_average, 'release_date': encoding.optional_to_json(encoding.basic_to_json)(self.release_date), 'overview': self.overview}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class KnownForShow:
+    media_type: typing.Literal['tv']
+    poster_path: typing.Optional[str]
+    id: int
+    vote_average: float
+    overview: str
+    first_air_date: typing.Optional[str]
+    name: typing.Optional[str]
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['KnownForShow']:
+        return validation.validate_interface(value, {'media_type': validation.validate_literal('tv'), 'poster_path': validation.validate_optional(validation.validate_string), 'id': validation.validate_int, 'vote_average': validation.validate_float, 'overview': validation.validate_string, 'first_air_date': validation.validate_optional(validation.validate_string), 'name': validation.validate_optional(validation.validate_string)}, KnownForShow)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['KnownForShow']:
+        return validation.validate_from_string(string, KnownForShow.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'media_type': 'tv', 'poster_path': encoding.optional_to_json(encoding.basic_to_json)(self.poster_path), 'id': self.id, 'vote_average': self.vote_average, 'overview': self.overview, 'first_air_date': encoding.optional_to_json(encoding.basic_to_json)(self.first_air_date), 'name': encoding.optional_to_json(encoding.basic_to_json)(self.name)}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+KnownFor = typing.Union[KnownForShow, KnownForMovie, str, float]
+class KnownForInterface:
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['KnownFor']:
+        return validation.validate_one_of(value, [KnownForShow.validate, KnownForMovie.validate, validation.validate_string, validation.validate_float])
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['KnownFor']:
+        return validation.validate_from_string(string, KnownForInterface.validate)
+
+    @staticmethod
+    def to_json(value) -> typing.Any:
+        return encoding.one_of_to_json(value, {KnownForShow: KnownForShow.to_json, KnownForMovie: KnownForMovie.to_json, str: encoding.basic_to_json, float: encoding.basic_to_json})
+
+    @staticmethod
+    def encode(value) -> str:
+        return json.dumps(value.to_json())

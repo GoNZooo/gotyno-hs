@@ -184,19 +184,65 @@ embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
 
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
-  let typeOutput = mconcat ["type ", unionName, " =\n", unionOutput]
-      unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n"
-      outputCaseLine fieldType =
+  let typeOutput = mconcat [unionName, " = ", "typing.Union[", unionOutput, "]"]
+      unionOutput = cases & fmap outputCase & Text.intercalate ", "
+      outputCase fieldType = outputFieldType fieldType
+      interfaceOutput = outputUntaggedUnionInterface unionName cases
+   in mconcat [typeOutput, "\n", interfaceOutput]
+
+outputUntaggedUnionInterface :: Text -> [FieldType] -> Text
+outputUntaggedUnionInterface unionName cases =
+  let oneOfValidatorsOutput =
         mconcat
-          [ "    | ",
-            unionName,
-            fieldTypeName fieldType,
-            " of ",
-            outputFieldType fieldType
+          [ "[",
+            cases
+              & fmap validatorForFieldType
+              & Text.intercalate ", ",
+            "]"
           ]
-      decoderOutput = outputUntaggedUnionDecoder unionName cases
-      encoderOutput = outputUntaggedUnionEncoder unionName cases
-   in Text.intercalate "\n\n" [typeOutput, decoderOutput, encoderOutput]
+      oneOfToJSONInterface =
+        mconcat
+          [ "{",
+            cases
+              & fmap
+                ( \fieldType ->
+                    fieldTypeName fieldType <> ": " <> encoderForFieldType ("", "") fieldType
+                )
+              & Text.intercalate ", ",
+            "}"
+          ]
+   in mconcat
+        [ mconcat ["class ", unionName, "Interface:\n"],
+          "    @staticmethod\n",
+          mconcat
+            [ "    def validate(value: validation.Unknown) -> validation.ValidationResult['",
+              unionName,
+              "']:\n"
+            ],
+          mconcat
+            [ "        return validation.validate_one_of(value, ",
+              oneOfValidatorsOutput,
+              ")\n\n"
+            ],
+          "    @staticmethod\n",
+          mconcat
+            [ "    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['",
+              unionName,
+              "']:\n"
+            ],
+          mconcat
+            [ "        return validation.validate_from_string(string, ",
+              unionName,
+              "Interface.validate)\n\n"
+            ],
+          "    @staticmethod\n",
+          "    def to_json(value) -> typing.Any:\n",
+          mconcat
+            ["        return encoding.one_of_to_json(value, ", oneOfToJSONInterface, ")\n\n"],
+          "    @staticmethod\n",
+          "    def encode(value) -> str:\n",
+          "        return json.dumps(value.to_json())"
+        ]
 
 outputUntaggedUnionDecoder :: Text -> [FieldType] -> Text
 outputUntaggedUnionDecoder name cases =
@@ -1281,28 +1327,25 @@ fieldTypeName :: FieldType -> Text
 fieldTypeName (LiteralType _) = error "Just don't use literals in untagged unions"
 fieldTypeName (RecursiveReferenceType _) =
   error "Just don't use recursive references in untagged unions"
-fieldTypeName (BasicType BasicString) = "String"
-fieldTypeName (BasicType F32) = "F32"
-fieldTypeName (BasicType F64) = "F64"
-fieldTypeName (BasicType U8) = "U8"
-fieldTypeName (BasicType U16) = "U16"
-fieldTypeName (BasicType U32) = "U32"
-fieldTypeName (BasicType U64) = "U64"
-fieldTypeName (BasicType U128) = "U128"
-fieldTypeName (BasicType I8) = "I8"
-fieldTypeName (BasicType I16) = "I16"
-fieldTypeName (BasicType I32) = "I32"
-fieldTypeName (BasicType I64) = "I64"
-fieldTypeName (BasicType I128) = "I128"
-fieldTypeName (BasicType Boolean) = "Boolean"
+fieldTypeName (BasicType BasicString) = "str"
+fieldTypeName (BasicType F32) = "float"
+fieldTypeName (BasicType F64) = "float"
+fieldTypeName (BasicType U8) = "int"
+fieldTypeName (BasicType U16) = "int"
+fieldTypeName (BasicType U32) = "int"
+fieldTypeName (BasicType U64) = "int"
+fieldTypeName (BasicType U128) = "int"
+fieldTypeName (BasicType I8) = "int"
+fieldTypeName (BasicType I16) = "int"
+fieldTypeName (BasicType I32) = "int"
+fieldTypeName (BasicType I64) = "int"
+fieldTypeName (BasicType I128) = "int"
+fieldTypeName (BasicType Boolean) = "bool"
 fieldTypeName (TypeVariableReferenceType (TypeVariable t)) = t
-fieldTypeName (ComplexType (ArrayType _ arrayFieldType)) =
-  "ArrayOf" <> fieldTypeName arrayFieldType
-fieldTypeName (ComplexType (SliceType sliceFieldType)) =
-  "SliceOf" <> fieldTypeName sliceFieldType
+fieldTypeName (ComplexType (ArrayType _ _arrayFieldType)) = "list"
+fieldTypeName (ComplexType (SliceType _sliceFieldType)) = "list"
 fieldTypeName (ComplexType (PointerType pointerFieldType)) = fieldTypeName pointerFieldType
-fieldTypeName (ComplexType (OptionalType optionalFieldType)) =
-  "OptionalOf" <> fieldTypeName optionalFieldType
+fieldTypeName (ComplexType (OptionalType optionalFieldType)) = fieldTypeName optionalFieldType
 fieldTypeName
   ( DefinitionReferenceType
       (DefinitionReference (TypeDefinition (DefinitionName definitionName) _))
@@ -1316,29 +1359,29 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedGenericReference
-          fieldTypes
+          _fieldTypes
           (TypeDefinition (DefinitionName definitionName) _)
         )
     ) =
-    mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
+    definitionName
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedImportedGenericReference
           _moduleName
-          (AppliedTypes fieldTypes)
+          (AppliedTypes _fieldTypes)
           (TypeDefinition (DefinitionName definitionName) _)
         )
     ) =
-    mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
+    definitionName
 fieldTypeName
   ( DefinitionReferenceType
       ( GenericDeclarationReference
           (ModuleName _moduleName)
           (DefinitionName definitionName)
-          (AppliedTypes fieldTypes)
+          (AppliedTypes _fieldTypes)
         )
     ) =
-    mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
+    definitionName
 fieldTypeName
   (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
     definitionName
