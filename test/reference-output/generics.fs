@@ -4,64 +4,64 @@ open Thoth.Json.Net
 
 type UsingGenerics =
     {
-        field1: Basic.Maybe<string>
-        field2: Basic.Either<string, uint32>
+        Field1: Basic.Maybe<string>
+        Field2: Basic.Either<string, uint32>
     }
 
     static member Decoder: Decoder<UsingGenerics> =
         Decode.object (fun get ->
             {
-                field1 = get.Required.Field "field1" (Basic.Maybe.Decoder Decode.string)
-                field2 = get.Required.Field "field2" (Basic.Either.Decoder Decode.string Decode.uint32)
+                Field1 = get.Required.Field "field1" (Basic.Maybe.Decoder Decode.string)
+                Field2 = get.Required.Field "field2" (Basic.Either.Decoder Decode.string Decode.uint32)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "field1", (Basic.Maybe.Encoder Encode.string) value.field1
-                "field2", (Basic.Either.Encoder Encode.string Encode.uint32) value.field2
+                "field1", (Basic.Maybe.Encoder Encode.string) value.Field1
+                "field2", (Basic.Either.Encoder Encode.string Encode.uint32) value.Field2
             ]
 
 type UsingOwnGenerics<'t> =
     {
-        field1: Basic.Maybe<'t>
+        Field1: Basic.Maybe<'t>
     }
 
     static member Decoder decodeT: Decoder<UsingOwnGenerics<'t>> =
         Decode.object (fun get ->
             {
-                field1 = get.Required.Field "field1" (Basic.Maybe.Decoder decodeT)
+                Field1 = get.Required.Field "field1" (Basic.Maybe.Decoder decodeT)
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "field1", (Basic.Maybe.Encoder encodeT) value.field1
+                "field1", (Basic.Maybe.Encoder encodeT) value.Field1
             ]
 
 type KnownForMovie =
     {
-        media_type: string
-        poster_path: option<string>
-        id: uint32
-        title: option<string>
-        vote_average: float32
-        release_date: option<string>
-        overview: string
+        Media_type: string
+        Poster_path: option<string>
+        Id: uint32
+        Title: option<string>
+        Vote_average: float32
+        Release_date: option<string>
+        Overview: string
     }
 
     static member Decoder: Decoder<KnownForMovie> =
         Decode.object (fun get ->
             {
-                media_type = get.Required.Field "media_type" (GotynoCoders.decodeLiteralString "movie")
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                title = get.Optional.Field "title" Decode.string
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                release_date = get.Optional.Field "release_date" Decode.string
-                overview = get.Required.Field "overview" Decode.string
+                Media_type = get.Required.Field "media_type" (GotynoCoders.decodeLiteralString "movie")
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Title = get.Optional.Field "title" Decode.string
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Release_date = get.Optional.Field "release_date" Decode.string
+                Overview = get.Required.Field "overview" Decode.string
             }
         )
 
@@ -69,35 +69,35 @@ type KnownForMovie =
         Encode.object
             [
                 "media_type", Encode.string "movie"
-                "poster_path", Encode.option Encode.string value.poster_path
-                "id", Encode.uint32 value.id
-                "title", Encode.option Encode.string value.title
-                "vote_average", Encode.float32 value.vote_average
-                "release_date", Encode.option Encode.string value.release_date
-                "overview", Encode.string value.overview
+                "poster_path", Encode.option Encode.string value.Poster_path
+                "id", Encode.uint32 value.Id
+                "title", Encode.option Encode.string value.Title
+                "vote_average", Encode.float32 value.Vote_average
+                "release_date", Encode.option Encode.string value.Release_date
+                "overview", Encode.string value.Overview
             ]
 
 type KnownForShow =
     {
-        media_type: string
-        poster_path: option<string>
-        id: uint32
-        vote_average: float32
-        overview: string
-        first_air_date: option<string>
-        name: option<string>
+        Media_type: string
+        Poster_path: option<string>
+        Id: uint32
+        Vote_average: float32
+        Overview: string
+        First_air_date: option<string>
+        Name: option<string>
     }
 
     static member Decoder: Decoder<KnownForShow> =
         Decode.object (fun get ->
             {
-                media_type = get.Required.Field "media_type" (GotynoCoders.decodeLiteralString "tv")
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                overview = get.Required.Field "overview" Decode.string
-                first_air_date = get.Optional.Field "first_air_date" Decode.string
-                name = get.Optional.Field "name" Decode.string
+                Media_type = get.Required.Field "media_type" (GotynoCoders.decodeLiteralString "tv")
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Overview = get.Required.Field "overview" Decode.string
+                First_air_date = get.Optional.Field "first_air_date" Decode.string
+                Name = get.Optional.Field "name" Decode.string
             }
         )
 
@@ -105,12 +105,12 @@ type KnownForShow =
         Encode.object
             [
                 "media_type", Encode.string "tv"
-                "poster_path", Encode.option Encode.string value.poster_path
-                "id", Encode.uint32 value.id
-                "vote_average", Encode.float32 value.vote_average
-                "overview", Encode.string value.overview
-                "first_air_date", Encode.option Encode.string value.first_air_date
-                "name", Encode.option Encode.string value.name
+                "poster_path", Encode.option Encode.string value.Poster_path
+                "id", Encode.uint32 value.Id
+                "vote_average", Encode.float32 value.Vote_average
+                "overview", Encode.string value.Overview
+                "first_air_date", Encode.option Encode.string value.First_air_date
+                "name", Encode.option Encode.string value.Name
             ]
 
 type KnownFor =
@@ -156,68 +156,68 @@ type KnownFor =
 
 type KnownForMovieWithoutTypeTag =
     {
-        poster_path: option<string>
-        id: uint32
-        title: option<string>
-        vote_average: float32
-        release_date: option<string>
-        overview: string
+        Poster_path: option<string>
+        Id: uint32
+        Title: option<string>
+        Vote_average: float32
+        Release_date: option<string>
+        Overview: string
     }
 
     static member Decoder: Decoder<KnownForMovieWithoutTypeTag> =
         Decode.object (fun get ->
             {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                title = get.Optional.Field "title" Decode.string
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                release_date = get.Optional.Field "release_date" Decode.string
-                overview = get.Required.Field "overview" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Title = get.Optional.Field "title" Decode.string
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Release_date = get.Optional.Field "release_date" Decode.string
+                Overview = get.Required.Field "overview" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "poster_path", Encode.option Encode.string value.poster_path
-                "id", Encode.uint32 value.id
-                "title", Encode.option Encode.string value.title
-                "vote_average", Encode.float32 value.vote_average
-                "release_date", Encode.option Encode.string value.release_date
-                "overview", Encode.string value.overview
+                "poster_path", Encode.option Encode.string value.Poster_path
+                "id", Encode.uint32 value.Id
+                "title", Encode.option Encode.string value.Title
+                "vote_average", Encode.float32 value.Vote_average
+                "release_date", Encode.option Encode.string value.Release_date
+                "overview", Encode.string value.Overview
             ]
 
 type KnownForShowWithoutTypeTag =
     {
-        poster_path: option<string>
-        id: uint32
-        vote_average: float32
-        overview: string
-        first_air_date: option<string>
-        name: option<string>
+        Poster_path: option<string>
+        Id: uint32
+        Vote_average: float32
+        Overview: string
+        First_air_date: option<string>
+        Name: option<string>
     }
 
     static member Decoder: Decoder<KnownForShowWithoutTypeTag> =
         Decode.object (fun get ->
             {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                overview = get.Required.Field "overview" Decode.string
-                first_air_date = get.Optional.Field "first_air_date" Decode.string
-                name = get.Optional.Field "name" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Overview = get.Required.Field "overview" Decode.string
+                First_air_date = get.Optional.Field "first_air_date" Decode.string
+                Name = get.Optional.Field "name" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "poster_path", Encode.option Encode.string value.poster_path
-                "id", Encode.uint32 value.id
-                "vote_average", Encode.float32 value.vote_average
-                "overview", Encode.string value.overview
-                "first_air_date", Encode.option Encode.string value.first_air_date
-                "name", Encode.option Encode.string value.name
+                "poster_path", Encode.option Encode.string value.Poster_path
+                "id", Encode.uint32 value.Id
+                "vote_average", Encode.float32 value.Vote_average
+                "overview", Encode.string value.Overview
+                "first_air_date", Encode.option Encode.string value.First_air_date
+                "name", Encode.option Encode.string value.Name
             ]
 
 type KnownForEmbedded =
@@ -227,24 +227,24 @@ type KnownForEmbedded =
     static member MovieStartingWithLowercaseDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
             MovieStartingWithLowercase {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                title = get.Optional.Field "title" Decode.string
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                release_date = get.Optional.Field "release_date" Decode.string
-                overview = get.Required.Field "overview" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Title = get.Optional.Field "title" Decode.string
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Release_date = get.Optional.Field "release_date" Decode.string
+                Overview = get.Required.Field "overview" Decode.string
             }
         )
 
     static member TvStartingWithLowercaseDecoder: Decoder<KnownForEmbedded> =
         Decode.object (fun get ->
             TvStartingWithLowercase {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                overview = get.Required.Field "overview" Decode.string
-                first_air_date = get.Optional.Field "first_air_date" Decode.string
-                name = get.Optional.Field "name" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Overview = get.Required.Field "overview" Decode.string
+                First_air_date = get.Optional.Field "first_air_date" Decode.string
+                Name = get.Optional.Field "name" Decode.string
             }
         )
 
@@ -262,24 +262,24 @@ type KnownForEmbedded =
             Encode.object
                 [
                     "media_type", Encode.string "movieStartingWithLowercase"
-                    "poster_path", Encode.option Encode.string payload.poster_path
-                    "id", Encode.uint32 payload.id
-                    "title", Encode.option Encode.string payload.title
-                    "vote_average", Encode.float32 payload.vote_average
-                    "release_date", Encode.option Encode.string payload.release_date
-                    "overview", Encode.string payload.overview
+                    "poster_path", Encode.option Encode.string payload.Poster_path
+                    "id", Encode.uint32 payload.Id
+                    "title", Encode.option Encode.string payload.Title
+                    "vote_average", Encode.float32 payload.Vote_average
+                    "release_date", Encode.option Encode.string payload.Release_date
+                    "overview", Encode.string payload.Overview
                 ]
 
         | TvStartingWithLowercase payload ->
             Encode.object
                 [
                     "media_type", Encode.string "tvStartingWithLowercase"
-                    "poster_path", Encode.option Encode.string payload.poster_path
-                    "id", Encode.uint32 payload.id
-                    "vote_average", Encode.float32 payload.vote_average
-                    "overview", Encode.string payload.overview
-                    "first_air_date", Encode.option Encode.string payload.first_air_date
-                    "name", Encode.option Encode.string payload.name
+                    "poster_path", Encode.option Encode.string payload.Poster_path
+                    "id", Encode.uint32 payload.Id
+                    "vote_average", Encode.float32 payload.Vote_average
+                    "overview", Encode.string payload.Overview
+                    "first_air_date", Encode.option Encode.string payload.First_air_date
+                    "name", Encode.option Encode.string payload.Name
                 ]
 
 type KnownForEmbeddedWithUpperCase =
@@ -289,24 +289,24 @@ type KnownForEmbeddedWithUpperCase =
     static member MovieDecoder: Decoder<KnownForEmbeddedWithUpperCase> =
         Decode.object (fun get ->
             Movie {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                title = get.Optional.Field "title" Decode.string
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                release_date = get.Optional.Field "release_date" Decode.string
-                overview = get.Required.Field "overview" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Title = get.Optional.Field "title" Decode.string
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Release_date = get.Optional.Field "release_date" Decode.string
+                Overview = get.Required.Field "overview" Decode.string
             }
         )
 
     static member TvDecoder: Decoder<KnownForEmbeddedWithUpperCase> =
         Decode.object (fun get ->
             Tv {
-                poster_path = get.Optional.Field "poster_path" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                vote_average = get.Required.Field "vote_average" Decode.float32
-                overview = get.Required.Field "overview" Decode.string
-                first_air_date = get.Optional.Field "first_air_date" Decode.string
-                name = get.Optional.Field "name" Decode.string
+                Poster_path = get.Optional.Field "poster_path" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Vote_average = get.Required.Field "vote_average" Decode.float32
+                Overview = get.Required.Field "overview" Decode.string
+                First_air_date = get.Optional.Field "first_air_date" Decode.string
+                Name = get.Optional.Field "name" Decode.string
             }
         )
 
@@ -324,22 +324,22 @@ type KnownForEmbeddedWithUpperCase =
             Encode.object
                 [
                     "media_type", Encode.string "Movie"
-                    "poster_path", Encode.option Encode.string payload.poster_path
-                    "id", Encode.uint32 payload.id
-                    "title", Encode.option Encode.string payload.title
-                    "vote_average", Encode.float32 payload.vote_average
-                    "release_date", Encode.option Encode.string payload.release_date
-                    "overview", Encode.string payload.overview
+                    "poster_path", Encode.option Encode.string payload.Poster_path
+                    "id", Encode.uint32 payload.Id
+                    "title", Encode.option Encode.string payload.Title
+                    "vote_average", Encode.float32 payload.Vote_average
+                    "release_date", Encode.option Encode.string payload.Release_date
+                    "overview", Encode.string payload.Overview
                 ]
 
         | Tv payload ->
             Encode.object
                 [
                     "media_type", Encode.string "Tv"
-                    "poster_path", Encode.option Encode.string payload.poster_path
-                    "id", Encode.uint32 payload.id
-                    "vote_average", Encode.float32 payload.vote_average
-                    "overview", Encode.string payload.overview
-                    "first_air_date", Encode.option Encode.string payload.first_air_date
-                    "name", Encode.option Encode.string payload.name
+                    "poster_path", Encode.option Encode.string payload.Poster_path
+                    "id", Encode.uint32 payload.Id
+                    "vote_average", Encode.float32 payload.Vote_average
+                    "overview", Encode.string payload.Overview
+                    "first_air_date", Encode.option Encode.string payload.First_air_date
+                    "name", Encode.option Encode.string payload.Name
                 ]

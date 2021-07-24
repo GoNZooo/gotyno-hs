@@ -32,41 +32,41 @@ type Result<'t, 'e> =
 
 type Holder<'t> =
     {
-        value: 't
+        Value: 't
     }
 
     static member Decoder decodeT: Decoder<Holder<'t>> =
         Decode.object (fun get ->
             {
-                value = get.Required.Field "value" decodeT
+                Value = get.Required.Field "value" decodeT
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "value", encodeT value.value
+                "value", encodeT value.Value
             ]
 
 type MaybeHolder<'t> =
     {
-        value: External.Option<'t>
-        otherValue: Other.Plain
+        Value: External.Option<'t>
+        OtherValue: Other.Plain
     }
 
     static member Decoder decodeT: Decoder<MaybeHolder<'t>> =
         Decode.object (fun get ->
             {
-                value = get.Required.Field "value" (External.Option.Decoder decodeT)
-                otherValue = get.Required.Field "otherValue" Other.Plain.Decoder
+                Value = get.Required.Field "value" (External.Option.Decoder decodeT)
+                OtherValue = get.Required.Field "otherValue" Other.Plain.Decoder
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "value", (External.Option.Encoder encodeT) value.value
-                "otherValue", Other.Plain.Encoder value.otherValue
+                "value", (External.Option.Encoder encodeT) value.Value
+                "otherValue", Other.Plain.Encoder value.OtherValue
             ]
 
 type HasGenericEvent<'t> =

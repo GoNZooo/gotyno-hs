@@ -4,15 +4,15 @@ open Thoth.Json.Net
 
 type UsesImport =
     {
-        ``type``: string
-        recruiter: Basic.Recruiter
+        Type: string
+        Recruiter: Basic.Recruiter
     }
 
     static member Decoder: Decoder<UsesImport> =
         Decode.object (fun get ->
             {
-                ``type`` = get.Required.Field "type" (GotynoCoders.decodeLiteralString "UsesImport")
-                recruiter = get.Required.Field "recruiter" Basic.Recruiter.Decoder
+                Type = get.Required.Field "type" (GotynoCoders.decodeLiteralString "UsesImport")
+                Recruiter = get.Required.Field "recruiter" Basic.Recruiter.Decoder
             }
         )
 
@@ -20,43 +20,43 @@ type UsesImport =
         Encode.object
             [
                 "type", Encode.string "UsesImport"
-                "recruiter", Basic.Recruiter.Encoder value.recruiter
+                "recruiter", Basic.Recruiter.Encoder value.Recruiter
             ]
 
 type HoldsSomething<'t> =
     {
-        holdingField: 't
+        HoldingField: 't
     }
 
     static member Decoder decodeT: Decoder<HoldsSomething<'t>> =
         Decode.object (fun get ->
             {
-                holdingField = get.Required.Field "holdingField" decodeT
+                HoldingField = get.Required.Field "holdingField" decodeT
             }
         )
 
     static member Encoder encodeT value =
         Encode.object
             [
-                "holdingField", encodeT value.holdingField
+                "holdingField", encodeT value.HoldingField
             ]
 
 type StructureUsingImport =
     {
-        event: Basic.Event
+        Event: Basic.Event
     }
 
     static member Decoder: Decoder<StructureUsingImport> =
         Decode.object (fun get ->
             {
-                event = get.Required.Field "event" Basic.Event.Decoder
+                Event = get.Required.Field "event" Basic.Event.Decoder
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "event", Basic.Event.Encoder value.event
+                "event", Basic.Event.Encoder value.Event
             ]
 
 type UnionUsingImport =
@@ -89,18 +89,18 @@ type UnionUsingImport =
 
 type AllConcrete =
     {
-        field: HoldsSomething<Basic.Either<Basic.Maybe<StructureUsingImport>, UnionUsingImport>>
+        Field: HoldsSomething<Basic.Either<Basic.Maybe<StructureUsingImport>, UnionUsingImport>>
     }
 
     static member Decoder: Decoder<AllConcrete> =
         Decode.object (fun get ->
             {
-                field = get.Required.Field "field" (HoldsSomething.Decoder (Basic.Either.Decoder (Basic.Maybe.Decoder StructureUsingImport.Decoder) UnionUsingImport.Decoder))
+                Field = get.Required.Field "field" (HoldsSomething.Decoder (Basic.Either.Decoder (Basic.Maybe.Decoder StructureUsingImport.Decoder) UnionUsingImport.Decoder))
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "field", (HoldsSomething.Encoder (Basic.Either.Encoder (Basic.Maybe.Encoder StructureUsingImport.Encoder) UnionUsingImport.Encoder)) value.field
+                "field", (HoldsSomething.Encoder (Basic.Either.Encoder (Basic.Maybe.Encoder StructureUsingImport.Encoder) UnionUsingImport.Encoder)) value.Field
             ]

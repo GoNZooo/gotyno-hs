@@ -4,140 +4,140 @@ open Thoth.Json.Net
 
 type UserData =
     {
-        login: string
-        id: uint32
-        avatar_url: string
-        url: string
-        html_url: string
-        followers_url: string
-        gists_url: string
-        repos_url: string
-        site_admin: bool
-        bio: string
-        public_repos: uint32
-        followers: uint32
-        following: uint32
-        created_at: string
-        updated_at: string
-        location: option<string>
-        blog: option<string>
+        Login: string
+        Id: uint32
+        Avatar_url: string
+        Url: string
+        Html_url: string
+        Followers_url: string
+        Gists_url: string
+        Repos_url: string
+        Site_admin: bool
+        Bio: string
+        Public_repos: uint32
+        Followers: uint32
+        Following: uint32
+        Created_at: string
+        Updated_at: string
+        Location: option<string>
+        Blog: option<string>
     }
 
     static member Decoder: Decoder<UserData> =
         Decode.object (fun get ->
             {
-                login = get.Required.Field "login" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                avatar_url = get.Required.Field "avatar_url" Decode.string
-                url = get.Required.Field "url" Decode.string
-                html_url = get.Required.Field "html_url" Decode.string
-                followers_url = get.Required.Field "followers_url" Decode.string
-                gists_url = get.Required.Field "gists_url" Decode.string
-                repos_url = get.Required.Field "repos_url" Decode.string
-                site_admin = get.Required.Field "site_admin" Decode.bool
-                bio = get.Required.Field "bio" Decode.string
-                public_repos = get.Required.Field "public_repos" Decode.uint32
-                followers = get.Required.Field "followers" Decode.uint32
-                following = get.Required.Field "following" Decode.uint32
-                created_at = get.Required.Field "created_at" Decode.string
-                updated_at = get.Required.Field "updated_at" Decode.string
-                location = get.Optional.Field "location" Decode.string
-                blog = get.Optional.Field "blog" Decode.string
+                Login = get.Required.Field "login" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Avatar_url = get.Required.Field "avatar_url" Decode.string
+                Url = get.Required.Field "url" Decode.string
+                Html_url = get.Required.Field "html_url" Decode.string
+                Followers_url = get.Required.Field "followers_url" Decode.string
+                Gists_url = get.Required.Field "gists_url" Decode.string
+                Repos_url = get.Required.Field "repos_url" Decode.string
+                Site_admin = get.Required.Field "site_admin" Decode.bool
+                Bio = get.Required.Field "bio" Decode.string
+                Public_repos = get.Required.Field "public_repos" Decode.uint32
+                Followers = get.Required.Field "followers" Decode.uint32
+                Following = get.Required.Field "following" Decode.uint32
+                Created_at = get.Required.Field "created_at" Decode.string
+                Updated_at = get.Required.Field "updated_at" Decode.string
+                Location = get.Optional.Field "location" Decode.string
+                Blog = get.Optional.Field "blog" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "login", Encode.string value.login
-                "id", Encode.uint32 value.id
-                "avatar_url", Encode.string value.avatar_url
-                "url", Encode.string value.url
-                "html_url", Encode.string value.html_url
-                "followers_url", Encode.string value.followers_url
-                "gists_url", Encode.string value.gists_url
-                "repos_url", Encode.string value.repos_url
-                "site_admin", Encode.bool value.site_admin
-                "bio", Encode.string value.bio
-                "public_repos", Encode.uint32 value.public_repos
-                "followers", Encode.uint32 value.followers
-                "following", Encode.uint32 value.following
-                "created_at", Encode.string value.created_at
-                "updated_at", Encode.string value.updated_at
-                "location", Encode.option Encode.string value.location
-                "blog", Encode.option Encode.string value.blog
+                "login", Encode.string value.Login
+                "id", Encode.uint32 value.Id
+                "avatar_url", Encode.string value.Avatar_url
+                "url", Encode.string value.Url
+                "html_url", Encode.string value.Html_url
+                "followers_url", Encode.string value.Followers_url
+                "gists_url", Encode.string value.Gists_url
+                "repos_url", Encode.string value.Repos_url
+                "site_admin", Encode.bool value.Site_admin
+                "bio", Encode.string value.Bio
+                "public_repos", Encode.uint32 value.Public_repos
+                "followers", Encode.uint32 value.Followers
+                "following", Encode.uint32 value.Following
+                "created_at", Encode.string value.Created_at
+                "updated_at", Encode.string value.Updated_at
+                "location", Encode.option Encode.string value.Location
+                "blog", Encode.option Encode.string value.Blog
             ]
 
 type OwnerData =
     {
-        id: uint32
-        login: string
-        url: string
-        html_url: string
-        followers_url: string
-        gists_url: string
-        repos_url: string
-        site_admin: bool
+        Id: uint32
+        Login: string
+        Url: string
+        Html_url: string
+        Followers_url: string
+        Gists_url: string
+        Repos_url: string
+        Site_admin: bool
     }
 
     static member Decoder: Decoder<OwnerData> =
         Decode.object (fun get ->
             {
-                id = get.Required.Field "id" Decode.uint32
-                login = get.Required.Field "login" Decode.string
-                url = get.Required.Field "url" Decode.string
-                html_url = get.Required.Field "html_url" Decode.string
-                followers_url = get.Required.Field "followers_url" Decode.string
-                gists_url = get.Required.Field "gists_url" Decode.string
-                repos_url = get.Required.Field "repos_url" Decode.string
-                site_admin = get.Required.Field "site_admin" Decode.bool
+                Id = get.Required.Field "id" Decode.uint32
+                Login = get.Required.Field "login" Decode.string
+                Url = get.Required.Field "url" Decode.string
+                Html_url = get.Required.Field "html_url" Decode.string
+                Followers_url = get.Required.Field "followers_url" Decode.string
+                Gists_url = get.Required.Field "gists_url" Decode.string
+                Repos_url = get.Required.Field "repos_url" Decode.string
+                Site_admin = get.Required.Field "site_admin" Decode.bool
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "id", Encode.uint32 value.id
-                "login", Encode.string value.login
-                "url", Encode.string value.url
-                "html_url", Encode.string value.html_url
-                "followers_url", Encode.string value.followers_url
-                "gists_url", Encode.string value.gists_url
-                "repos_url", Encode.string value.repos_url
-                "site_admin", Encode.bool value.site_admin
+                "id", Encode.uint32 value.Id
+                "login", Encode.string value.Login
+                "url", Encode.string value.Url
+                "html_url", Encode.string value.Html_url
+                "followers_url", Encode.string value.Followers_url
+                "gists_url", Encode.string value.Gists_url
+                "repos_url", Encode.string value.Repos_url
+                "site_admin", Encode.bool value.Site_admin
             ]
 
 type OrganizationData =
     {
-        login: string
-        id: uint32
-        avatar_url: string
-        members_url: option<string>
-        repos_url: string
-        description: option<string>
+        Login: string
+        Id: uint32
+        Avatar_url: string
+        Members_url: option<string>
+        Repos_url: string
+        Description: option<string>
     }
 
     static member Decoder: Decoder<OrganizationData> =
         Decode.object (fun get ->
             {
-                login = get.Required.Field "login" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                avatar_url = get.Required.Field "avatar_url" Decode.string
-                members_url = get.Optional.Field "members_url" Decode.string
-                repos_url = get.Required.Field "repos_url" Decode.string
-                description = get.Optional.Field "description" Decode.string
+                Login = get.Required.Field "login" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Avatar_url = get.Required.Field "avatar_url" Decode.string
+                Members_url = get.Optional.Field "members_url" Decode.string
+                Repos_url = get.Required.Field "repos_url" Decode.string
+                Description = get.Optional.Field "description" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "login", Encode.string value.login
-                "id", Encode.uint32 value.id
-                "avatar_url", Encode.string value.avatar_url
-                "members_url", Encode.option Encode.string value.members_url
-                "repos_url", Encode.string value.repos_url
-                "description", Encode.option Encode.string value.description
+                "login", Encode.string value.Login
+                "id", Encode.uint32 value.Id
+                "avatar_url", Encode.string value.Avatar_url
+                "members_url", Encode.option Encode.string value.Members_url
+                "repos_url", Encode.string value.Repos_url
+                "description", Encode.option Encode.string value.Description
             ]
 
 type Owner =
@@ -147,26 +147,26 @@ type Owner =
     static member UserDecoder: Decoder<Owner> =
         Decode.object (fun get ->
             User {
-                id = get.Required.Field "id" Decode.uint32
-                login = get.Required.Field "login" Decode.string
-                url = get.Required.Field "url" Decode.string
-                html_url = get.Required.Field "html_url" Decode.string
-                followers_url = get.Required.Field "followers_url" Decode.string
-                gists_url = get.Required.Field "gists_url" Decode.string
-                repos_url = get.Required.Field "repos_url" Decode.string
-                site_admin = get.Required.Field "site_admin" Decode.bool
+                Id = get.Required.Field "id" Decode.uint32
+                Login = get.Required.Field "login" Decode.string
+                Url = get.Required.Field "url" Decode.string
+                Html_url = get.Required.Field "html_url" Decode.string
+                Followers_url = get.Required.Field "followers_url" Decode.string
+                Gists_url = get.Required.Field "gists_url" Decode.string
+                Repos_url = get.Required.Field "repos_url" Decode.string
+                Site_admin = get.Required.Field "site_admin" Decode.bool
             }
         )
 
     static member OrganizationDecoder: Decoder<Owner> =
         Decode.object (fun get ->
             Organization {
-                login = get.Required.Field "login" Decode.string
-                id = get.Required.Field "id" Decode.uint32
-                avatar_url = get.Required.Field "avatar_url" Decode.string
-                members_url = get.Optional.Field "members_url" Decode.string
-                repos_url = get.Required.Field "repos_url" Decode.string
-                description = get.Optional.Field "description" Decode.string
+                Login = get.Required.Field "login" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Avatar_url = get.Required.Field "avatar_url" Decode.string
+                Members_url = get.Optional.Field "members_url" Decode.string
+                Repos_url = get.Required.Field "repos_url" Decode.string
+                Description = get.Optional.Field "description" Decode.string
             }
         )
 
@@ -184,326 +184,326 @@ type Owner =
             Encode.object
                 [
                     "type", Encode.string "User"
-                    "id", Encode.uint32 payload.id
-                    "login", Encode.string payload.login
-                    "url", Encode.string payload.url
-                    "html_url", Encode.string payload.html_url
-                    "followers_url", Encode.string payload.followers_url
-                    "gists_url", Encode.string payload.gists_url
-                    "repos_url", Encode.string payload.repos_url
-                    "site_admin", Encode.bool payload.site_admin
+                    "id", Encode.uint32 payload.Id
+                    "login", Encode.string payload.Login
+                    "url", Encode.string payload.Url
+                    "html_url", Encode.string payload.Html_url
+                    "followers_url", Encode.string payload.Followers_url
+                    "gists_url", Encode.string payload.Gists_url
+                    "repos_url", Encode.string payload.Repos_url
+                    "site_admin", Encode.bool payload.Site_admin
                 ]
 
         | Organization payload ->
             Encode.object
                 [
                     "type", Encode.string "Organization"
-                    "login", Encode.string payload.login
-                    "id", Encode.uint32 payload.id
-                    "avatar_url", Encode.string payload.avatar_url
-                    "members_url", Encode.option Encode.string payload.members_url
-                    "repos_url", Encode.string payload.repos_url
-                    "description", Encode.option Encode.string payload.description
+                    "login", Encode.string payload.Login
+                    "id", Encode.uint32 payload.Id
+                    "avatar_url", Encode.string payload.Avatar_url
+                    "members_url", Encode.option Encode.string payload.Members_url
+                    "repos_url", Encode.string payload.Repos_url
+                    "description", Encode.option Encode.string payload.Description
                 ]
 
 type Repository =
     {
-        id: uint32
-        name: string
-        full_name: string
-        ``private``: bool
-        fork: bool
-        created_at: string
-        updated_at: string
-        description: option<string>
-        owner: Owner
-        url: string
-        html_url: string
-        language: option<string>
+        Id: uint32
+        Name: string
+        Full_name: string
+        Private: bool
+        Fork: bool
+        Created_at: string
+        Updated_at: string
+        Description: option<string>
+        Owner: Owner
+        Url: string
+        Html_url: string
+        Language: option<string>
     }
 
     static member Decoder: Decoder<Repository> =
         Decode.object (fun get ->
             {
-                id = get.Required.Field "id" Decode.uint32
-                name = get.Required.Field "name" Decode.string
-                full_name = get.Required.Field "full_name" Decode.string
-                ``private`` = get.Required.Field "private" Decode.bool
-                fork = get.Required.Field "fork" Decode.bool
-                created_at = get.Required.Field "created_at" Decode.string
-                updated_at = get.Required.Field "updated_at" Decode.string
-                description = get.Optional.Field "description" Decode.string
-                owner = get.Required.Field "owner" Owner.Decoder
-                url = get.Required.Field "url" Decode.string
-                html_url = get.Required.Field "html_url" Decode.string
-                language = get.Optional.Field "language" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Name = get.Required.Field "name" Decode.string
+                Full_name = get.Required.Field "full_name" Decode.string
+                Private = get.Required.Field "private" Decode.bool
+                Fork = get.Required.Field "fork" Decode.bool
+                Created_at = get.Required.Field "created_at" Decode.string
+                Updated_at = get.Required.Field "updated_at" Decode.string
+                Description = get.Optional.Field "description" Decode.string
+                Owner = get.Required.Field "owner" Owner.Decoder
+                Url = get.Required.Field "url" Decode.string
+                Html_url = get.Required.Field "html_url" Decode.string
+                Language = get.Optional.Field "language" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "id", Encode.uint32 value.id
-                "name", Encode.string value.name
-                "full_name", Encode.string value.full_name
-                "private", Encode.bool value.``private``
-                "fork", Encode.bool value.fork
-                "created_at", Encode.string value.created_at
-                "updated_at", Encode.string value.updated_at
-                "description", Encode.option Encode.string value.description
-                "owner", Owner.Encoder value.owner
-                "url", Encode.string value.url
-                "html_url", Encode.string value.html_url
-                "language", Encode.option Encode.string value.language
+                "id", Encode.uint32 value.Id
+                "name", Encode.string value.Name
+                "full_name", Encode.string value.Full_name
+                "private", Encode.bool value.Private
+                "fork", Encode.bool value.Fork
+                "created_at", Encode.string value.Created_at
+                "updated_at", Encode.string value.Updated_at
+                "description", Encode.option Encode.string value.Description
+                "owner", Owner.Encoder value.Owner
+                "url", Encode.string value.Url
+                "html_url", Encode.string value.Html_url
+                "language", Encode.option Encode.string value.Language
             ]
 
 type Pusher =
     {
-        name: string
-        email: string
+        Name: string
+        Email: string
     }
 
     static member Decoder: Decoder<Pusher> =
         Decode.object (fun get ->
             {
-                name = get.Required.Field "name" Decode.string
-                email = get.Required.Field "email" Decode.string
+                Name = get.Required.Field "name" Decode.string
+                Email = get.Required.Field "email" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "name", Encode.string value.name
-                "email", Encode.string value.email
+                "name", Encode.string value.Name
+                "email", Encode.string value.Email
             ]
 
 type Author =
     {
-        name: string
-        email: string
-        username: string
+        Name: string
+        Email: string
+        Username: string
     }
 
     static member Decoder: Decoder<Author> =
         Decode.object (fun get ->
             {
-                name = get.Required.Field "name" Decode.string
-                email = get.Required.Field "email" Decode.string
-                username = get.Required.Field "username" Decode.string
+                Name = get.Required.Field "name" Decode.string
+                Email = get.Required.Field "email" Decode.string
+                Username = get.Required.Field "username" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "name", Encode.string value.name
-                "email", Encode.string value.email
-                "username", Encode.string value.username
+                "name", Encode.string value.Name
+                "email", Encode.string value.Email
+                "username", Encode.string value.Username
             ]
 
 type Label =
     {
-        id: uint32
-        url: string
-        name: string
-        color: string
-        default: bool
-        description: string
+        Id: uint32
+        Url: string
+        Name: string
+        Color: string
+        Default: bool
+        Description: string
     }
 
     static member Decoder: Decoder<Label> =
         Decode.object (fun get ->
             {
-                id = get.Required.Field "id" Decode.uint32
-                url = get.Required.Field "url" Decode.string
-                name = get.Required.Field "name" Decode.string
-                color = get.Required.Field "color" Decode.string
-                default = get.Required.Field "default" Decode.bool
-                description = get.Required.Field "description" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Url = get.Required.Field "url" Decode.string
+                Name = get.Required.Field "name" Decode.string
+                Color = get.Required.Field "color" Decode.string
+                Default = get.Required.Field "default" Decode.bool
+                Description = get.Required.Field "description" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "id", Encode.uint32 value.id
-                "url", Encode.string value.url
-                "name", Encode.string value.name
-                "color", Encode.string value.color
-                "default", Encode.bool value.default
-                "description", Encode.string value.description
+                "id", Encode.uint32 value.Id
+                "url", Encode.string value.Url
+                "name", Encode.string value.Name
+                "color", Encode.string value.Color
+                "default", Encode.bool value.Default
+                "description", Encode.string value.Description
             ]
 
 type Issue =
     {
-        id: uint32
-        url: string
-        html_url: string
-        repository_url: string
-        number: uint32
-        title: string
-        user: UserData
-        labels: list<Label>
-        state: string
-        locked: bool
-        assignee: option<UserData>
-        assignees: list<UserData>
-        comments: uint32
-        created_at: string
-        updated_at: string
-        closed_at: option<string>
-        author_association: string
-        body: string
+        Id: uint32
+        Url: string
+        Html_url: string
+        Repository_url: string
+        Number: uint32
+        Title: string
+        User: UserData
+        Labels: list<Label>
+        State: string
+        Locked: bool
+        Assignee: option<UserData>
+        Assignees: list<UserData>
+        Comments: uint32
+        Created_at: string
+        Updated_at: string
+        Closed_at: option<string>
+        Author_association: string
+        Body: string
     }
 
     static member Decoder: Decoder<Issue> =
         Decode.object (fun get ->
             {
-                id = get.Required.Field "id" Decode.uint32
-                url = get.Required.Field "url" Decode.string
-                html_url = get.Required.Field "html_url" Decode.string
-                repository_url = get.Required.Field "repository_url" Decode.string
-                number = get.Required.Field "number" Decode.uint32
-                title = get.Required.Field "title" Decode.string
-                user = get.Required.Field "user" UserData.Decoder
-                labels = get.Required.Field "labels" (Decode.list Label.Decoder)
-                state = get.Required.Field "state" Decode.string
-                locked = get.Required.Field "locked" Decode.bool
-                assignee = get.Optional.Field "assignee" UserData.Decoder
-                assignees = get.Required.Field "assignees" (Decode.list UserData.Decoder)
-                comments = get.Required.Field "comments" Decode.uint32
-                created_at = get.Required.Field "created_at" Decode.string
-                updated_at = get.Required.Field "updated_at" Decode.string
-                closed_at = get.Optional.Field "closed_at" Decode.string
-                author_association = get.Required.Field "author_association" Decode.string
-                body = get.Required.Field "body" Decode.string
+                Id = get.Required.Field "id" Decode.uint32
+                Url = get.Required.Field "url" Decode.string
+                Html_url = get.Required.Field "html_url" Decode.string
+                Repository_url = get.Required.Field "repository_url" Decode.string
+                Number = get.Required.Field "number" Decode.uint32
+                Title = get.Required.Field "title" Decode.string
+                User = get.Required.Field "user" UserData.Decoder
+                Labels = get.Required.Field "labels" (Decode.list Label.Decoder)
+                State = get.Required.Field "state" Decode.string
+                Locked = get.Required.Field "locked" Decode.bool
+                Assignee = get.Optional.Field "assignee" UserData.Decoder
+                Assignees = get.Required.Field "assignees" (Decode.list UserData.Decoder)
+                Comments = get.Required.Field "comments" Decode.uint32
+                Created_at = get.Required.Field "created_at" Decode.string
+                Updated_at = get.Required.Field "updated_at" Decode.string
+                Closed_at = get.Optional.Field "closed_at" Decode.string
+                Author_association = get.Required.Field "author_association" Decode.string
+                Body = get.Required.Field "body" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "id", Encode.uint32 value.id
-                "url", Encode.string value.url
-                "html_url", Encode.string value.html_url
-                "repository_url", Encode.string value.repository_url
-                "number", Encode.uint32 value.number
-                "title", Encode.string value.title
-                "user", UserData.Encoder value.user
-                "labels", GotynoCoders.encodeList Label.Encoder value.labels
-                "state", Encode.string value.state
-                "locked", Encode.bool value.locked
-                "assignee", Encode.option UserData.Encoder value.assignee
-                "assignees", GotynoCoders.encodeList UserData.Encoder value.assignees
-                "comments", Encode.uint32 value.comments
-                "created_at", Encode.string value.created_at
-                "updated_at", Encode.string value.updated_at
-                "closed_at", Encode.option Encode.string value.closed_at
-                "author_association", Encode.string value.author_association
-                "body", Encode.string value.body
+                "id", Encode.uint32 value.Id
+                "url", Encode.string value.Url
+                "html_url", Encode.string value.Html_url
+                "repository_url", Encode.string value.Repository_url
+                "number", Encode.uint32 value.Number
+                "title", Encode.string value.Title
+                "user", UserData.Encoder value.User
+                "labels", GotynoCoders.encodeList Label.Encoder value.Labels
+                "state", Encode.string value.State
+                "locked", Encode.bool value.Locked
+                "assignee", Encode.option UserData.Encoder value.Assignee
+                "assignees", GotynoCoders.encodeList UserData.Encoder value.Assignees
+                "comments", Encode.uint32 value.Comments
+                "created_at", Encode.string value.Created_at
+                "updated_at", Encode.string value.Updated_at
+                "closed_at", Encode.option Encode.string value.Closed_at
+                "author_association", Encode.string value.Author_association
+                "body", Encode.string value.Body
             ]
 
 type Commit =
     {
-        id: string
-        tree_id: string
-        distinct: bool
-        message: string
-        timestamp: string
-        url: string
-        author: Author
-        committer: Author
-        added: list<string>
-        removed: list<string>
-        modified: list<string>
+        Id: string
+        Tree_id: string
+        Distinct: bool
+        Message: string
+        Timestamp: string
+        Url: string
+        Author: Author
+        Committer: Author
+        Added: list<string>
+        Removed: list<string>
+        Modified: list<string>
     }
 
     static member Decoder: Decoder<Commit> =
         Decode.object (fun get ->
             {
-                id = get.Required.Field "id" Decode.string
-                tree_id = get.Required.Field "tree_id" Decode.string
-                distinct = get.Required.Field "distinct" Decode.bool
-                message = get.Required.Field "message" Decode.string
-                timestamp = get.Required.Field "timestamp" Decode.string
-                url = get.Required.Field "url" Decode.string
-                author = get.Required.Field "author" Author.Decoder
-                committer = get.Required.Field "committer" Author.Decoder
-                added = get.Required.Field "added" (Decode.list Decode.string)
-                removed = get.Required.Field "removed" (Decode.list Decode.string)
-                modified = get.Required.Field "modified" (Decode.list Decode.string)
+                Id = get.Required.Field "id" Decode.string
+                Tree_id = get.Required.Field "tree_id" Decode.string
+                Distinct = get.Required.Field "distinct" Decode.bool
+                Message = get.Required.Field "message" Decode.string
+                Timestamp = get.Required.Field "timestamp" Decode.string
+                Url = get.Required.Field "url" Decode.string
+                Author = get.Required.Field "author" Author.Decoder
+                Committer = get.Required.Field "committer" Author.Decoder
+                Added = get.Required.Field "added" (Decode.list Decode.string)
+                Removed = get.Required.Field "removed" (Decode.list Decode.string)
+                Modified = get.Required.Field "modified" (Decode.list Decode.string)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "id", Encode.string value.id
-                "tree_id", Encode.string value.tree_id
-                "distinct", Encode.bool value.distinct
-                "message", Encode.string value.message
-                "timestamp", Encode.string value.timestamp
-                "url", Encode.string value.url
-                "author", Author.Encoder value.author
-                "committer", Author.Encoder value.committer
-                "added", GotynoCoders.encodeList Encode.string value.added
-                "removed", GotynoCoders.encodeList Encode.string value.removed
-                "modified", GotynoCoders.encodeList Encode.string value.modified
+                "id", Encode.string value.Id
+                "tree_id", Encode.string value.Tree_id
+                "distinct", Encode.bool value.Distinct
+                "message", Encode.string value.Message
+                "timestamp", Encode.string value.Timestamp
+                "url", Encode.string value.Url
+                "author", Author.Encoder value.Author
+                "committer", Author.Encoder value.Committer
+                "added", GotynoCoders.encodeList Encode.string value.Added
+                "removed", GotynoCoders.encodeList Encode.string value.Removed
+                "modified", GotynoCoders.encodeList Encode.string value.Modified
             ]
 
 type PushData =
     {
-        repository: Repository
-        ref: string
-        before: string
-        after: string
-        pusher: Pusher
-        organization: OrganizationData
-        sender: UserData
-        created: bool
-        deleted: bool
-        forced: bool
-        compare: string
-        commits: list<Commit>
-        head_commit: Commit
+        Repository: Repository
+        Ref: string
+        Before: string
+        After: string
+        Pusher: Pusher
+        Organization: OrganizationData
+        Sender: UserData
+        Created: bool
+        Deleted: bool
+        Forced: bool
+        Compare: string
+        Commits: list<Commit>
+        Head_commit: Commit
     }
 
     static member Decoder: Decoder<PushData> =
         Decode.object (fun get ->
             {
-                repository = get.Required.Field "repository" Repository.Decoder
-                ref = get.Required.Field "ref" Decode.string
-                before = get.Required.Field "before" Decode.string
-                after = get.Required.Field "after" Decode.string
-                pusher = get.Required.Field "pusher" Pusher.Decoder
-                organization = get.Required.Field "organization" OrganizationData.Decoder
-                sender = get.Required.Field "sender" UserData.Decoder
-                created = get.Required.Field "created" Decode.bool
-                deleted = get.Required.Field "deleted" Decode.bool
-                forced = get.Required.Field "forced" Decode.bool
-                compare = get.Required.Field "compare" Decode.string
-                commits = get.Required.Field "commits" (Decode.list Commit.Decoder)
-                head_commit = get.Required.Field "head_commit" Commit.Decoder
+                Repository = get.Required.Field "repository" Repository.Decoder
+                Ref = get.Required.Field "ref" Decode.string
+                Before = get.Required.Field "before" Decode.string
+                After = get.Required.Field "after" Decode.string
+                Pusher = get.Required.Field "pusher" Pusher.Decoder
+                Organization = get.Required.Field "organization" OrganizationData.Decoder
+                Sender = get.Required.Field "sender" UserData.Decoder
+                Created = get.Required.Field "created" Decode.bool
+                Deleted = get.Required.Field "deleted" Decode.bool
+                Forced = get.Required.Field "forced" Decode.bool
+                Compare = get.Required.Field "compare" Decode.string
+                Commits = get.Required.Field "commits" (Decode.list Commit.Decoder)
+                Head_commit = get.Required.Field "head_commit" Commit.Decoder
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "repository", Repository.Encoder value.repository
-                "ref", Encode.string value.ref
-                "before", Encode.string value.before
-                "after", Encode.string value.after
-                "pusher", Pusher.Encoder value.pusher
-                "organization", OrganizationData.Encoder value.organization
-                "sender", UserData.Encoder value.sender
-                "created", Encode.bool value.created
-                "deleted", Encode.bool value.deleted
-                "forced", Encode.bool value.forced
-                "compare", Encode.string value.compare
-                "commits", GotynoCoders.encodeList Commit.Encoder value.commits
-                "head_commit", Commit.Encoder value.head_commit
+                "repository", Repository.Encoder value.Repository
+                "ref", Encode.string value.Ref
+                "before", Encode.string value.Before
+                "after", Encode.string value.After
+                "pusher", Pusher.Encoder value.Pusher
+                "organization", OrganizationData.Encoder value.Organization
+                "sender", UserData.Encoder value.Sender
+                "created", Encode.bool value.Created
+                "deleted", Encode.bool value.Deleted
+                "forced", Encode.bool value.Forced
+                "compare", Encode.string value.Compare
+                "commits", GotynoCoders.encodeList Commit.Encoder value.Commits
+                "head_commit", Commit.Encoder value.Head_commit
             ]
 
 type WebhookEvent =
@@ -527,24 +527,24 @@ type WebhookEvent =
 
 type RepositorySearchData =
     {
-        total_count: uint32
-        incomplete_results: bool
-        items: list<Repository>
+        Total_count: uint32
+        Incomplete_results: bool
+        Items: list<Repository>
     }
 
     static member Decoder: Decoder<RepositorySearchData> =
         Decode.object (fun get ->
             {
-                total_count = get.Required.Field "total_count" Decode.uint32
-                incomplete_results = get.Required.Field "incomplete_results" Decode.bool
-                items = get.Required.Field "items" (Decode.list Repository.Decoder)
+                Total_count = get.Required.Field "total_count" Decode.uint32
+                Incomplete_results = get.Required.Field "incomplete_results" Decode.bool
+                Items = get.Required.Field "items" (Decode.list Repository.Decoder)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "total_count", Encode.uint32 value.total_count
-                "incomplete_results", Encode.bool value.incomplete_results
-                "items", GotynoCoders.encodeList Repository.Encoder value.items
+                "total_count", Encode.uint32 value.Total_count
+                "incomplete_results", Encode.bool value.Incomplete_results
+                "items", GotynoCoders.encodeList Repository.Encoder value.Items
             ]

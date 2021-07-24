@@ -4,19 +4,19 @@ open Thoth.Json.Net
 
 type Recruiter =
     {
-        ``type``: string
-        name: string
-        emails: list<option<string>>
-        recruiter: option<Recruiter>
+        Type: string
+        Name: string
+        Emails: list<option<string>>
+        Recruiter: option<Recruiter>
     }
 
     static member Decoder: Decoder<Recruiter> =
         Decode.object (fun get ->
             {
-                ``type`` = get.Required.Field "type" (GotynoCoders.decodeLiteralString "Recruiter")
-                name = get.Required.Field "name" Decode.string
-                emails = get.Required.Field "emails" (Decode.list (Decode.option Decode.string))
-                recruiter = get.Optional.Field "recruiter" Recruiter.Decoder
+                Type = get.Required.Field "type" (GotynoCoders.decodeLiteralString "Recruiter")
+                Name = get.Required.Field "name" Decode.string
+                Emails = get.Required.Field "emails" (Decode.list (Decode.option Decode.string))
+                Recruiter = get.Optional.Field "recruiter" Recruiter.Decoder
             }
         )
 
@@ -24,9 +24,9 @@ type Recruiter =
         Encode.object
             [
                 "type", Encode.string "Recruiter"
-                "name", Encode.string value.name
-                "emails", GotynoCoders.encodeList (Encode.option Encode.string) value.emails
-                "recruiter", Encode.option Recruiter.Encoder value.recruiter
+                "name", Encode.string value.Name
+                "emails", GotynoCoders.encodeList (Encode.option Encode.string) value.Emails
+                "recruiter", Encode.option Recruiter.Encoder value.Recruiter
             ]
 
 type GetSearchesFilter =
@@ -67,20 +67,20 @@ type GetSearchesFilter =
 
 type SearchesParameters =
     {
-        filters: list<GetSearchesFilter>
+        Filters: list<GetSearchesFilter>
     }
 
     static member Decoder: Decoder<SearchesParameters> =
         Decode.object (fun get ->
             {
-                filters = get.Required.Field "filters" (Decode.list GetSearchesFilter.Decoder)
+                Filters = get.Required.Field "filters" (Decode.list GetSearchesFilter.Decoder)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "filters", GotynoCoders.encodeList GetSearchesFilter.Encoder value.filters
+                "filters", GotynoCoders.encodeList GetSearchesFilter.Encoder value.Filters
             ]
 
 type StillSize =
@@ -103,80 +103,80 @@ type StillSize =
 
 type LogInData =
     {
-        username: string
-        password: string
+        Username: string
+        Password: string
     }
 
     static member Decoder: Decoder<LogInData> =
         Decode.object (fun get ->
             {
-                username = get.Required.Field "username" Decode.string
-                password = get.Required.Field "password" Decode.string
+                Username = get.Required.Field "username" Decode.string
+                Password = get.Required.Field "password" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "username", Encode.string value.username
-                "password", Encode.string value.password
+                "username", Encode.string value.Username
+                "password", Encode.string value.Password
             ]
 
 type UserId =
     {
-        value: string
+        Value: string
     }
 
     static member Decoder: Decoder<UserId> =
         Decode.object (fun get ->
             {
-                value = get.Required.Field "value" Decode.string
+                Value = get.Required.Field "value" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "value", Encode.string value.value
+                "value", Encode.string value.Value
             ]
 
 type Channel =
     {
-        name: string
-        ``private``: bool
+        Name: string
+        Private: bool
     }
 
     static member Decoder: Decoder<Channel> =
         Decode.object (fun get ->
             {
-                name = get.Required.Field "name" Decode.string
-                ``private`` = get.Required.Field "private" Decode.bool
+                Name = get.Required.Field "name" Decode.string
+                Private = get.Required.Field "private" Decode.bool
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "name", Encode.string value.name
-                "private", Encode.bool value.``private``
+                "name", Encode.string value.Name
+                "private", Encode.bool value.Private
             ]
 
 type Email =
     {
-        value: string
+        Value: string
     }
 
     static member Decoder: Decoder<Email> =
         Decode.object (fun get ->
             {
-                value = get.Required.Field "value" Decode.string
+                Value = get.Required.Field "value" Decode.string
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "value", Encode.string value.value
+                "value", Encode.string value.Value
             ]
 
 type Event =
@@ -282,39 +282,39 @@ type Either<'l, 'r> =
 
 type Person =
     {
-        name: string
-        age: uint8
-        efficiency: float32
-        on_vacation: bool
-        hobbies: list<string>
-        last_fifteen_comments: list<string>
-        recruiter: Recruiter
-        spouse: Maybe<Person>
+        Name: string
+        Age: uint8
+        Efficiency: float32
+        On_vacation: bool
+        Hobbies: list<string>
+        Last_fifteen_comments: list<string>
+        Recruiter: Recruiter
+        Spouse: Maybe<Person>
     }
 
     static member Decoder: Decoder<Person> =
         Decode.object (fun get ->
             {
-                name = get.Required.Field "name" Decode.string
-                age = get.Required.Field "age" Decode.byte
-                efficiency = get.Required.Field "efficiency" Decode.float32
-                on_vacation = get.Required.Field "on_vacation" Decode.bool
-                hobbies = get.Required.Field "hobbies" (Decode.list Decode.string)
-                last_fifteen_comments = get.Required.Field "last_fifteen_comments" (Decode.list Decode.string)
-                recruiter = get.Required.Field "recruiter" Recruiter.Decoder
-                spouse = get.Required.Field "spouse" (Maybe.Decoder Person.Decoder)
+                Name = get.Required.Field "name" Decode.string
+                Age = get.Required.Field "age" Decode.byte
+                Efficiency = get.Required.Field "efficiency" Decode.float32
+                On_vacation = get.Required.Field "on_vacation" Decode.bool
+                Hobbies = get.Required.Field "hobbies" (Decode.list Decode.string)
+                Last_fifteen_comments = get.Required.Field "last_fifteen_comments" (Decode.list Decode.string)
+                Recruiter = get.Required.Field "recruiter" Recruiter.Decoder
+                Spouse = get.Required.Field "spouse" (Maybe.Decoder Person.Decoder)
             }
         )
 
     static member Encoder value =
         Encode.object
             [
-                "name", Encode.string value.name
-                "age", Encode.byte value.age
-                "efficiency", Encode.float32 value.efficiency
-                "on_vacation", Encode.bool value.on_vacation
-                "hobbies", GotynoCoders.encodeList Encode.string value.hobbies
-                "last_fifteen_comments", GotynoCoders.encodeList Encode.string value.last_fifteen_comments
-                "recruiter", Recruiter.Encoder value.recruiter
-                "spouse", (Maybe.Encoder Person.Encoder) value.spouse
+                "name", Encode.string value.Name
+                "age", Encode.byte value.Age
+                "efficiency", Encode.float32 value.Efficiency
+                "on_vacation", Encode.bool value.On_vacation
+                "hobbies", GotynoCoders.encodeList Encode.string value.Hobbies
+                "last_fifteen_comments", GotynoCoders.encodeList Encode.string value.Last_fifteen_comments
+                "recruiter", Recruiter.Encoder value.Recruiter
+                "spouse", (Maybe.Encoder Person.Encoder) value.Spouse
             ]

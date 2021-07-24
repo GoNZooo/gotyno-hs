@@ -343,7 +343,7 @@ outputStructEncoder fields typeVariables =
 outputDecoderForField :: StructField -> Text
 outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalType fieldType))) =
   mconcat
-    [ sanitizeName fieldName,
+    [ upperCaseFirstCharacter fieldName,
       " = ",
       "get.Optional.Field",
       " \"",
@@ -353,7 +353,7 @@ outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalT
     ]
 outputDecoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
-    [ sanitizeName fieldName,
+    [ upperCaseFirstCharacter fieldName,
       " = ",
       "get.Required.Field",
       " \"",
@@ -379,7 +379,7 @@ outputEncoderForFieldWithValueName valueName (StructField (FieldName fieldName) 
       " ",
       valueName,
       ".",
-      sanitizeName fieldName
+      upperCaseFirstCharacter fieldName
     ]
 
 decoderForFieldType :: FieldType -> Text
@@ -744,14 +744,7 @@ typeVariablesFromDefinition (TypeDefinition _name (DeclaredType _moduleName type
 outputField :: Int -> StructField -> Text
 outputField indentation (StructField (FieldName name) fieldType) =
   let indent = Text.pack $ replicate indentation ' '
-   in indent <> mconcat [sanitizeName name, ": ", outputFieldType fieldType, "\n"]
-
-sanitizeName :: Text -> Text
-sanitizeName "type" = "``type``"
-sanitizeName "private" = "``private``"
-sanitizeName "class" = "``class``"
-sanitizeName "public" = "``public``"
-sanitizeName name = name
+   in indent <> mconcat [upperCaseFirstCharacter name, ": ", outputFieldType fieldType, "\n"]
 
 outputFieldType :: FieldType -> Text
 outputFieldType (LiteralType (LiteralString _text)) = outputBasicType BasicString
