@@ -4,6 +4,6 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "simple-validation-tools": "^1.4.9"
+    "simple-validation-tools": "^1.4.12"
   }
 }

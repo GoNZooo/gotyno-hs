@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-simple-validation-tools@^1.4.9:
-  version "1.4.9"
-  resolved "https://registry.yarnpkg.com/simple-validation-tools/-/simple-validation-tools-1.4.9.tgz#447fd85dd0830a1e49d7fa598ff383975772d43a"
-  integrity sha512-5csGOyrzhOkCoLJU4za2smE+v43OaDC5G28XEMJWX5uqoP93RMq4bBAkUaD2ayFe/tC3iCPwVxdL5l0bw/3kQQ==
+simple-validation-tools@^1.4.12:
+  version "1.4.12"
+  resolved "https://registry.yarnpkg.com/simple-validation-tools/-/simple-validation-tools-1.4.12.tgz#f8246395b2e719e3d33f11785dee9404e5739ea7"
+  integrity sha512-oOJYf0DmdNc87tm+lyw8fax30A/RlAEDlAX9cOc3bOCP/lXbBpk/xm6W9tTLbiRT/FqpuPCy+lJN3zLk5M4WUQ==
