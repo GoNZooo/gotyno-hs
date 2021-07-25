@@ -1,3 +1,5 @@
+import basic
+
 struct SomeType {
     type: "SomeType"
     some_field: String
@@ -9,12 +11,6 @@ struct Holder <T>{
     value: T
 }
 
-union Event {
-    Notification: String
-    Launch
-    AnotherEvent: SomeType
-}
-
 union(tag = kind) EventWithKind {
     NotificationWithKind: String
     LaunchWithKind
@@ -24,6 +20,10 @@ union(tag = kind) EventWithKind {
 union Possibly <T>{
     NotReally
     Definitely: T
+}
+
+struct PossiblyHolder {
+    value: Possibly<String>
 }
 
 enum Color {

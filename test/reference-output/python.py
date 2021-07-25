@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from gotyno_validation import validation
 from gotyno_validation import encoding
 
+from . import basic
+
 @dataclass(frozen=True)
 class SomeType:
     type: typing.Literal['SomeType']
@@ -45,73 +47,6 @@ class Holder(typing.Generic[T]):
 
     def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
         return json.dumps(self.to_json(T_to_json))
-
-class Event:
-    @staticmethod
-    def validate(value: validation.Unknown) -> validation.ValidationResult['Event']:
-        return validation.validate_with_type_tags(value, 'type', {'Notification': Notification.validate, 'Launch': Launch.validate, 'AnotherEvent': AnotherEvent.validate})
-
-    @staticmethod
-    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Event']:
-        return validation.validate_from_string(string, Event.validate)
-
-    def to_json(self) -> typing.Dict[str, typing.Any]:
-        raise NotImplementedError('`to_json` is not implemented for base class `Event`')
-
-    def encode(self) -> str:
-        raise NotImplementedError('`encode` is not implemented for base class `Event`')
-
-@dataclass(frozen=True)
-class Notification(Event):
-    data: str
-
-    @staticmethod
-    def validate(value: validation.Unknown) -> validation.ValidationResult['Notification']:
-        return validation.validate_with_type_tag(value, 'type', 'Notification', {'data': validation.validate_string}, Notification)
-
-    @staticmethod
-    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Notification']:
-        return validation.validate_from_string(string, Notification.validate)
-
-    def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'Notification', 'data': self.data}
-
-    def encode(self) -> str:
-        return json.dumps(self.to_json())
-
-@dataclass(frozen=True)
-class Launch(Event):
-    @staticmethod
-    def validate(value: validation.Unknown) -> validation.ValidationResult['Launch']:
-        return validation.validate_with_type_tag(value, 'type', 'Launch', {}, Launch)
-
-    @staticmethod
-    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Launch']:
-        return validation.validate_from_string(string, Launch.validate)
-
-    def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'Launch'}
-
-    def encode(self) -> str:
-        return json.dumps(self.to_json())
-
-@dataclass(frozen=True)
-class AnotherEvent(Event):
-    data: SomeType
-
-    @staticmethod
-    def validate(value: validation.Unknown) -> validation.ValidationResult['AnotherEvent']:
-        return validation.validate_with_type_tag(value, 'type', 'AnotherEvent', {'data': SomeType.validate}, AnotherEvent)
-
-    @staticmethod
-    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['AnotherEvent']:
-        return validation.validate_from_string(string, AnotherEvent.validate)
-
-    def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'AnotherEvent', 'data': self.data.to_json()}
-
-    def encode(self) -> str:
-        return json.dumps(self.to_json())
 
 class EventWithKind:
     @staticmethod
@@ -192,7 +127,7 @@ class Possibly(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Possibly[T]']:
         return validation.validate_from_string(string, Possibly.validate(validate_T))
 
-    def to_json(self) -> typing.Dict[str, typing.Any]:
+    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
         raise NotImplementedError('`to_json` is not implemented for base class `Possibly`')
 
     def encode(self) -> str:
@@ -208,11 +143,11 @@ class NotReally(Possibly[T]):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['NotReally']:
         return validation.validate_from_string(string, NotReally.validate)
 
-    def to_json(self) -> typing.Dict[str, typing.Any]:
+    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
         return {'type': 'NotReally'}
 
-    def encode(self) -> str:
-        return json.dumps(self.to_json())
+    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
+        return json.dumps(self.to_json(T_to_json))
 
 @dataclass(frozen=True)
 class Definitely(Possibly[T]):
@@ -233,6 +168,24 @@ class Definitely(Possibly[T]):
 
     def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
         return json.dumps(self.to_json(T_to_json))
+
+@dataclass(frozen=True)
+class PossiblyHolder:
+    value: Possibly[str]
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['PossiblyHolder']:
+        return validation.validate_interface(value, {'value': Possibly.validate(validation.validate_string)}, PossiblyHolder)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['PossiblyHolder']:
+        return validation.validate_from_string(string, PossiblyHolder.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'value': self.value.to_json(encoding.basic_to_json)}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 class Color(enum.Enum):
     red = 'ff0000'

@@ -449,8 +449,40 @@ outputEncoderForField
   (StructField (FieldName fieldName) fieldType@(LiteralType _)) =
     mconcat ["'", fieldName, "': ", encoderForFieldType ("", "") fieldType]
 outputEncoderForField
-  (StructField (FieldName fieldName) (BasicType _)) =
-    mconcat ["'", fieldName, "': self.", fieldName]
+  (StructField (FieldName fieldName) basicType@(BasicType t))
+    | t `elem` [U64, U128, I64, I128] =
+      mconcat
+        [ "'",
+          fieldName,
+          "': ",
+          encoderForFieldType ("", "") basicType,
+          "(self.",
+          fieldName,
+          ")"
+        ]
+    | otherwise = mconcat ["'", fieldName, "': self.", fieldName]
+outputEncoderForField
+  ( StructField
+      (FieldName fieldName)
+      (DefinitionReferenceType (AppliedGenericReference appliedTypeVariables _definition))
+    ) =
+    let passedInToJSONs =
+          appliedTypeVariables & fmap (encoderForFieldType ("", "")) & Text.intercalate ", "
+     in mconcat ["'", fieldName, "': self.", fieldName, ".to_json(", passedInToJSONs, ")"]
+outputEncoderForField
+  ( StructField
+      (FieldName fieldName)
+      ( DefinitionReferenceType
+          ( AppliedImportedGenericReference
+              _moduleName
+              (AppliedTypes appliedTypeVariables)
+              _definition
+            )
+        )
+    ) =
+    let passedInToJSONs =
+          appliedTypeVariables & fmap (encoderForFieldType ("", "")) & Text.intercalate ", "
+     in mconcat ["'", fieldName, "': self.", fieldName, ".to_json(", passedInToJSONs, ")"]
 outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
     [ "'",
@@ -461,6 +493,76 @@ outputEncoderForField (StructField (FieldName fieldName) fieldType) =
       fieldName,
       ")"
     ]
+
+encoderForFieldType :: (Text, Text) -> FieldType -> Text
+encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
+encoderForFieldType (_l, _r) (BasicType basicType) = encoderForBasicType basicType
+encoderForFieldType (l, r) (ComplexType complexType) = l <> encoderForComplexType complexType <> r
+encoderForFieldType (_l, _r) (DefinitionReferenceType definitionReference) =
+  encoderForDefinitionReference definitionReference
+encoderForFieldType (_l, _r) (TypeVariableReferenceType (TypeVariable name)) = name <> "_to_json"
+encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = name <> ".to_json"
+
+encoderForBasicType :: BasicTypeValue -> Text
+encoderForBasicType U64 = "encoding.bigint_to_json"
+encoderForBasicType U128 = "encoding.bigint_to_json"
+encoderForBasicType I64 = "encoding.bigint_to_json"
+encoderForBasicType I128 = "encoding.bigint_to_json"
+encoderForBasicType _ = "encoding.basic_to_json"
+
+encoderForLiteralType :: LiteralTypeValue -> Text
+encoderForLiteralType (LiteralString s) = "'" <> s <> "'"
+encoderForLiteralType (LiteralInteger i) = tshow i
+encoderForLiteralType (LiteralFloat f) = tshow f
+encoderForLiteralType (LiteralBoolean b) = tshow b
+
+encoderForComplexType :: ComplexTypeValue -> Text
+encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
+encoderForComplexType (ArrayType _size fieldType) =
+  mconcat ["encoding.list_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
+encoderForComplexType (SliceType fieldType) =
+  mconcat ["encoding.list_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
+encoderForComplexType (OptionalType fieldType) =
+  mconcat ["encoding.optional_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
+
+encoderForDefinitionReference :: DefinitionReference -> Text
+encoderForDefinitionReference
+  ( DefinitionReference
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    name <> ".to_json"
+encoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    mconcat [moduleName, ".", name, ".to_json"]
+encoderForDefinitionReference
+  ( AppliedGenericReference
+      appliedTypes
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
+     in mconcat [name, ".to_json(", appliedEncoders, ")"]
+encoderForDefinitionReference
+  ( AppliedImportedGenericReference
+      (ModuleName moduleName)
+      (AppliedTypes appliedTypes)
+      (TypeDefinition (DefinitionName name) _typeData)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
+     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
+encoderForDefinitionReference
+  ( GenericDeclarationReference
+      (ModuleName moduleName)
+      (DefinitionName name)
+      (AppliedTypes appliedTypes)
+    ) =
+    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
+     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
+encoderForDefinitionReference
+  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
+    mconcat [moduleName, ".", name, ".to_json"]
 
 validatorForFieldType :: FieldType -> Text
 validatorForFieldType (LiteralType literalType) = validatorForLiteralType literalType
@@ -476,13 +578,13 @@ validatorForBasicType BasicString = "validation.validate_string"
 validatorForBasicType U8 = "validation.validate_int"
 validatorForBasicType U16 = "validation.validate_int"
 validatorForBasicType U32 = "validation.validate_int"
-validatorForBasicType U64 = "validation.validate_int"
-validatorForBasicType U128 = "validation.validate_int"
+validatorForBasicType U64 = "validation.validate_bigint"
+validatorForBasicType U128 = "validation.validate_bigint"
 validatorForBasicType I8 = "validation.validate_int"
 validatorForBasicType I16 = "validation.validate_int"
 validatorForBasicType I32 = "validation.validate_int"
-validatorForBasicType I64 = "validation.validate_int"
-validatorForBasicType I128 = "validation.validate_int"
+validatorForBasicType I64 = "validation.validate_bigint"
+validatorForBasicType I128 = "validation.validate_bigint"
 validatorForBasicType F32 = "validation.validate_float"
 validatorForBasicType F64 = "validation.validate_float"
 validatorForBasicType Boolean = "validation.validate_bool"
@@ -541,76 +643,10 @@ decoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
     mconcat [moduleName, ".", name, ".validate"]
 
-encoderForFieldType :: (Text, Text) -> FieldType -> Text
-encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
-encoderForFieldType (_l, _r) (BasicType basicType) = encoderForBasicType basicType
-encoderForFieldType (l, r) (ComplexType complexType) = l <> encoderForComplexType complexType <> r
-encoderForFieldType (_l, _r) (DefinitionReferenceType definitionReference) =
-  encoderForDefinitionReference definitionReference
-encoderForFieldType (_l, _r) (TypeVariableReferenceType (TypeVariable name)) = name <> "_to_json"
-encoderForFieldType (_l, _r) (RecursiveReferenceType (DefinitionName name)) = name <> ".to_json"
-
-encoderForBasicType :: BasicTypeValue -> Text
-encoderForBasicType _ = "encoding.basic_to_json"
-
-encoderForLiteralType :: LiteralTypeValue -> Text
-encoderForLiteralType (LiteralString s) = "'" <> s <> "'"
-encoderForLiteralType (LiteralInteger i) = tshow i
-encoderForLiteralType (LiteralFloat f) = tshow f
-encoderForLiteralType (LiteralBoolean b) = tshow b
-
-encoderForComplexType :: ComplexTypeValue -> Text
-encoderForComplexType (PointerType fieldType) = encoderForFieldType ("", "") fieldType
-encoderForComplexType (ArrayType _size fieldType) =
-  mconcat ["encoding.list_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
-encoderForComplexType (SliceType fieldType) =
-  mconcat ["encoding.list_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
-encoderForComplexType (OptionalType fieldType) =
-  mconcat ["encoding.optional_to_json(", encoderForFieldType ("(", ")") fieldType, ")"]
-
-encoderForDefinitionReference :: DefinitionReference -> Text
-encoderForDefinitionReference
-  ( DefinitionReference
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    name <> ".to_json"
-encoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [moduleName, ".", name, ".to_json"]
-encoderForDefinitionReference
-  ( AppliedGenericReference
-      appliedTypes
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat [name, ".to_json(", appliedEncoders, ")"]
-encoderForDefinitionReference
-  ( AppliedImportedGenericReference
-      (ModuleName moduleName)
-      (AppliedTypes appliedTypes)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
-encoderForDefinitionReference
-  ( GenericDeclarationReference
-      (ModuleName moduleName)
-      (DefinitionName name)
-      (AppliedTypes appliedTypes)
-    ) =
-    let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
-encoderForDefinitionReference
-  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [moduleName, ".", name, ".to_json"]
-
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
   let baseClassOutput = outputUnionBaseClass name typeTag (constructorsFrom unionType) typeVariables
-      casesOutput = outputUnionCases fullUnionName typeTag (constructorsFrom unionType)
+      casesOutput = outputUnionCases fullUnionName typeVariables typeTag (constructorsFrom unionType)
       fullUnionName =
         if null typeVariables
           then name
@@ -638,9 +674,21 @@ outputUnionBaseClass name tag constructors typeVariables =
         if null typeVariables
           then ""
           else mconcat ["(typing.Generic", joinTypeVariables typeVariables, ")"]
+      maybeTypeVariableToJSONArguments =
+        if null typeVariables
+          then ""
+          else
+            mconcat
+              [ ", ",
+                typeVariables
+                  & fmap (\(TypeVariable t) -> mconcat [t, "_to_json: encoding.ToJSON[", t, "]"])
+                  & Text.intercalate ","
+              ]
       stubsOutput =
         mconcat
-          [ "    def to_json(self) -> typing.Dict[str, typing.Any]:\n",
+          [ "    def to_json(self",
+            maybeTypeVariableToJSONArguments,
+            ") -> typing.Dict[str, typing.Any]:\n",
             mconcat
               [ "        raise NotImplementedError('`to_json` is not implemented for base class `",
                 name,
@@ -789,13 +837,14 @@ outputUnionDecoder unionName typeVariables =
             ]
         ]
 
-outputUnionCases :: Text -> FieldName -> [Constructor] -> Text
-outputUnionCases unionName tag =
-  fmap (outputUnionCase unionName tag) >>> Text.intercalate "\n\n"
+outputUnionCases :: Text -> [TypeVariable] -> FieldName -> [Constructor] -> Text
+outputUnionCases unionName unionTypeVariables tag =
+  fmap (outputUnionCase unionName unionTypeVariables tag) >>> Text.intercalate "\n\n"
 
-outputUnionCase :: Text -> FieldName -> Constructor -> Text
+outputUnionCase :: Text -> [TypeVariable] -> FieldName -> Constructor -> Text
 outputUnionCase
   unionName
+  unionTypeVariables
   fieldName@(FieldName tag)
   constructor@(Constructor (ConstructorName name) maybePayload) =
     let payloadTypeVariables =
@@ -899,7 +948,7 @@ outputUnionCase
                       ")"
                     ]
                 ]
-        encoderOutput = outputEncoderForUnionConstructor fieldName constructor
+        encoderOutput = outputEncoderForUnionConstructor unionTypeVariables fieldName constructor
      in mconcat
           [ "@dataclass(frozen=True)\n",
             mconcat ["class ", name, "(", unionName, "):\n"],
@@ -911,42 +960,44 @@ outputUnionCase
             encoderOutput
           ]
 
-outputEncoderForUnionConstructor :: FieldName -> Constructor -> Text
-outputEncoderForUnionConstructor (FieldName tag) (Constructor (ConstructorName name) maybePayload) =
-  let payloadTypeVariables =
-        fromMaybe [] $ foldMap typeVariablesFrom maybePayload
-      maybeDataField =
-        maybe "" (dataEncoder >>> (", 'data': " <>)) maybePayload
-      dataEncoder (BasicType _) = "self.data"
-      dataEncoder (DefinitionReferenceType _) = "self.data.to_json()"
-      dataEncoder fieldType = mconcat [encoderForFieldType ("", "") fieldType, "(self.data)"]
-      maybeTypeVariableToJSONArguments =
-        if null payloadTypeVariables
-          then ""
-          else
-            mconcat
-              [ ", ",
-                payloadTypeVariables
-                  & fmap
-                    ( \(TypeVariable t) ->
-                        mconcat [t, "_to_json: encoding.ToJSON[", t, "]"]
-                    )
-                  & Text.intercalate ", "
-              ]
-      interface = mconcat ["{", mconcat ["'", tag, "': '", name, "'", maybeDataField], "}"]
-      maybePassedInToJSONs =
-        if null payloadTypeVariables
-          then ""
-          else
-            payloadTypeVariables
-              & fmap (\(TypeVariable t) -> t <> "_to_json")
-              & Text.intercalate ", "
-   in mconcat
-        [ mconcat ["    def to_json(self", maybeTypeVariableToJSONArguments, ") -> typing.Dict[str, typing.Any]:\n"],
-          mconcat ["        return ", interface, "\n\n"],
-          mconcat ["    def encode(self", maybeTypeVariableToJSONArguments, ") -> str:\n"],
-          mconcat ["        return json.dumps(self.to_json(", maybePassedInToJSONs, "))"]
-        ]
+outputEncoderForUnionConstructor :: [TypeVariable] -> FieldName -> Constructor -> Text
+outputEncoderForUnionConstructor
+  unionTypeVariables
+  (FieldName tag)
+  (Constructor (ConstructorName name) maybePayload) =
+    let maybeDataField =
+          maybe "" (dataEncoder >>> (", 'data': " <>)) maybePayload
+        dataEncoder (BasicType _) = "self.data"
+        dataEncoder (DefinitionReferenceType _) =
+          mconcat ["self.data.to_json(", maybePassedInToJSONs, ")"]
+        dataEncoder fieldType = mconcat [encoderForFieldType ("", "") fieldType, "(self.data)"]
+        maybeTypeVariableToJSONArguments =
+          if null unionTypeVariables
+            then ""
+            else
+              mconcat
+                [ ", ",
+                  unionTypeVariables
+                    & fmap
+                      ( \(TypeVariable t) ->
+                          mconcat [t, "_to_json: encoding.ToJSON[", t, "]"]
+                      )
+                    & Text.intercalate ", "
+                ]
+        interface = mconcat ["{", mconcat ["'", tag, "': '", name, "'", maybeDataField], "}"]
+        maybePassedInToJSONs =
+          if null unionTypeVariables
+            then ""
+            else
+              unionTypeVariables
+                & fmap (\(TypeVariable t) -> t <> "_to_json")
+                & Text.intercalate ", "
+     in mconcat
+          [ mconcat ["    def to_json(self", maybeTypeVariableToJSONArguments, ") -> typing.Dict[str, typing.Any]:\n"],
+            mconcat ["        return ", interface, "\n\n"],
+            mconcat ["    def encode(self", maybeTypeVariableToJSONArguments, ") -> str:\n"],
+            mconcat ["        return json.dumps(self.to_json(", maybePassedInToJSONs, "))"]
+          ]
 
 typeVariableValidatorsAsArguments :: [TypeVariable] -> Text
 typeVariableValidatorsAsArguments [] = ""

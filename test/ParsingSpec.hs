@@ -26,7 +26,8 @@ data FSharpReferenceOutput = FSharpReferenceOutput
   }
 
 data PythonReferenceOutput = PythonReferenceOutput
-  { python :: !Text
+  { python :: !Text,
+    basic :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -69,13 +70,14 @@ gitHubReferenceOutput extension =
 pythonReferenceOutput :: IO PythonReferenceOutput
 pythonReferenceOutput = do
   python <- readFileUtf8 "./test/reference-output/python.py"
-  pure PythonReferenceOutput {python}
+  basic <- readFileUtf8 "./test/reference-output/basic.py"
+  pure PythonReferenceOutput {python, basic}
 
 spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> PythonReferenceOutput -> Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
-  (PythonReferenceOutput pyPython) = do
+  (PythonReferenceOutput pyPython pyBasic) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -105,8 +107,10 @@ spec
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
         let basicTypeScriptOutput = TypeScript.outputModule basicModule
             basicFSharpOutput = FSharp.outputModule basicModule
+            basicPythonOutput = Python.outputModule basicModule
         basicTypeScriptOutput `shouldBe` tsBasic
         basicFSharpOutput `shouldBe` fsBasic
+        basicPythonOutput `shouldBe` pyBasic
 
       it "Mirrors reference output for `importExample.gotyno`" $ do
         importModule <-
@@ -150,7 +154,8 @@ spec
 
       it "Basic `python.gotyno` module is output correctly" $ do
         pythonModule <-
-          (getRight >>> PartialList.head) <$> parseModules ["examples/python.gotyno"]
+          (getRight >>> PartialList.last)
+            <$> parseModules ["examples/basic.gotyno", "examples/python.gotyno"]
         let pythonPythonOutput = Python.outputModule pythonModule
         pythonPythonOutput `shouldBe` pyPython
 
