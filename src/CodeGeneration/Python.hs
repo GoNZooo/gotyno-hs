@@ -520,7 +520,7 @@ decoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", name, ".validate ", appliedDecoders, ")"]
+     in mconcat [name, ".validate(", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
@@ -528,7 +528,7 @@ decoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
-     in mconcat ["(", moduleName, ".", name, ".validate ", appliedDecoders, ")"]
+     in mconcat [moduleName, ".", name, ".validate(", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
