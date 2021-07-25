@@ -8,6 +8,7 @@ type Recruiter =
         Name: string
         Emails: list<option<string>>
         Recruiter: option<Recruiter>
+        Created: uint64
     }
 
     static member Decoder: Decoder<Recruiter> =
@@ -17,6 +18,7 @@ type Recruiter =
                 Name = get.Required.Field "name" Decode.string
                 Emails = get.Required.Field "emails" (Decode.list (Decode.option Decode.string))
                 Recruiter = get.Optional.Field "recruiter" Recruiter.Decoder
+                Created = get.Required.Field "created" Decode.uint64
             }
         )
 
@@ -27,6 +29,7 @@ type Recruiter =
                 "name", Encode.string value.Name
                 "emails", GotynoCoders.encodeList (Encode.option Encode.string) value.Emails
                 "recruiter", Encode.option Recruiter.Encoder value.Recruiter
+                "created", Encode.uint64 value.Created
             ]
 
 type GetSearchesFilter =

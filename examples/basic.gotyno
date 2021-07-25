@@ -3,6 +3,7 @@ struct Recruiter {
     name: String
     emails: [3]?String
     recruiter: ?*Recruiter
+    created: U64
 }
 
 union GetSearchesFilter {

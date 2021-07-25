@@ -5,14 +5,15 @@ export type Recruiter = {
     name: string;
     emails: (string | null | undefined)[];
     recruiter: Recruiter | null | undefined;
+    created: bigint;
 };
 
 export function isRecruiter(value: unknown): value is Recruiter {
-    return svt.isInterface<Recruiter>(value, {type: "Recruiter", name: svt.isString, emails: svt.arrayOf(svt.optional(svt.isString)), recruiter: svt.optional(isRecruiter)});
+    return svt.isInterface<Recruiter>(value, {type: "Recruiter", name: svt.isString, emails: svt.arrayOf(svt.optional(svt.isString)), recruiter: svt.optional(isRecruiter), created: svt.isBigInt});
 }
 
 export function validateRecruiter(value: unknown): svt.ValidationResult<Recruiter> {
-    return svt.validate<Recruiter>(value, {type: "Recruiter", name: svt.validateString, emails: svt.validateArray(svt.validateOptional(svt.validateString)), recruiter: svt.validateOptional(validateRecruiter)});
+    return svt.validate<Recruiter>(value, {type: "Recruiter", name: svt.validateString, emails: svt.validateArray(svt.validateOptional(svt.validateString)), recruiter: svt.validateOptional(validateRecruiter), created: svt.validateBigInt});
 }
 
 export type GetSearchesFilter = SearchesByQueryLike | SearchesByResultLike | NoSearchesFilter;
