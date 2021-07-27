@@ -100,12 +100,12 @@ struct Person {
     hobbies: []String
     last_fifteen_comments: [15]String
     recruiter: ?Recruiter
-    spouse: Maybe<Person>
 }
 
 struct Generic <T>{
     field: T
-    other_field: OtherType<T>
+    other_field: ?T
+    other_field_with_slice: []T
 }
 ```
 
