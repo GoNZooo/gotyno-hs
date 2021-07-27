@@ -1,5 +1,26 @@
 # gotyno-hs
 
+A tool for generating validation/encoding/decoding code for types via a type
+definition language. See details of the language [here](#the-language).
+
+## Supported languages
+
+- TypeScript
+- F#
+- Python
+
+## Planned support
+
+- Haskell
+- PureScript
+
+## Maybe supported in the future
+
+- Kotlin
+- Swift
+- Scala 3 (if it's better now)
+- Elixir
+
 ## Options you can pass to the compiler
 
 The help text for the compiler illustrates most of what you can do.
