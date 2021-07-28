@@ -19,6 +19,15 @@ stack install
 Stack will now install `gotyno-hs` as a binary in your `$HOME/.local/bin` directory. If you've made
 sure that you have this directory in your `$PATH` you can execute `gotyno-hs` anywhere.
 
+If we wanted to compile a file at `examples/basic.gotyno` into both TypeScript and F# into separate
+output directories as well as watch for file changes and recompile when they happen, we could
+execute the following at this point:
+
+```bash
+$ gotyno-hs --typescript ts-output --fsharp fsharp-output --watch examples/basic.gotyno
+Watching directory: '<ABSOLUTE-PATH-TO-EXAMPLES-DIRECTORY>'
+```
+
 ## Supported languages
 
 - TypeScript
