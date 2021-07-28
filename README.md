@@ -1,15 +1,14 @@
 # gotyno-hs
 
-A tool for generating validation/encoding/decoding code for types via a type
-definition language. See details of the language [here](#the-language).
+A tool for generating validation/encoding/decoding code for types via a type definition language.
+See details of the language [here](#the-language).
 
 ## Installation
 
 Make sure you have the Haskell tool
-[`stack`](https://docs.haskellstack.org/en/stable/install_and_upgrade/). This is
-used for building the entire project and once you've installed it, it will
-manage having the correct version of the compiler and all the Haskell libraries
-that are used as well.
+[`stack`](https://docs.haskellstack.org/en/stable/install_and_upgrade/). This is used for building
+the entire project and once you've installed it, it will manage having the correct version of the
+compiler and all the Haskell libraries that are used as well.
 
 ```
 stack install
@@ -57,60 +56,56 @@ Available options:
 
 ### `=|-|PATH`
 
-The output destination for a language can be set to `=` for "same as input file"
-`-` for standard output or a path for all output for that language.
+The output destination for a language can be set to `=` for "same as input file" `-` for standard
+output or a path for all output for that language.
 
 ## TypeScript example
 
-[basic.gotyno](./examples/basic.gotyno) has an example of some types being
-defined and [basic.ts](./test/reference-output/basic.ts) is the automatically
-generated TypeScript output from this file. This directory contains other
-examples, used primarily for testing purposes.
+[basic.gotyno](./examples/basic.gotyno) has an example of some types being defined and
+[basic.ts](./test/reference-output/basic.ts) is the automatically generated TypeScript output from
+this file. This directory contains other examples, used primarily for testing purposes.
 
-Behind the scenes it's using a validation library I wrote for validating
-`unknown` values (for the most part against given interface definitions).
+Behind the scenes it's using a validation library I wrote for validating `unknown` values
+(for the most part against given interface definitions).
 
 ## F# example
 
-[basic.gotyno](./examples/basic.gotyno) has an example of some types being
-defined and [basic.fs](./test/reference-output/basic.fs) is the automatically
-generated F# output from this file. This directory contains other examples, used
-primarily for testing purposes.
+[basic.gotyno](./examples/basic.gotyno) has an example of some types being defined and
+[basic.fs](./test/reference-output/basic.fs) is the automatically generated F# output from this
+file. This directory contains other examples, used primarily for testing purposes.
 
-The F# version uses `Thoth` for JSON decoding, as well as an additional
-extension library to it for some custom decoding helpers that I wrote.
+The F# version uses `Thoth` for JSON decoding, as well as an additional extension library to it for
+some custom decoding helpers that I wrote.
 
-Import names (and by extension declaration source names) are automatically
-converted to use an initial uppercase letter for F#. Note, however, that
-PascalCase is not automatically converted to. If import names are written in
-snake_case the output will be Snake_case. For the most part camelCase will work
-well for Gotyno file names, since the output will be "CamelCase" for that
-particular example.
+Import names (and by extension declaration source names) are automatically converted to use an
+initial uppercase letter for F#. Note, however, that PascalCase is not automatically converted to.
+If import names are written in snake_case the output will be Snake_case. For the most part camelCase
+will work well for Gotyno file names, since the output will be "CamelCase" for that particular
+example.
 
 ## The Language
 
-All supported type names are uppercase and type definitions currently are
-enforced as such as well.
+All supported type names are uppercase and type definitions currently are enforced as such as well.
 
 ### Annotations/Types
 
 - `?TypeName` signifies an optional type.
-- `*TypeName` signifies a pointer to that type. In languages where pointers are
-  hidden from the user this may not be visible in types generated for it.
-- `[]TypeName` signifies a sequence of several `TypeName` with a length known at
-  run-time, whereas `[N]TypeName` signifies a sequence of several `TypeName`
-  with a known and enforced length at compile-time. Some languages may or may
-  not have the latter concept and will use only the former for code generation.
-- `TypeName<OtherTypeName>` signifies an application of a generic type, such that
-  whatever type variable `TypeName` takes in its definition is filled in with
-  `OtherTypeName` in this specific instance.
-- Conversely, `struct/union TypeName <T>{ ... }` is how one defines a type that
-  takes a type parameter. The `<T>` part is seen here to take and provide a type
-  `T` for the adjacent scope, hence its position in the syntax.
-- The type `"SomeValue"` signifies a literal string of that value and can be
-  used very effectively in TypeScript.
-- The unsigned integer type is the same, but for integers. It's debatable
-  whether this is useful to have.
+- `*TypeName` signifies a pointer to that type. In languages where pointers are hidden from the user
+  this may not be visible in types generated for it.
+- `[]TypeName` signifies a sequence of several `TypeName` with a length known at run-time, whereas
+  `[N]TypeName` signifies a sequence of several `TypeName` with a known and enforced length at
+  compile-time. Some languages may or may not have the latter concept and will use only the former
+  for code generation.
+- `TypeName<OtherTypeName>` signifies an application of a generic type, such that whatever type
+  variable `TypeName` takes in its definition is filled in with `OtherTypeName` in this specific
+  instance.
+- Conversely, `struct/union TypeName <T>{ ... }` is how one defines a type that takes a type
+  parameter. The `<T>` part is seen here to take and provide a type `T` for the adjacent scope,
+  hence its position in the syntax.
+- The type `"SomeValue"` signifies a literal string of that value and can be used very effectively
+  in TypeScript.
+- The unsigned integer type is the same, but for integers. It's debatable whether this is useful to
+  have.
 
 ### Structs
 
@@ -170,9 +165,8 @@ union Result<E, T>{
 
 #### Untagged
 
-Sometimes a union that carries no extra tags is required, though usually these
-will have to be identified less automatically, perhaps via custom tags in their
-respective payload:
+Sometimes a union that carries no extra tags is required, though usually these will have to be
+identified less automatically, perhaps via custom tags in their respective payload:
 
 ```
 struct SomeType {
@@ -194,14 +188,13 @@ untagged union Possible {
 }
 ```
 
-In TypeScript, for example, the correct type guard and validator for this
-untagged union will be generated, and the literal string fields can still be
-used for identifying which type one has.
+In TypeScript, for example, the correct type guard and validator for this untagged union will be
+generated, and the literal string fields can still be used for identifying which type one has.
 
 #### Setting the tag key and embedding it in payload structures
 
-The above can also be accomplished by setting the tag key to be embedded in
-options passed to the `union` keyword (we can also set which key is used):
+The above can also be accomplished by setting the tag key to be embedded in options passed to the
+`union` keyword (we can also set which key is used):
 
 ```
 struct SomeType {
@@ -220,22 +213,21 @@ union(tag = type_tag, embedded) Possible {
 }
 ```
 
-This effectively will create a structure where we get the field `type_tag`
-embedded in the payload structures (`SomeType` & `SomeOtherType`) with the
-values `"FirstConstructor"` and `"SecondConstructor"` respectively.
+This effectively will create a structure where we get the field `type_tag` embedded in the payload
+structures (`SomeType` & `SomeOtherType`) with the values `"FirstConstructor"` and
+`"SecondConstructor"` respectively.
 
-Note that in order to embed a type key we need the payload (if present) to be a
-structure type, otherwise we have no fields to merge the type tag field into.
+Note that in order to embed a type key we need the payload (if present) to be a structure type,
+otherwise we have no fields to merge the type tag field into.
 
-Both checks for existence of the referenced payload types and checks that they
-are structures are done during compilation.
+Both checks for existence of the referenced payload types and checks that they are structures are
+done during compilation.
 
 ### Declarations
 
-When a type that is outside of Gotyno files is needed, we can use a declaration
-to assert that it exists. It will function much like an import in the generated
-code and it's up to the user to supply the required functionality for each
-language in the required file:
+When a type that is outside of Gotyno files is needed, we can use a declaration to assert that it
+exists. It will function much like an import in the generated code and it's up to the user to supply
+the required functionality for each language in the required file:
 
 ```
 declare external.Option<T>
@@ -249,6 +241,6 @@ struct HasOption<T> {
 ```
 
 Note that the above code will generate an import for each unique source module
-(on the left of the '.') and each usage is automatically recognized as a
-reference to a declaration. The code output will rely on this module being
-present in the same output directory as the generated code.
+(on the left of the '.') and each usage is automatically recognized as a reference to a declaration.
+The code output will rely on this module being present in the same output directory as the generated
+code.
