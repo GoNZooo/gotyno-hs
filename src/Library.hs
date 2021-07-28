@@ -12,7 +12,7 @@ import qualified RIO.List as List
 import qualified RIO.Time as Time
 import qualified System.FSNotify as FSNotify
 import Types
-import Prelude (putStrLn)
+import Prelude (print, putStrLn)
 
 data OutputDestination
   = SameAsInput
@@ -20,19 +20,21 @@ data OutputDestination
   | StandardOut
   deriving (Eq, Show)
 
-data Languages = Languages
-  { typescript :: !(Maybe OutputDestination),
-    fsharp :: !(Maybe OutputDestination),
-    python :: !(Maybe OutputDestination)
-  }
+data Languages
+  = Languages
+      { typescript :: !(Maybe OutputDestination),
+        fsharp :: !(Maybe OutputDestination),
+        python :: !(Maybe OutputDestination)
+      }
   deriving (Eq, Show)
 
-data Options = Options
-  { languages :: !Languages,
-    watchMode :: !Bool,
-    verbose :: !Bool,
-    inputs :: ![FilePath]
-  }
+data Options
+  = Options
+      { languages :: !Languages,
+        watchMode :: !Bool,
+        verbose :: !Bool,
+        inputs :: ![FilePath]
+      }
   deriving (Eq, Show)
 
 runMain :: Options -> IO ()
@@ -44,26 +46,21 @@ runMain
       verbose
     } = do
     when watchMode $ do
-      watchInputs inputs languages
-
+      watchInputs inputs languages verbose
     start <- Time.getCurrentTime
     maybeModules <- Parsing.parseModules inputs
     postParsing <- Time.getCurrentTime
-
     case maybeModules of
       Right modules -> do
         startTS <- Time.getCurrentTime
         forM_ typescript $ outputLanguage modules TypeScript.outputModule "ts"
         endTS <- Time.getCurrentTime
-
         startFS <- Time.getCurrentTime
         forM_ fsharp $ outputLanguage modules FSharp.outputModule "fs"
         endFS <- Time.getCurrentTime
-
         startPython <- Time.getCurrentTime
         forM_ python $ outputLanguage modules Python.outputModule "py"
         endPython <- Time.getCurrentTime
-
         end <- Time.getCurrentTime
         let diff = Time.diffUTCTime end start
             diffParsing = Time.diffUTCTime postParsing start
@@ -97,8 +94,8 @@ outputLanguage modules outputFunction extension outputDestination = do
         Directory.createDirectoryIfMissing True basePath
         writeFileUtf8 pathForOutput output
 
-watchInputs :: [FilePath] -> Languages -> IO ()
-watchInputs relativeInputs Languages {typescript, fsharp, python} = do
+watchInputs :: [FilePath] -> Languages -> Bool -> IO ()
+watchInputs relativeInputs Languages {typescript, fsharp, python} verbose = do
   inputs <- traverse Directory.makeAbsolute relativeInputs
   let compileEverything = do
         maybeModules <- Parsing.parseModules relativeInputs
@@ -109,9 +106,7 @@ watchInputs relativeInputs Languages {typescript, fsharp, python} = do
             forM_ python $ outputLanguage modules Python.outputModule "py"
           Left errors ->
             forM_ errors putStrLn
-
   compileEverything
-
   FSNotify.withManager $ \watchManager -> do
     let inputDirectories = inputs & fmap FilePath.takeDirectory & List.nub
         eventPredicate (FSNotify.Modified modifiedInput _modificationTime _someBool) =
@@ -119,6 +114,12 @@ watchInputs relativeInputs Languages {typescript, fsharp, python} = do
         eventPredicate _otherEvents = False
     forM_ inputDirectories $ \inputDirectory -> do
       putStrLn $ "Watching directory: '" <> inputDirectory <> "'"
-      FSNotify.watchDir watchManager inputDirectory eventPredicate (const compileEverything)
-
+      FSNotify.watchDir
+        watchManager
+        inputDirectory
+        eventPredicate
+        ( \event -> do
+            when verbose (print event)
+            compileEverything
+        )
     forever $ threadDelay 1000000

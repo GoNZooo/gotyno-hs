@@ -69,3 +69,8 @@ struct Person {
     recruiter: Recruiter
     spouse: Maybe<Person>
 }
+
+union(embedded) EmbeddedEvent {
+    EmbeddedLogIn: LogInData
+    SystemImploded
+}

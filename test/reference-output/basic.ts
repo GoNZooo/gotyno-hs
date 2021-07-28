@@ -380,3 +380,52 @@ export function isPerson(value: unknown): value is Person {
 export function validatePerson(value: unknown): svt.ValidationResult<Person> {
     return svt.validate<Person>(value, {name: svt.validateString, age: svt.validateNumber, efficiency: svt.validateNumber, on_vacation: svt.validateBoolean, hobbies: svt.validateArray(svt.validateString), last_fifteen_comments: svt.validateArray(svt.validateString), recruiter: validateRecruiter, spouse: validateMaybe(validatePerson)});
 }
+
+export type EmbeddedEvent = EmbeddedLogIn | SystemImploded;
+
+export enum EmbeddedEventTag {
+    EmbeddedLogIn = "EmbeddedLogIn",
+    SystemImploded = "SystemImploded",
+}
+
+export type EmbeddedLogIn = {
+    type: EmbeddedEventTag.EmbeddedLogIn;
+    username: string;
+    password: string;
+};
+
+export type SystemImploded = {
+    type: EmbeddedEventTag.SystemImploded;
+};
+
+export function EmbeddedLogIn(data: LogInData): EmbeddedLogIn {
+    return {type: EmbeddedEventTag.EmbeddedLogIn, ...data};
+}
+
+export function SystemImploded(): SystemImploded {
+    return {type: EmbeddedEventTag.SystemImploded};
+}
+
+export function isEmbeddedEvent(value: unknown): value is EmbeddedEvent {
+    return [isEmbeddedLogIn, isSystemImploded].some((typePredicate) => typePredicate(value));
+}
+
+export function isEmbeddedLogIn(value: unknown): value is EmbeddedLogIn {
+    return svt.isInterface<EmbeddedLogIn>(value, {type: EmbeddedEventTag.EmbeddedLogIn, username: svt.isString, password: svt.isString});
+}
+
+export function isSystemImploded(value: unknown): value is SystemImploded {
+    return svt.isInterface<SystemImploded>(value, {type: EmbeddedEventTag.SystemImploded});
+}
+
+export function validateEmbeddedEvent(value: unknown): svt.ValidationResult<EmbeddedEvent> {
+    return svt.validateWithTypeTag<EmbeddedEvent>(value, {[EmbeddedEventTag.EmbeddedLogIn]: validateEmbeddedLogIn, [EmbeddedEventTag.SystemImploded]: validateSystemImploded}, "type");
+}
+
+export function validateEmbeddedLogIn(value: unknown): svt.ValidationResult<EmbeddedLogIn> {
+    return svt.validate<EmbeddedLogIn>(value, {type: EmbeddedEventTag.EmbeddedLogIn, username: svt.validateString, password: svt.validateString});
+}
+
+export function validateSystemImploded(value: unknown): svt.ValidationResult<SystemImploded> {
+    return svt.validate<SystemImploded>(value, {type: EmbeddedEventTag.SystemImploded});
+}

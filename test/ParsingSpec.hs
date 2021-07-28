@@ -101,7 +101,7 @@ spec
           (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
         name `shouldBe` ModuleName "basic"
         imports `shouldBe` []
-        length definitions `shouldBe` 12
+        length definitions `shouldBe` 13
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]

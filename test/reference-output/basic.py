@@ -430,3 +430,53 @@ class Person:
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
+
+class EmbeddedEvent:
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['EmbeddedEvent']:
+        return validation.validate_with_type_tags(value, 'type', {'EmbeddedLogIn': EmbeddedLogIn.validate, 'SystemImploded': SystemImploded.validate})
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EmbeddedEvent']:
+        return validation.validate_from_string(string, EmbeddedEvent.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        raise NotImplementedError('`to_json` is not implemented for base class `EmbeddedEvent`')
+
+    def encode(self) -> str:
+        raise NotImplementedError('`encode` is not implemented for base class `EmbeddedEvent`')
+
+@dataclass
+class EmbeddedLogIn(EmbeddedEvent):
+    username: str
+    password: str
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['EmbeddedLogIn']:
+        return validation.validate_with_type_tag_and_validator(value, 'type', 'EmbeddedLogIn', LogInData.validate, EmbeddedLogIn)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EmbeddedLogIn']:
+        return validation.validate_from_string(string, EmbeddedLogIn.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'EmbeddedLogIn', **LogInData.to_json(self)}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass
+class SystemImploded(EmbeddedEvent):
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['SystemImploded']:
+        return validation.validate_with_type_tag_and_validator(value, 'type', 'SystemImploded', validation.validate_unknown, SystemImploded)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['SystemImploded']:
+        return validation.validate_from_string(string, SystemImploded.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'SystemImploded'}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())

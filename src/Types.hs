@@ -64,7 +64,7 @@ data TypeData
   | DeclaredType !ModuleName ![TypeVariable]
   deriving (Eq, Show)
 
-data EmbeddedConstructor = EmbeddedConstructor !ConstructorName !DefinitionReference
+data EmbeddedConstructor = EmbeddedConstructor !ConstructorName !(Maybe DefinitionReference)
   deriving (Eq, Show)
 
 data StructType

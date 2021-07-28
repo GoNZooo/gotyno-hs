@@ -39,6 +39,7 @@ import RIO
     (&),
     (*>),
     (.),
+    (<$),
     (<$>),
     (<*),
     (<>),
@@ -298,9 +299,13 @@ embeddedUnionStructConstructorsP typeVariables =
 
 embeddedUnionStructConstructorP :: [TypeVariable] -> Parser EmbeddedConstructor
 embeddedUnionStructConstructorP typeVariables = do
-  constructorName <- string "    " *> embeddedConstructorNameP <* string ": "
-  definition <- structReferenceP typeVariables <* newline
-  pure $ EmbeddedConstructor (ConstructorName constructorName) definition
+  constructorName <- string "    " *> embeddedConstructorNameP
+  maybeDefinition <-
+    choice
+      [ Nothing <$ newline,
+        Just <$> (string ": " *> structReferenceP typeVariables <* newline)
+      ]
+  pure $ EmbeddedConstructor (ConstructorName constructorName) maybeDefinition
 
 structReferenceP :: [TypeVariable] -> Parser DefinitionReference
 structReferenceP typeVariables = do
