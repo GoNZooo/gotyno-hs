@@ -10,9 +10,14 @@ Make sure you have the Haskell tool
 the entire project and once you've installed it, it will manage having the correct version of the
 compiler and all the Haskell libraries that are used as well.
 
+Once we have `stack` installed we can simply run the following in this project directory:
+
 ```
 stack install
 ```
+
+Stack will now install `gotyno-hs` as a binary in your `$HOME/.local/bin` directory. If you've made
+sure that you have this directory in your `$PATH` you can execute `gotyno-hs` anywhere.
 
 ## Supported languages
 
