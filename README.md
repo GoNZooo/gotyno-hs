@@ -3,6 +3,18 @@
 A tool for generating validation/encoding/decoding code for types via a type
 definition language. See details of the language [here](#the-language).
 
+## Installation
+
+Make sure you have the Haskell tool
+[`stack`](https://docs.haskellstack.org/en/stable/install_and_upgrade/). This is
+used for building the entire project and once you've installed it, it will
+manage having the correct version of the compiler and all the Haskell libraries
+that are used as well.
+
+```
+stack install
+```
+
 ## Supported languages
 
 - TypeScript
@@ -47,12 +59,6 @@ Available options:
 
 The output destination for a language can be set to `=` for "same as input file"
 `-` for standard output or a path for all output for that language.
-
-## Install
-
-```
-stack install
-```
 
 ## TypeScript example
 
