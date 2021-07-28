@@ -40,7 +40,7 @@ outputDefinition (TypeDefinition (DefinitionName name) (EmbeddedUnion typeTag co
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: Text -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedUnion unionName (FieldName tag) constructors =
+outputEmbeddedUnion unionName fieldName@(FieldName tag) constructors =
   let typeOutput =
         outputCaseUnion
           unionName
@@ -74,26 +74,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
           ]
       constructorCasesOutput =
         constructors
-          & fmap
-            ( \(EmbeddedConstructor (ConstructorName name) reference) ->
-                let fields = structFieldsFromReference reference
-                    fieldsEncoderOutput =
-                      fields
-                        & fmap
-                          ( outputEncoderForFieldWithValueName "payload"
-                              >>> ("                    " <>)
-                              >>> (<> "\n")
-                          )
-                        & mconcat
-                 in mconcat
-                      [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
-                        "            Encode.object\n",
-                        "                [\n",
-                        mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
-                        fieldsEncoderOutput,
-                        "                ]"
-                      ]
-            )
+          & fmap (outputEmbeddedCase fieldName)
           & Text.intercalate "\n\n"
       encoderOutput =
         mconcat
@@ -109,27 +90,67 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
           encoderOutput
         ]
 
+outputEmbeddedCase :: FieldName -> EmbeddedConstructor -> Text
+outputEmbeddedCase (FieldName tag) (EmbeddedConstructor (ConstructorName name) Nothing) =
+  mconcat
+    [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
+      "            Encode.object\n",
+      "                [\n",
+      mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
+      "                ]"
+    ]
+outputEmbeddedCase (FieldName tag) (EmbeddedConstructor (ConstructorName name) (Just reference)) =
+  let fields = structFieldsFromReference reference
+      fieldsEncoderOutput =
+        fields
+          & fmap
+            ( outputEncoderForFieldWithValueName "payload"
+                >>> ("                    " <>)
+                >>> (<> "\n")
+            )
+          & mconcat
+   in mconcat
+        [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
+          "            Encode.object\n",
+          "                [\n",
+          mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
+          fieldsEncoderOutput,
+          "                ]"
+        ]
+
 outputEmbeddedConstructorDecoders :: Text -> [EmbeddedConstructor] -> Text
 outputEmbeddedConstructorDecoders unionName =
   fmap (outputEmbeddedConstructorDecoder unionName) >>> Text.intercalate "\n\n"
 
 outputEmbeddedConstructorDecoder :: Text -> EmbeddedConstructor -> Text
-outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName name) reference) =
-  let structFields = structFieldsFromReference reference
-      structFieldDecoders =
-        structFields
-          & fmap (outputDecoderForField >>> ("                " <>) >>> (<> "\n"))
-          & mconcat
-      constructorName = upperCaseFirstCharacter name
+outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName name) Nothing) =
+  let constructorName = upperCaseFirstCharacter name
    in mconcat
         [ mconcat
             ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
-          "        Decode.object (fun get ->\n",
-          mconcat ["            ", constructorName, " {\n"],
-          structFieldDecoders,
-          "            }\n",
-          "        )"
+          mconcat ["        Decode.object (fun get -> ", constructorName, ")"]
         ]
+outputEmbeddedConstructorDecoder
+  unionName
+  ( EmbeddedConstructor
+      (ConstructorName name)
+      (Just reference)
+    ) =
+    let structFields = structFieldsFromReference reference
+        structFieldDecoders =
+          structFields
+            & fmap (outputDecoderForField >>> ("                " <>) >>> (<> "\n"))
+            & mconcat
+        constructorName = upperCaseFirstCharacter name
+     in mconcat
+          [ mconcat
+              ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
+            "        Decode.object (fun get ->\n",
+            mconcat ["            ", constructorName, " {\n"],
+            structFieldDecoders,
+            "            }\n",
+            "        )"
+          ]
 
 structFieldsFromReference :: DefinitionReference -> [StructField]
 structFieldsFromReference
@@ -141,7 +162,7 @@ embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor
 
 embeddedConstructorToConstructor :: EmbeddedConstructor -> Constructor
 embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
-  Constructor name (Just (DefinitionReferenceType reference))
+  Constructor name (DefinitionReferenceType <$> reference)
 
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =

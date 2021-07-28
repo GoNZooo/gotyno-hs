@@ -86,7 +86,25 @@ outputEmbeddedCaseTypeGuard :: FieldName -> Text -> EmbeddedConstructor -> Text
 outputEmbeddedCaseTypeGuard
   (FieldName tag)
   unionName
-  (EmbeddedConstructor (ConstructorName name) reference) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let tagName = unionEnumConstructorTag unionName name
+        interface = mconcat ["{", tag, ": ", tagName, "}"]
+        constructorName = upperCaseFirstCharacter name
+     in mconcat
+          [ mconcat
+              [ "export function is",
+                constructorName,
+                "(value: unknown): value is ",
+                constructorName,
+                " {\n"
+              ],
+            mconcat ["    return svt.isInterface<", constructorName, ">(value, ", interface, ");\n"],
+            "}"
+          ]
+outputEmbeddedCaseTypeGuard
+  (FieldName tag)
+  unionName
+  (EmbeddedConstructor (ConstructorName name) (Just reference)) =
     let fields = structFieldsFromReference reference
         tagName = unionEnumConstructorTag unionName name
         interface = mconcat ["{", tag, ": ", tagName, ", ", fieldTypeGuards, "}"]
@@ -113,7 +131,25 @@ outputEmbeddedCaseValidator :: FieldName -> Text -> EmbeddedConstructor -> Text
 outputEmbeddedCaseValidator
   (FieldName tag)
   unionName
-  (EmbeddedConstructor (ConstructorName name) reference) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let tagName = unionEnumConstructorTag unionName name
+        interface = mconcat ["{", tag, ": ", tagName, "}"]
+        constructorName = upperCaseFirstCharacter name
+     in mconcat
+          [ mconcat
+              [ "export function validate",
+                constructorName,
+                "(value: unknown): svt.ValidationResult<",
+                constructorName,
+                "> {\n"
+              ],
+            mconcat ["    return svt.validate<", constructorName, ">(value, ", interface, ");\n"],
+            "}"
+          ]
+outputEmbeddedCaseValidator
+  (FieldName tag)
+  unionName
+  (EmbeddedConstructor (ConstructorName name) (Just reference)) =
     let fields = structFieldsFromReference reference
         tagName = unionEnumConstructorTag unionName name
         interface = mconcat ["{", tag, ": ", tagName, ", ", fieldValidators, "}"]
@@ -139,7 +175,18 @@ outputEmbeddedConstructorType :: Text -> FieldName -> EmbeddedConstructor -> Tex
 outputEmbeddedConstructorType
   unionName
   (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) fields) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let tagFieldOutput = mconcat ["    ", tag, ": ", tagValue, ";"]
+        tagValue = unionEnumConstructorTag unionName name
+     in mconcat
+          [ mconcat ["export type ", upperCaseFirstCharacter name, " = {\n"],
+            mconcat [tagFieldOutput, "\n"],
+            "};"
+          ]
+outputEmbeddedConstructorType
+  unionName
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) (Just fields)) =
     let fieldsOutput = fields & structFieldsFromReference & fmap outputField & Text.intercalate ""
         tagFieldOutput = mconcat ["    ", tag, ": ", tagValue, ";"]
         tagValue = unionEnumConstructorTag unionName name
@@ -159,7 +206,29 @@ outputEmbeddedCaseConstructor :: Text -> FieldName -> EmbeddedConstructor -> Tex
 outputEmbeddedCaseConstructor
   unionName
   (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) definitionReference) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let constructorName = upperCaseFirstCharacter name
+     in mconcat
+          [ mconcat
+              [ "export function ",
+                constructorName,
+                "(): ",
+                constructorName,
+                " {\n"
+              ],
+            mconcat
+              [ "    return {",
+                tag,
+                ": ",
+                unionEnumConstructorTag unionName name,
+                "};\n"
+              ],
+            "}"
+          ]
+outputEmbeddedCaseConstructor
+  unionName
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) (Just definitionReference)) =
     let constructorName = upperCaseFirstCharacter name
      in mconcat
           [ mconcat
@@ -191,7 +260,7 @@ embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor
 
 embeddedConstructorToConstructor :: EmbeddedConstructor -> Constructor
 embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
-  Constructor name (Just (DefinitionReferenceType reference))
+  Constructor name (DefinitionReferenceType <$> reference)
 
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =

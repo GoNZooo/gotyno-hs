@@ -321,3 +321,42 @@ type Person =
                 "recruiter", Recruiter.Encoder value.Recruiter
                 "spouse", (Maybe.Encoder Person.Encoder) value.Spouse
             ]
+
+type EmbeddedEvent =
+    | EmbeddedLogIn of LogInData
+    | SystemImploded
+
+    static member EmbeddedLogInDecoder: Decoder<EmbeddedEvent> =
+        Decode.object (fun get ->
+            EmbeddedLogIn {
+                Username = get.Required.Field "username" Decode.string
+                Password = get.Required.Field "password" Decode.string
+            }
+        )
+
+    static member SystemImplodedDecoder: Decoder<EmbeddedEvent> =
+        Decode.object (fun get -> SystemImploded)
+
+    static member Decoder: Decoder<EmbeddedEvent> =
+        GotynoCoders.decodeWithTypeTag
+            "type"
+            [|
+                "EmbeddedLogIn", EmbeddedEvent.EmbeddedLogInDecoder
+                "SystemImploded", EmbeddedEvent.SystemImplodedDecoder
+            |]
+
+    static member Encoder =
+        function
+        | EmbeddedLogIn payload ->
+            Encode.object
+                [
+                    "type", Encode.string "EmbeddedLogIn"
+                    "username", Encode.string payload.Username
+                    "password", Encode.string payload.Password
+                ]
+
+        | SystemImploded payload ->
+            Encode.object
+                [
+                    "type", Encode.string "SystemImploded"
+                ]

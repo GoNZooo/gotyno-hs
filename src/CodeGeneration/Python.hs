@@ -67,7 +67,20 @@ outputEmbeddedUnionCase :: Text -> FieldName -> EmbeddedConstructor -> Text
 outputEmbeddedUnionCase
   unionName
   tag
-  constructor@(EmbeddedConstructor (ConstructorName name) reference) =
+  constructor@(EmbeddedConstructor (ConstructorName name) Nothing) =
+    let validatorOutput = outputEmbeddedConstructorDecoder tag constructor
+        encoderOutput = outputEmbeddedConstructorEncoder tag constructor
+     in mconcat
+          [ "@dataclass\n",
+            mconcat ["class ", upperCaseFirstCharacter name, "(", unionName, "):\n"],
+            validatorOutput,
+            "\n\n",
+            encoderOutput
+          ]
+outputEmbeddedUnionCase
+  unionName
+  tag
+  constructor@(EmbeddedConstructor (ConstructorName name) (Just reference)) =
     let structFields = structFieldsFromReference reference
         typesOutput =
           structFields
@@ -91,7 +104,31 @@ outputEmbeddedUnionCase
 outputEmbeddedConstructorDecoder :: FieldName -> EmbeddedConstructor -> Text
 outputEmbeddedConstructorDecoder
   (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) reference) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let typeName = upperCaseFirstCharacter name
+     in mconcat
+          [ "    @staticmethod\n",
+            mconcat ["    def validate(value: validation.Unknown) -> validation.ValidationResult['", typeName, "']:\n"],
+            mconcat
+              [ "        return validation.validate_with_type_tag_and_validator(value, '",
+                tag,
+                "', '",
+                name,
+                "', validation.validate_unknown, ",
+                typeName,
+                ")\n\n"
+              ],
+            "    @staticmethod\n",
+            mconcat
+              [ "    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['",
+                typeName,
+                "']:\n"
+              ],
+            mconcat ["        return validation.validate_from_string(string, ", typeName, ".validate)"]
+          ]
+outputEmbeddedConstructorDecoder
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) (Just reference)) =
     let typeName = upperCaseFirstCharacter name
         DefinitionName referenceName = nameOfReference reference
      in mconcat
@@ -120,7 +157,17 @@ outputEmbeddedConstructorDecoder
 outputEmbeddedConstructorEncoder :: FieldName -> EmbeddedConstructor -> Text
 outputEmbeddedConstructorEncoder
   (FieldName tag)
-  (EmbeddedConstructor (ConstructorName name) reference) =
+  (EmbeddedConstructor (ConstructorName name) Nothing) =
+    let interface = mconcat ["{'", tag, "': '", name, "'}"]
+     in mconcat
+          [ "    def to_json(self) -> typing.Dict[str, typing.Any]:\n",
+            mconcat ["        return ", interface, "\n\n"],
+            "    def encode(self) -> str:\n",
+            "        return json.dumps(self.to_json())"
+          ]
+outputEmbeddedConstructorEncoder
+  (FieldName tag)
+  (EmbeddedConstructor (ConstructorName name) (Just reference)) =
     let DefinitionName referenceName = nameOfReference reference
         interface = mconcat ["{'", tag, "': '", name, "', **", referenceName, ".to_json(self)}"]
      in mconcat
@@ -140,7 +187,7 @@ embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor
 
 embeddedConstructorToConstructor :: EmbeddedConstructor -> Constructor
 embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
-  Constructor name (Just (DefinitionReferenceType reference))
+  Constructor name (DefinitionReferenceType <$> reference)
 
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
