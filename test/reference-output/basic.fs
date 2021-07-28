@@ -15,7 +15,7 @@ type Recruiter =
         Decode.object (fun get ->
             {
                 Type = get.Required.Field "type" (GotynoCoders.decodeLiteralString "Recruiter")
-                Name = get.Required.Field "name" Decode.string
+                Name = get.Required.Field "Name" Decode.string
                 Emails = get.Required.Field "emails" (Decode.list (Decode.option Decode.string))
                 Recruiter = get.Optional.Field "recruiter" Recruiter.Decoder
                 Created = get.Required.Field "created" Decode.uint64
@@ -26,7 +26,7 @@ type Recruiter =
         Encode.object
             [
                 "type", Encode.string "Recruiter"
-                "name", Encode.string value.Name
+                "Name", Encode.string value.Name
                 "emails", GotynoCoders.encodeList (Encode.option Encode.string) value.Emails
                 "recruiter", Encode.option Recruiter.Encoder value.Recruiter
                 "created", Encode.uint64 value.Created

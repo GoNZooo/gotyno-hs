@@ -1,6 +1,6 @@
 struct Recruiter {
     type: "Recruiter"
-    name: String
+    Name: String
     emails: [3]?String
     recruiter: ?*Recruiter
     created: U64

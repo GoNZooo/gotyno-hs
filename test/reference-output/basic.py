@@ -7,21 +7,21 @@ from gotyno_validation import encoding
 @dataclass(frozen=True)
 class Recruiter:
     type: typing.Literal['Recruiter']
-    name: str
+    Name: str
     emails: typing.List[typing.Optional[str]]
     recruiter: typing.Optional[Recruiter]
     created: int
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Recruiter']:
-        return validation.validate_interface(value, {'type': validation.validate_literal('Recruiter'), 'name': validation.validate_string, 'emails': validation.validate_list(validation.validate_optional(validation.validate_string)), 'recruiter': validation.validate_optional(Recruiter.decode), 'created': validation.validate_bigint}, Recruiter)
+        return validation.validate_interface(value, {'type': validation.validate_literal('Recruiter'), 'Name': validation.validate_string, 'emails': validation.validate_list(validation.validate_optional(validation.validate_string)), 'recruiter': validation.validate_optional(Recruiter.decode), 'created': validation.validate_bigint}, Recruiter)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Recruiter']:
         return validation.validate_from_string(string, Recruiter.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'Recruiter', 'name': self.name, 'emails': encoding.list_to_json((encoding.optional_to_json(encoding.basic_to_json)))(self.emails), 'recruiter': encoding.optional_to_json((Recruiter.to_json))(self.recruiter), 'created': encoding.bigint_to_json(self.created)}
+        return {'type': 'Recruiter', 'Name': self.Name, 'emails': encoding.list_to_json((encoding.optional_to_json(encoding.basic_to_json)))(self.emails), 'recruiter': encoding.optional_to_json((Recruiter.to_json))(self.recruiter), 'created': encoding.bigint_to_json(self.created)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

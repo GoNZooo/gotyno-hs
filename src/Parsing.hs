@@ -369,8 +369,8 @@ fieldP typeVariables = do
 
 fieldNameP :: Parser FieldName
 fieldNameP = do
-  initialLowerCaseCharacter <- lowerChar
-  ((initialLowerCaseCharacter :) >>> pack >>> FieldName) <$> some (alphaNumChar <|> char '_')
+  initialAlphaChar <- lowerChar <|> upperChar
+  ((initialAlphaChar :) >>> pack >>> FieldName) <$> some (alphaNumChar <|> char '_')
 
 definitionNameP :: Parser DefinitionName
 definitionNameP = do
