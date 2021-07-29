@@ -20,21 +20,19 @@ data OutputDestination
   | StandardOut
   deriving (Eq, Show)
 
-data Languages
-  = Languages
-      { typescript :: !(Maybe OutputDestination),
-        fsharp :: !(Maybe OutputDestination),
-        python :: !(Maybe OutputDestination)
-      }
+data Languages = Languages
+  { typescript :: !(Maybe OutputDestination),
+    fsharp :: !(Maybe OutputDestination),
+    python :: !(Maybe OutputDestination)
+  }
   deriving (Eq, Show)
 
-data Options
-  = Options
-      { languages :: !Languages,
-        watchMode :: !Bool,
-        verbose :: !Bool,
-        inputs :: ![FilePath]
-      }
+data Options = Options
+  { languages :: !Languages,
+    watchMode :: !Bool,
+    verbose :: !Bool,
+    inputs :: ![FilePath]
+  }
   deriving (Eq, Show)
 
 runMain :: Options -> IO ()
@@ -106,8 +104,10 @@ watchInputs relativeInputs Languages {typescript, fsharp, python} verbose = do
             forM_ python $ outputLanguage modules Python.outputModule "py"
           Left errors ->
             forM_ errors putStrLn
+      debounceInterval = 0.01 :: Time.NominalDiffTime
+      fsNotifyConfig = FSNotify.defaultConfig {FSNotify.confDebounce = FSNotify.Debounce debounceInterval}
   compileEverything
-  FSNotify.withManager $ \watchManager -> do
+  FSNotify.withManagerConf fsNotifyConfig $ \watchManager -> do
     let inputDirectories = inputs & fmap FilePath.takeDirectory & List.nub
         eventPredicate (FSNotify.Modified modifiedInput _modificationTime _someBool) =
           modifiedInput `elem` inputs
