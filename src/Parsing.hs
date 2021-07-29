@@ -25,6 +25,7 @@ import RIO
     isLeft,
     maybe,
     mconcat,
+    mempty,
     modifyIORef,
     newIORef,
     not,
@@ -118,6 +119,7 @@ moduleP name sourceFile = do
   definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
   clearDeclarationNames
+  clearDefinitions
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
 addImports :: [Import] -> Parser ()
@@ -443,6 +445,11 @@ addDefinition definition@(TypeDefinition (DefinitionName definitionName) _typeDa
   if not (hasDefinition definition definitions)
     then modifyIORef currentDefinitionsReference (definition :)
     else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
+
+clearDefinitions :: Parser ()
+clearDefinitions = do
+  AppState {currentDefinitionsReference} <- ask
+  writeIORef currentDefinitionsReference mempty
 
 hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
 hasDefinition (TypeDefinition name _typeData) =

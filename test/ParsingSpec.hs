@@ -96,6 +96,13 @@ spec
               ]
         length modules'' `shouldBe` 4
 
+      it "Allows two separate modules to declare the same type (by name)" $ do
+        modules <-
+          getRight
+            <$> parseModules
+              ["test/examples/declaration1.gotyno", "test/examples/declaration2.gotyno"]
+        length modules `shouldBe` 2
+
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {name, imports, definitions} <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
