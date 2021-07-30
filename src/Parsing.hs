@@ -179,7 +179,6 @@ typeDefinitionP = do
           unionP fieldName
         EmbeddedTypeTag fieldName ->
           embeddedUnionP fieldName
-        NoTypeTag -> error "TODO: no type tag in union"
     "untagged union" ->
       char ' ' *> untaggedUnionP
     "enum" ->

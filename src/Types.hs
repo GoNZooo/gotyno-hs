@@ -47,9 +47,7 @@ newtype EnumerationIdentifier = EnumerationIdentifier Text
 
 -- | Defines what type tag field a union should have as well as the type tag location.
 data TagType
-  = -- | The union is untagged.
-    NoTypeTag
-  | -- | The union has the type tag with the rest of the payload.
+  = -- | The union has the type tag with the rest of the payload.
     EmbeddedTypeTag FieldName
   | -- | The union has the type tag outside of the payload, wrapping it.
     StandardTypeTag FieldName
