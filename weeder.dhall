@@ -1,1 +1,6 @@
-{ roots = [ "^Main.main$", "^Paths_.*" ], type-class-roots = True }
+{ roots = [ "^Main.main$"
+          , "^Paths_.*"
+          , "^Parsing.test"
+          ]
+, type-class-roots = True
+}
