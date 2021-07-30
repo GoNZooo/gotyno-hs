@@ -54,9 +54,6 @@ parseLanguages =
           <> metavar "=|-|PATH"
       )
 
-parseLanguageSetting :: Parser (Maybe Library.OutputDestination)
-parseLanguageSetting = undefined
-
 parseOutputDestination :: String -> Maybe (Maybe Library.OutputDestination)
 parseOutputDestination "=" = pure $ Just Library.SameAsInput
 parseOutputDestination "-" = pure $ Just Library.StandardOut

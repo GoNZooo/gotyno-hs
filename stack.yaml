@@ -4,3 +4,6 @@ packages:
 - .
 
 allow-different-user: true
+
+ghc-options:
+  "$locals": -fwrite-ide-info
