@@ -168,4 +168,4 @@ spec
 
 getRight :: (Show l) => Either l r -> r
 getRight (Right r) = r
-getRight (Left e) = error $ "unpacking `Left` in `fromRight`, error: " <> show e
+getRight (Left e) = error $ show e
