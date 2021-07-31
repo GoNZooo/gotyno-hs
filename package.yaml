@@ -1,5 +1,11 @@
 name:    gotyno-hs
-version: "0.0.0"
+version: "1.0.2"
+synopsis: A type definition compiler supporting multiple output languages.
+description: Compiles type definitions into F#, TypeScript and Python, with validators, decoders and encoders.
+license: BSD2
+license-file: LICENSE.txt
+category: Compiler
+maintainer: Rickard Andersson <gonz@severnatazvezda.com>
 
 dependencies:
 
@@ -9,6 +15,14 @@ dependencies:
 - pretty-show
 - fsnotify
 - text
+
+extra-source-files:
+- README.md
+- examples/*
+- test/reference-output/*.ts
+- test/reference-output/*.fs
+- test/reference-output/*.py
+- test/examples/*
 
 default-extensions:
 - ApplicativeDo
