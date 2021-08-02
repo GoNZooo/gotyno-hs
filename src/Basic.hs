@@ -18,11 +18,11 @@ data Recruiter = Recruiter
 
 instance FromJSON Recruiter where
   parseJSON = JSON.withObject "Recruiter" $ \o -> do
-    recruiterType <- Helpers.readLiteralString o "type" "Recruiter"
-    recruiterName <- o .: "name"
+    recruiterType <- Helpers.parseLiteralString o "type" "Recruiter"
+    recruiterName <- o .: "Name"
     recruiterEmails <- o .: "emails"
     recruiterRecruiter <- o .:? "recruiter"
-    recruiterCreated <- o .: "created"
+    (Helpers.StringEncodedInteger recruiterCreated) <- o .: "created"
     Prelude.pure $
       Recruiter
         { recruiterType,
@@ -39,7 +39,7 @@ instance ToJSON Recruiter where
         "name" .= recruiterName value,
         "emails" .= recruiterEmails value,
         "recruiter" .= recruiterRecruiter value,
-        "created" .= recruiterCreated value
+        "created" .= Helpers.StringEncodedInteger (recruiterCreated value)
       ]
 
 -- struct Recruiter {
