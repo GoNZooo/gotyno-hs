@@ -15,6 +15,7 @@ dependencies:
 - pretty-show
 - fsnotify
 - text
+- aeson
 
 extra-source-files:
 - README.md
