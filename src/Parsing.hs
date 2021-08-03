@@ -411,19 +411,38 @@ definitionReferenceP typeVariables = do
   maybeTypeVariables <-
     optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
   case maybeDefinition of
-    Just (TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
+    Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
       case maybeTypeVariables of
         Nothing ->
           pure $ DeclarationReference moduleName name'
         Just appliedTypes ->
-          pure $ GenericDeclarationReference moduleName name' (AppliedTypes appliedTypes)
+          if isGenericType definition
+            then pure $ GenericDeclarationReference moduleName name' (AppliedTypes appliedTypes)
+            else
+              reportError $
+                mconcat ["Trying to apply type as generic, but ", unpack n, " is not generic"]
     Just definition -> do
       case maybeTypeVariables of
         Just appliedTypeVariables ->
-          pure $ AppliedGenericReference appliedTypeVariables definition
+          if isGenericType definition
+            then pure $ AppliedGenericReference appliedTypeVariables definition
+            else
+              reportError $
+                mconcat ["Trying to apply type as generic, but ", unpack n, " is not generic"]
         Nothing ->
           pure $ DefinitionReference definition
     Nothing -> reportError $ mconcat ["Unknown type reference: ", unpack n]
+
+isGenericType :: TypeDefinition -> Bool
+isGenericType (TypeDefinition _name (Struct (GenericStruct _typeVariables _fields))) = True
+isGenericType (TypeDefinition _name (Union _tag (GenericUnion _typeVariables _constructors))) = True
+isGenericType (TypeDefinition _name (Struct (PlainStruct _fields))) = False
+isGenericType (TypeDefinition _name (Union _tag (PlainUnion _constructors))) = False
+isGenericType (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
+  not $ List.null typeVariables
+isGenericType (TypeDefinition _name (EmbeddedUnion _tag _constructors)) = False
+isGenericType (TypeDefinition _name (UntaggedUnion _cases)) = False
+isGenericType (TypeDefinition _name (Enumeration _values)) = False
 
 getDefinitions :: Parser [TypeDefinition]
 getDefinitions = do

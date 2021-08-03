@@ -5,6 +5,7 @@ import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Parsing
 import RIO
+import qualified RIO.List as List
 import qualified RIO.List.Partial as PartialList
 import Test.Hspec
 import Types
@@ -102,6 +103,15 @@ spec
             <$> parseModules
               ["test/examples/declaration1.gotyno", "test/examples/declaration2.gotyno"]
         length modules `shouldBe` 2
+
+      it "Errors out when trying to apply a non-generic type" $ do
+        result <- parseModules ["test/examples/applyingNonGeneric.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e `shouldSatisfy` ("Trying to apply type as generic" `List.isInfixOf`)
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
 
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {name, imports, definitions} <-

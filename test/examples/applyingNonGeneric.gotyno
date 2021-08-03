@@ -1,0 +1,7 @@
+struct NotGeneric {
+    field: String
+}
+
+struct UsingNotGeneric {
+    field: NotGeneric<String>
+}
