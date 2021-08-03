@@ -4,25 +4,24 @@ import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as JSON
 import GHC.Generics (Generic)
 import qualified Gotyno.Helpers as Helpers
-import Prelude (($))
-import qualified Prelude
+import Prelude
 
 data Recruiter = Recruiter
-  { recruiterType :: !Prelude.String,
-    recruiterName :: !Prelude.String,
-    recruiterEmails :: ![Prelude.Maybe Prelude.String],
-    recruiterRecruiter :: !(Prelude.Maybe Recruiter),
-    recruiterCreated :: !Prelude.Integer
+  { recruiterType :: !String,
+    recruiterName :: !String,
+    recruiterEmails :: ![Maybe String],
+    recruiterRecruiter :: !(Maybe Recruiter),
+    recruiterCreated :: !Integer
   }
-  deriving (Prelude.Eq, Prelude.Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON Recruiter where
   parseJSON = JSON.withObject "Recruiter" $ \o -> do
-    recruiterType <- Helpers.parseLiteralString o "type" "Recruiter"
+    recruiterType <- o .: "type" >>= Helpers.checkEqualTo "Recruiter"
     recruiterName <- o .: "Name"
     recruiterEmails <- o .: "emails"
     recruiterRecruiter <- o .:? "recruiter"
-    (Helpers.StringEncodedInteger recruiterCreated) <- o .: "created"
+    Helpers.StringEncodedInteger recruiterCreated <- o .: "created"
     Prelude.pure $
       Recruiter
         { recruiterType,
@@ -35,7 +34,7 @@ instance FromJSON Recruiter where
 instance ToJSON Recruiter where
   toJSON value =
     JSON.object
-      [ "type" .= recruiterType value,
+      [ "type" .= Helpers.LiteralString "Recruiter",
         "name" .= recruiterName value,
         "emails" .= recruiterEmails value,
         "recruiter" .= recruiterRecruiter value,
