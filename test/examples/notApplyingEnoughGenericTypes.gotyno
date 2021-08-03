@@ -1,0 +1,8 @@
+union GenericUnion <T, U>{
+    One: T
+    Two: U
+}
+
+struct UsingGeneric {
+    field: GenericUnion<String>
+}

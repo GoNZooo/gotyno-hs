@@ -109,7 +109,17 @@ spec
         isLeft result `shouldBe` True
         case result of
           Left e ->
-            PartialList.head e `shouldSatisfy` ("Trying to apply type as generic" `List.isInfixOf`)
+            PartialList.head e `shouldContain` "Type NotGeneric expects 0 type parameters"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+
+      it "Errors out when not applying enough type parameters" $ do
+        result <- parseModules ["test/examples/notApplyingEnoughGenericTypes.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e
+              `shouldContain` "Type GenericUnion expects 2 type parameters, 1 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
 

@@ -17,7 +17,7 @@ newtype ModuleName = ModuleName Text
 newtype Import = Import Module
   deriving (Eq, Show)
 
-newtype DefinitionName = DefinitionName Text
+newtype DefinitionName = DefinitionName {unDefinitionName :: Text}
   deriving (Eq, Show)
 
 data TypeDefinition = TypeDefinition !DefinitionName !TypeData

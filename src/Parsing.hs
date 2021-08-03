@@ -1,5 +1,6 @@
 module Parsing where
 
+import qualified CodeGeneration.Utilities as Utilities
 import RIO
   ( Bool (..),
     Char,
@@ -23,12 +24,14 @@ import RIO
     for,
     fromMaybe,
     isLeft,
+    length,
     maybe,
     mconcat,
     mempty,
     modifyIORef,
     newIORef,
     not,
+    otherwise,
     pure,
     readFileUtf8,
     readIORef,
@@ -40,6 +43,7 @@ import RIO
     (&),
     (*>),
     (.),
+    (/=),
     (<$),
     (<$>),
     (<*),
@@ -410,6 +414,7 @@ definitionReferenceP typeVariables = do
   maybeDefinition <- getDefinition soughtName
   maybeTypeVariables <-
     optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
+  ensureMatchingGenericity maybeDefinition maybeTypeVariables
   case maybeDefinition of
     Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
       case maybeTypeVariables of
@@ -432,6 +437,30 @@ definitionReferenceP typeVariables = do
         Nothing ->
           pure $ DefinitionReference definition
     Nothing -> reportError $ mconcat ["Unknown type reference: ", unpack n]
+
+ensureMatchingGenericity :: Maybe TypeDefinition -> Maybe [FieldType] -> Parser ()
+ensureMatchingGenericity Nothing _maybeTypeParameters = pure ()
+ensureMatchingGenericity (Just definition) maybeTypeParameters = do
+  let expectedTypeParameters =
+        definition
+          & Utilities.typeVariablesFromDefinition
+          & fromMaybe []
+          & length
+      name = definition & definitionName & unDefinitionName & unpack
+      appliedTypeParameters = maybeTypeParameters & fromMaybe [] & length
+  if expectedTypeParameters /= appliedTypeParameters
+    then
+      reportError $
+        mconcat
+          [ "Type ",
+            name,
+            " expects ",
+            show expectedTypeParameters,
+            " type parameters, ",
+            show appliedTypeParameters,
+            " applied"
+          ]
+    else pure ()
 
 isGenericType :: TypeDefinition -> Bool
 isGenericType (TypeDefinition _name (Struct (GenericStruct _typeVariables _fields))) = True
@@ -639,3 +668,6 @@ partialFromRight (Left _l) = error "Unable to get `Right` from `Left`"
 partialFromLeft :: Either l r -> l
 partialFromLeft (Left l) = l
 partialFromLeft (Right _r) = error "Unable to get `Left` from `Right`"
+
+definitionName :: TypeDefinition -> DefinitionName
+definitionName (TypeDefinition name _) = name
