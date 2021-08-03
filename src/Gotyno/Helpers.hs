@@ -1,6 +1,6 @@
 module Gotyno.Helpers where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as JSON
 import Data.Aeson.Types (Parser)
 import RIO
@@ -30,19 +30,3 @@ checkEqualTo :: (Eq a, Show a) => a -> a -> Parser a
 checkEqualTo expected actual
   | expected == actual = pure actual
   | otherwise = fail $ "Expected: " <> show expected <> " but got: " <> show actual
-
--- | Reads a value from a given key and expects it to match a given value.
-parseLiteralString :: (Eq a, Show a, FromJSON a) => JSON.Object -> Text -> a -> Parser a
-parseLiteralString value key soughtValue = do
-  readValue <- value .: key
-  if readValue == soughtValue
-    then pure readValue
-    else
-      fail $
-        mconcat
-          [ "Expected value '",
-            show soughtValue,
-            "' but got '",
-            show readValue,
-            "'"
-          ]
