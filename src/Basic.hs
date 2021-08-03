@@ -22,7 +22,7 @@ instance FromJSON Recruiter where
     recruiterEmails <- o .: "emails"
     recruiterRecruiter <- o .:? "recruiter"
     Helpers.StringEncodedInteger recruiterCreated <- o .: "created"
-    Prelude.pure $
+    pure $
       Recruiter
         { recruiterType,
           recruiterName,
