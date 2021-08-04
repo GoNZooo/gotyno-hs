@@ -5,7 +5,6 @@ import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Parsing
 import RIO
-import qualified RIO.List as List
 import qualified RIO.List.Partial as PartialList
 import Test.Hspec
 import Types
@@ -104,6 +103,7 @@ spec
               ["test/examples/declaration1.gotyno", "test/examples/declaration2.gotyno"]
         length modules `shouldBe` 2
 
+    describe "Handles applied type parameters properly" $ do
       it "Errors out when trying to apply a non-generic type" $ do
         result <- parseModules ["test/examples/applyingNonGeneric.gotyno"]
         isLeft result `shouldBe` True
@@ -122,7 +122,47 @@ spec
               `shouldContain` "Type GenericUnion expects 2 type parameters, 1 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
+      it "Handles one missing argument out of 2" $ do
+        result <- parseModules ["test/examples/declaredGenerics1.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e
+              `shouldContain` "Type GenericUnion expects 2 type parameters, 1 applied"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Handles two missing arguments out of 2" $ do
+        result <- parseModules ["test/examples/declaredGenerics2.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e
+              `shouldContain` "Type GenericUnion expects 2 type parameters, 0 applied"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Handles one missing arguments out of 1" $ do
+        result <- parseModules ["test/examples/declaredGenerics3.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e
+              `shouldContain` "Type GenericUnion expects 1 type parameters, 0 applied"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Errors out when trying to apply a non-generic declared type" $ do
+        result <- parseModules ["test/examples/declaredGenerics5.gotyno"]
+        isLeft result `shouldBe` True
+        case result of
+          Left e ->
+            PartialList.head e
+              `shouldContain` "Type GenericUnion expects 0 type parameters, 1 applied"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Gives correct result when all are applied" $ do
+        result <- parseModules ["test/examples/declaredGenerics4.gotyno"]
+        isRight result `shouldBe` True
 
+    describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {name, imports, definitions} <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]

@@ -1,0 +1,5 @@
+declare someModule.GenericUnion<T>
+
+struct UsingGeneric {
+    field: GenericUnion<String>
+}

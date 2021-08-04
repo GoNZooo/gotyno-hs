@@ -31,7 +31,6 @@ import RIO
     modifyIORef,
     newIORef,
     not,
-    otherwise,
     pure,
     readFileUtf8,
     readIORef,
@@ -446,7 +445,7 @@ ensureMatchingGenericity (Just definition) maybeTypeParameters = do
           & Utilities.typeVariablesFromDefinition
           & fromMaybe []
           & length
-      name = definition & definitionName & unDefinitionName & unpack
+      name = definition & typeDefinitionName & unDefinitionName & unpack
       appliedTypeParameters = maybeTypeParameters & fromMaybe [] & length
   if expectedTypeParameters /= appliedTypeParameters
     then
@@ -669,5 +668,5 @@ partialFromLeft :: Either l r -> l
 partialFromLeft (Left l) = l
 partialFromLeft (Right _r) = error "Unable to get `Left` from `Right`"
 
-definitionName :: TypeDefinition -> DefinitionName
-definitionName (TypeDefinition name _) = name
+typeDefinitionName :: TypeDefinition -> DefinitionName
+typeDefinitionName (TypeDefinition name _) = name
