@@ -1,4 +1,4 @@
-module Parsing where
+module Parsing (parseModules, test) where
 
 import qualified CodeGeneration.Utilities as Utilities
 import RIO
@@ -91,6 +91,8 @@ parseModules files = do
     let moduleName = f & FilePath.takeBaseName & pack & ModuleName
     fileContents <- readFileUtf8 f
     maybeModule <- run state fileContents $ moduleP moduleName f
+    writeIORef currentDefinitionsReference mempty
+    writeIORef currentDeclarationNamesReference mempty
     case maybeModule of
       Right module' -> do
         addModule module' modulesReference
@@ -121,8 +123,6 @@ moduleP name sourceFile = do
   addImports imports
   definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
-  clearDeclarationNames
-  clearDefinitions
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
 addImports :: [Import] -> Parser ()
@@ -139,11 +139,6 @@ getDeclarationNames :: Parser (Set ModuleName)
 getDeclarationNames = do
   AppState {currentDeclarationNamesReference} <- ask
   readIORef currentDeclarationNamesReference
-
-clearDeclarationNames :: Parser ()
-clearDeclarationNames = do
-  AppState {currentDeclarationNamesReference} <- ask
-  writeIORef currentDeclarationNamesReference Set.empty
 
 importP :: Parser Import
 importP = do
@@ -491,11 +486,6 @@ addDefinition definition@(TypeDefinition (DefinitionName definitionName) _typeDa
   if not (hasDefinition definition definitions)
     then modifyIORef currentDefinitionsReference (definition :)
     else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
-
-clearDefinitions :: Parser ()
-clearDefinitions = do
-  AppState {currentDefinitionsReference} <- ask
-  writeIORef currentDefinitionsReference mempty
 
 hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
 hasDefinition (TypeDefinition name _typeData) =
