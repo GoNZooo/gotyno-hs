@@ -5,6 +5,7 @@ struct DefinitionWithoutManyNewlines    {
    field2:      U32
 }
 
+
 union   SomeUnionName   {
   One:    U32
     Two  
