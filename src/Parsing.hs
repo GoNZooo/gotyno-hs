@@ -58,7 +58,8 @@ import qualified RIO.Text as Text
 import System.IO (putStrLn)
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer
+import Text.Megaparsec.Char.Lexer hiding (lexeme, symbol)
+import qualified Text.Megaparsec.Char.Lexer as Lexer
 import Text.Show.Pretty (pPrint)
 import Types
 
@@ -121,7 +122,7 @@ moduleP :: ModuleName -> FilePath -> Parser Module
 moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP newline <* newline)
   addImports imports
-  definitions <- sepBy1 typeDefinitionP (newline <* newline) <* eof
+  definitions <- sepEndBy1 typeDefinitionP (some newline) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
@@ -142,7 +143,7 @@ getDeclarationNames = do
 
 importP :: Parser Import
 importP = do
-  string "import "
+  symbol "import "
   importName <- some (alphaNumChar <|> char '_')
   maybeModule <- getModule importName
   case maybeModule of
@@ -166,23 +167,23 @@ typeDefinitionP = do
   keyword <- choice $ List.map string ["struct", "untagged union", "union", "enum", "declare"]
   definition <- case keyword of
     "struct" ->
-      char ' ' *> structP
+      some (char ' ') *> structP
     "union" -> do
       maybeTagType <- optional $ do
-        _ <- char '('
+        _ <- symbol "("
         tagTypeP <* char ')'
       let tagType = fromMaybe (StandardTypeTag $ FieldName "type") maybeTagType
-      char ' ' *> case tagType of
+      some (char ' ') *> case tagType of
         StandardTypeTag fieldName ->
           unionP fieldName
         EmbeddedTypeTag fieldName ->
           embeddedUnionP fieldName
     "untagged union" ->
-      char ' ' *> untaggedUnionP
+      some (char ' ') *> untaggedUnionP
     "enum" ->
-      char ' ' *> enumerationP
+      some (char ' ') *> enumerationP
     "declare" ->
-      char ' ' *> declarationP
+      some (char ' ') *> declarationP
     other ->
       reportError $ "Unknown type definition keyword: " <> unpack other
   addDefinition definition
@@ -229,7 +230,7 @@ readCurrentDefinitionName = do
 
 structP :: Parser TypeDefinition
 structP = do
-  name <- readCurrentDefinitionName <* char ' '
+  name <- lexeme readCurrentDefinitionName
   maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
   string "{\n"
   case maybeTypeVariables of
@@ -249,17 +250,16 @@ plainStructP name = do
   pure $ TypeDefinition name $ Struct $ PlainStruct fields
 
 constructorsP :: [TypeVariable] -> Parser [Constructor]
-constructorsP = some . constructorP
+constructorsP typeVariables = some $ some (char ' ') *> constructorP typeVariables
 
 constructorP :: [TypeVariable] -> Parser Constructor
 constructorP typeVariables = do
-  string "    "
   name <- constructorNameP
-  maybeColon <- optional $ string ": "
+  maybeColon <- optional $ symbol ": "
   payload <- case maybeColon of
     Just _ -> Just <$> fieldTypeP typeVariables
     Nothing -> pure Nothing
-  newline
+  many (char ' ') *> newline
   pure $ Constructor (ConstructorName name) payload
 
 constructorNameP :: Parser Text
@@ -270,7 +270,7 @@ constructorNameP = do
 
 unionP :: FieldName -> Parser TypeDefinition
 unionP typeTag = do
-  name <- readCurrentDefinitionName <* char ' '
+  name <- lexeme readCurrentDefinitionName
   maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
   string "{\n"
   case maybeTypeVariables of
@@ -279,7 +279,7 @@ unionP typeTag = do
 
 embeddedUnionP :: FieldName -> Parser TypeDefinition
 embeddedUnionP typeTag = do
-  name <- readCurrentDefinitionName <* string " {\n"
+  name <- lexeme readCurrentDefinitionName <* string "{\n"
   constructors <- embeddedUnionStructConstructorsP []
   _ <- char '}'
   pure $ TypeDefinition name (EmbeddedUnion typeTag constructors)
@@ -298,11 +298,11 @@ embeddedUnionStructConstructorsP typeVariables =
 
 embeddedUnionStructConstructorP :: [TypeVariable] -> Parser EmbeddedConstructor
 embeddedUnionStructConstructorP typeVariables = do
-  constructorName <- string "    " *> embeddedConstructorNameP
+  constructorName <- some (char ' ') *> embeddedConstructorNameP
   maybeDefinition <-
     choice
-      [ Nothing <$ newline,
-        Just <$> (string ": " *> structReferenceP typeVariables <* newline)
+      [ Nothing <$ many (char ' ') <* newline,
+        Just <$> (symbol ": " *> structReferenceP typeVariables <* many (char ' ') <* newline)
       ]
   pure $ EmbeddedConstructor (ConstructorName constructorName) maybeDefinition
 
@@ -328,9 +328,7 @@ embeddedConstructorNameP = pack <$> some alphaNumChar
 
 enumerationP :: Parser TypeDefinition
 enumerationP = do
-  name <- definitionNameP
-  setCurrentDefinitionName name
-  string " {\n"
+  name <- lexeme readCurrentDefinitionName <* "{\n"
   values <- enumerationValuesP
   char '}'
   pure $ TypeDefinition name $ Enumeration values
@@ -340,9 +338,9 @@ enumerationValuesP = some enumerationValueP
 
 enumerationValueP :: Parser EnumerationValue
 enumerationValueP = do
-  string "    "
-  identifier <- (pack >>> EnumerationIdentifier) <$> someTill alphaNumChar (string " = ")
-  value <- literalP <* newline
+  some (char ' ')
+  identifier <- (pack >>> EnumerationIdentifier) <$> someTill alphaNumChar (symbol " = ")
+  value <- literalP <* many (char ' ') <* newline
   pure $ EnumerationValue identifier value
 
 plainUnionP :: FieldName -> DefinitionName -> Parser TypeDefinition
@@ -364,9 +362,9 @@ fieldsP = some . fieldP
 
 fieldP :: [TypeVariable] -> Parser StructField
 fieldP typeVariables = do
-  string "    "
+  _ <- some $ char ' '
   name <- fieldNameP
-  string ": "
+  symbol ": "
   fieldType <- fieldTypeP typeVariables
   newline
   pure $ StructField name fieldType
@@ -502,6 +500,7 @@ fieldTypeP typeVariables =
       DefinitionReferenceType <$> importedReferenceP typeVariables,
       RecursiveReferenceType <$> recursiveReferenceP
     ]
+    <* many (char ' ')
 
 typeVariableReferenceP :: [TypeVariable] -> Parser TypeVariable
 typeVariableReferenceP typeVariables =
@@ -660,3 +659,12 @@ partialFromLeft (Right _r) = error "Unable to get `Left` from `Right`"
 
 typeDefinitionName :: TypeDefinition -> DefinitionName
 typeDefinitionName (TypeDefinition name _) = name
+
+lexeme :: Parser a -> Parser a
+lexeme = Lexer.lexeme spaceConsumer
+
+symbol :: Text -> Parser Text
+symbol = Lexer.symbol spaceConsumer
+
+spaceConsumer :: Parser ()
+spaceConsumer = Lexer.space space1 (Lexer.skipLineComment "# ") empty

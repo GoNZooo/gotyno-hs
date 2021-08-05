@@ -162,6 +162,11 @@ spec
         result <- parseModules ["test/examples/declaredGenerics4.gotyno"]
         isRight result `shouldBe` True
 
+    describe "Parser is less rigid about syntax than reference implementation" $ do
+      it "Does not error out when extra whitespace is used in many places" $ do
+        result <- parseModules ["test/examples/relaxedWhiteSpace.gotyno"]
+        shouldBeRight result
+
     describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {name, imports, definitions} <-
@@ -226,6 +231,10 @@ spec
         let pythonPythonOutput = Python.outputModule pythonModule
         pythonPythonOutput `shouldBe` pyPython
 
-getRight :: (Show l) => Either l r -> r
+getRight :: Either [String] r -> r
 getRight (Right r) = r
-getRight (Left e) = error $ show e
+getRight (Left e) = error $ mconcat e
+
+shouldBeRight :: Either [String] r -> Expectation
+shouldBeRight (Right _r) = pure ()
+shouldBeRight (Left e) = error $ mconcat e
