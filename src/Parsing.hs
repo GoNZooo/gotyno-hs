@@ -212,7 +212,7 @@ untaggedUnionCasesP = do
 
 untaggedUnionCaseP :: Parser FieldType
 untaggedUnionCaseP =
-  string "    " *> fieldTypeP [] <* newline
+  some (char ' ') *> fieldTypeP [] <* newline
 
 tagTypeP :: Parser TagType
 tagTypeP = do
