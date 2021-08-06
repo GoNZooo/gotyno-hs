@@ -230,9 +230,8 @@ readCurrentDefinitionName = do
 
 structP :: Parser TypeDefinition
 structP = do
-  name <- lexeme readCurrentDefinitionName
-  maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
-  string "{\n"
+  (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
+  _ <- string "{\n"
   case maybeTypeVariables of
     Just typeVariables -> genericStructP name $ List.map TypeVariable typeVariables
     Nothing -> plainStructP name
@@ -270,9 +269,8 @@ constructorNameP = do
 
 unionP :: FieldName -> Parser TypeDefinition
 unionP typeTag = do
-  name <- lexeme readCurrentDefinitionName
-  maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
-  string "{\n"
+  (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
+  _ <- string "{\n"
   case maybeTypeVariables of
     Just typeVariables -> genericUnionP typeTag name $ List.map TypeVariable typeVariables
     Nothing -> plainUnionP typeTag name
@@ -501,6 +499,12 @@ fieldTypeP typeVariables =
       RecursiveReferenceType <$> recursiveReferenceP
     ]
     <* many (char ' ')
+
+nameAndMaybeTypeVariablesP :: Parser (DefinitionName, Maybe [Text])
+nameAndMaybeTypeVariablesP = do
+  name <- lexeme readCurrentDefinitionName
+  maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
+  pure (name, maybeTypeVariables)
 
 typeVariableReferenceP :: [TypeVariable] -> Parser TypeVariable
 typeVariableReferenceP typeVariables =
