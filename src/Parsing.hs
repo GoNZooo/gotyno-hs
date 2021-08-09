@@ -126,21 +126,6 @@ moduleP name sourceFile = do
   declarationNames <- Set.toList <$> getDeclarationNames
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
-addImports :: [Import] -> Parser ()
-addImports imports = do
-  AppState {currentImportsReference} <- ask
-  writeIORef currentImportsReference imports
-
-addDeclarationName :: ModuleName -> Parser ()
-addDeclarationName moduleName = do
-  AppState {currentDeclarationNamesReference} <- ask
-  modifyIORef currentDeclarationNamesReference (Set.insert moduleName)
-
-getDeclarationNames :: Parser (Set ModuleName)
-getDeclarationNames = do
-  AppState {currentDeclarationNamesReference} <- ask
-  readIORef currentDeclarationNamesReference
-
 importP :: Parser Import
 importP = do
   symbol "import "
@@ -151,16 +136,6 @@ importP = do
       pure $ Import module'
     Nothing ->
       reportError $ "Unknown module referenced: " <> importName
-
-getModule :: String -> Parser (Maybe Module)
-getModule importName = do
-  AppState {modulesReference} <- ask
-  modules <- readIORef modulesReference
-  pure $ List.find (\Module {name = ModuleName name} -> name == pack importName) modules
-
-addModule :: Module -> IORef [Module] -> IO ()
-addModule module' modulesReference = do
-  modifyIORef modulesReference (module' :)
 
 typeDefinitionP :: Parser TypeDefinition
 typeDefinitionP = do
@@ -221,12 +196,6 @@ tagTypeP = do
   maybeEmbedded <- optional $ TypeTag <$> string "embedded"
   let tagField = fromMaybe (FieldName "type") maybeTagName
   pure $ maybe (StandardTypeTag tagField) (const $ EmbeddedTypeTag tagField) maybeEmbedded
-
-readCurrentDefinitionName :: Parser DefinitionName
-readCurrentDefinitionName = do
-  name <- definitionNameP
-  setCurrentDefinitionName name
-  pure name
 
 structP :: Parser TypeDefinition
 structP = do
@@ -372,16 +341,6 @@ fieldNameP = do
   initialAlphaChar <- lowerChar <|> upperChar
   ((initialAlphaChar :) >>> pack >>> FieldName) <$> some (alphaNumChar <|> char '_')
 
-definitionNameP :: Parser DefinitionName
-definitionNameP = do
-  initialTitleCaseCharacter <- upperChar
-  ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> many alphaNumChar
-
-setCurrentDefinitionName :: DefinitionName -> Parser ()
-setCurrentDefinitionName name = do
-  AppState {currentDefinitionNameReference} <- ask
-  writeIORef currentDefinitionNameReference (Just name)
-
 recursiveReferenceP :: Parser DefinitionName
 recursiveReferenceP = do
   AppState {currentDefinitionNameReference} <- ask
@@ -455,41 +414,6 @@ ensureMatchingGenericity (Just definition) maybeTypeParameters = do
 appliedTypeVariablesP :: [TypeVariable] -> Parser [FieldType]
 appliedTypeVariablesP typeVariables = sepBy1 (fieldTypeP typeVariables) (string ", ")
 
-isGenericType :: TypeDefinition -> Bool
-isGenericType (TypeDefinition _name (Struct (GenericStruct _typeVariables _fields))) = True
-isGenericType (TypeDefinition _name (Union _tag (GenericUnion _typeVariables _constructors))) = True
-isGenericType (TypeDefinition _name (Struct (PlainStruct _fields))) = False
-isGenericType (TypeDefinition _name (Union _tag (PlainUnion _constructors))) = False
-isGenericType (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
-  not $ List.null typeVariables
-isGenericType (TypeDefinition _name (EmbeddedUnion _tag _constructors)) = False
-isGenericType (TypeDefinition _name (UntaggedUnion _cases)) = False
-isGenericType (TypeDefinition _name (Enumeration _values)) = False
-
-getDefinitions :: Parser [TypeDefinition]
-getDefinitions = do
-  AppState {currentDefinitionsReference} <- ask
-  readIORef currentDefinitionsReference
-
-getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
-getDefinition name = do
-  AppState {currentDefinitionsReference} <- ask
-  definitions <- readIORef currentDefinitionsReference
-  pure $
-    List.find (\(TypeDefinition definitionName _typeData) -> name == definitionName) definitions
-
-addDefinition :: TypeDefinition -> Parser ()
-addDefinition definition@(TypeDefinition (DefinitionName definitionName) _typeData) = do
-  AppState {currentDefinitionsReference} <- ask
-  definitions <- readIORef currentDefinitionsReference
-  if not (hasDefinition definition definitions)
-    then modifyIORef currentDefinitionsReference (definition :)
-    else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
-
-hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
-hasDefinition (TypeDefinition name _typeData) =
-  any (\(TypeDefinition name' _typeData) -> name == name')
-
 fieldTypeP :: [TypeVariable] -> Parser FieldType
 fieldTypeP typeVariables =
   choice
@@ -545,20 +469,6 @@ importedReferenceP typeVariables = do
     Nothing ->
       reportError $ "Unknown module referenced, not in imports: " <> unpack moduleName
 
-getImports :: Parser [Import]
-getImports = do
-  AppState {currentImportsReference} <- ask
-  readIORef currentImportsReference
-
-getImport :: Text -> Parser (Maybe Import)
-getImport soughtName = do
-  AppState {currentImportsReference} <- ask
-  imports <- readIORef currentImportsReference
-  pure $ List.find (\(Import Module {name = ModuleName name}) -> soughtName == name) imports
-
-reportError :: String -> Parser a
-reportError = ErrorFail >>> Set.singleton >>> fancyFailure
-
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, floatP, booleanP, basicStringP]
 
@@ -584,12 +494,6 @@ optionalTypeP typeVariables = OptionalType <$> (char '?' *> fieldTypeP typeVaria
 
 pointerTypeP :: [TypeVariable] -> Parser ComplexTypeValue
 pointerTypeP typeVariables = PointerType <$> (char '*' *> fieldTypeP typeVariables)
-
-integerSizes :: [Int]
-integerSizes = [8, 16, 32, 64, 128]
-
-integerTypeParsers :: Text -> [Parser Text]
-integerTypeParsers prefix = List.map (show >>> pack >>> (prefix <>) >>> string) integerSizes
 
 uintP :: Parser BasicTypeValue
 uintP = do
@@ -650,6 +554,102 @@ trueP = string "true" $> True
 
 falseP :: Parser Bool
 falseP = string "false" $> False
+
+isGenericType :: TypeDefinition -> Bool
+isGenericType (TypeDefinition _name (Struct (GenericStruct _typeVariables _fields))) = True
+isGenericType (TypeDefinition _name (Union _tag (GenericUnion _typeVariables _constructors))) = True
+isGenericType (TypeDefinition _name (Struct (PlainStruct _fields))) = False
+isGenericType (TypeDefinition _name (Union _tag (PlainUnion _constructors))) = False
+isGenericType (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
+  not $ List.null typeVariables
+isGenericType (TypeDefinition _name (EmbeddedUnion _tag _constructors)) = False
+isGenericType (TypeDefinition _name (UntaggedUnion _cases)) = False
+isGenericType (TypeDefinition _name (Enumeration _values)) = False
+
+definitionNameP :: Parser DefinitionName
+definitionNameP = do
+  initialTitleCaseCharacter <- upperChar
+  ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> many alphaNumChar
+
+addImports :: [Import] -> Parser ()
+addImports imports = do
+  AppState {currentImportsReference} <- ask
+  writeIORef currentImportsReference imports
+
+addDeclarationName :: ModuleName -> Parser ()
+addDeclarationName moduleName = do
+  AppState {currentDeclarationNamesReference} <- ask
+  modifyIORef currentDeclarationNamesReference (Set.insert moduleName)
+
+getDeclarationNames :: Parser (Set ModuleName)
+getDeclarationNames = do
+  AppState {currentDeclarationNamesReference} <- ask
+  readIORef currentDeclarationNamesReference
+
+getModule :: String -> Parser (Maybe Module)
+getModule importName = do
+  AppState {modulesReference} <- ask
+  modules <- readIORef modulesReference
+  pure $ List.find (\Module {name = ModuleName name} -> name == pack importName) modules
+
+addModule :: Module -> IORef [Module] -> IO ()
+addModule module' modulesReference = do
+  modifyIORef modulesReference (module' :)
+
+readCurrentDefinitionName :: Parser DefinitionName
+readCurrentDefinitionName = do
+  name <- definitionNameP
+  setCurrentDefinitionName name
+  pure name
+
+setCurrentDefinitionName :: DefinitionName -> Parser ()
+setCurrentDefinitionName name = do
+  AppState {currentDefinitionNameReference} <- ask
+  writeIORef currentDefinitionNameReference (Just name)
+
+getDefinitions :: Parser [TypeDefinition]
+getDefinitions = do
+  AppState {currentDefinitionsReference} <- ask
+  readIORef currentDefinitionsReference
+
+getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
+getDefinition name = do
+  AppState {currentDefinitionsReference} <- ask
+  definitions <- readIORef currentDefinitionsReference
+  pure $
+    List.find (\(TypeDefinition definitionName _typeData) -> name == definitionName) definitions
+
+addDefinition :: TypeDefinition -> Parser ()
+addDefinition definition@(TypeDefinition (DefinitionName definitionName) _typeData) = do
+  AppState {currentDefinitionsReference} <- ask
+  definitions <- readIORef currentDefinitionsReference
+  if not (hasDefinition definition definitions)
+    then modifyIORef currentDefinitionsReference (definition :)
+    else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
+
+hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
+hasDefinition (TypeDefinition name _typeData) =
+  any (\(TypeDefinition name' _typeData) -> name == name')
+
+getImports :: Parser [Import]
+getImports = do
+  AppState {currentImportsReference} <- ask
+  readIORef currentImportsReference
+
+getImport :: Text -> Parser (Maybe Import)
+getImport soughtName = do
+  AppState {currentImportsReference} <- ask
+  imports <- readIORef currentImportsReference
+  pure $ List.find (\(Import Module {name = ModuleName name}) -> soughtName == name) imports
+
+reportError :: String -> Parser a
+reportError = ErrorFail >>> Set.singleton >>> fancyFailure
+
+integerSizes :: [Int]
+integerSizes = [8, 16, 32, 64, 128]
+
+integerTypeParsers :: Text -> [Parser Text]
+integerTypeParsers prefix = List.map (show >>> pack >>> (prefix <>) >>> string) integerSizes
 
 partialFromRight :: Either l r -> r
 partialFromRight (Right r) = r
