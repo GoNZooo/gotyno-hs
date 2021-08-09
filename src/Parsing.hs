@@ -195,7 +195,7 @@ declarationP = do
   name <- readCurrentDefinitionName
   typeVariables <-
     (fromMaybe [] >>> List.map TypeVariable)
-      <$> optional (between (char '<') (char '>') typeVariablesP)
+      <$> optional (angleBracketed typeVariablesP)
   addDeclarationName externalModule
   pure $ TypeDefinition name $ DeclaredType externalModule typeVariables
 
@@ -403,7 +403,7 @@ definitionReferenceP typeVariables = do
   soughtName@(DefinitionName n) <- DefinitionName <$> choice (List.map string definitionNames)
   maybeDefinition <- getDefinition soughtName
   maybeTypeVariables <-
-    optional $ between (char '<') (char '>') $ appliedTypeVariablesP typeVariables
+    optional $ angleBracketed $ appliedTypeVariablesP typeVariables
   ensureMatchingGenericity maybeDefinition maybeTypeVariables
   case maybeDefinition of
     Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
@@ -506,7 +506,7 @@ fieldTypeP typeVariables =
 nameAndMaybeTypeVariablesP :: Parser (DefinitionName, Maybe [Text])
 nameAndMaybeTypeVariablesP = do
   name <- lexeme readCurrentDefinitionName
-  maybeTypeVariables <- optional $ between (char '<') (char '>') typeVariablesP
+  maybeTypeVariables <- optional $ angleBracketed typeVariablesP
   pure (name, maybeTypeVariables)
 
 typeVariableReferenceP :: [TypeVariable] -> Parser TypeVariable
@@ -525,7 +525,7 @@ importedReferenceP typeVariables = do
       case List.find (\(TypeDefinition name _typeData) -> name == definitionName) definitions of
         Just definition@(TypeDefinition foundDefinitionName typeData) -> do
           maybeTypeVariables <-
-            optional $ between (char '<') (char '>') $ appliedTypeVariablesP typeVariables
+            optional $ angleBracketed $ appliedTypeVariablesP typeVariables
           pure $ case maybeTypeVariables of
             Just appliedTypeVariables ->
               AppliedImportedGenericReference
@@ -675,3 +675,6 @@ symbol = Lexer.symbol spaceConsumer
 
 spaceConsumer :: Parser ()
 spaceConsumer = Lexer.space space1 (Lexer.skipLineComment "# ") empty
+
+angleBracketed :: Parser a -> Parser a
+angleBracketed = between (char '<') (char '>')
