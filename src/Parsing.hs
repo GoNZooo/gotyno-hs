@@ -164,26 +164,26 @@ addModule module' modulesReference = do
 
 typeDefinitionP :: Parser TypeDefinition
 typeDefinitionP = do
-  keyword <- choice $ List.map string ["struct", "untagged union", "union", "enum", "declare"]
-  definition <- case keyword of
+  keyword <- choice $ symbol <$> ["struct", "untagged union", "union", "enum", "declare"]
+  definition <- case Text.stripEnd keyword of
     "struct" ->
-      some (char ' ') *> structP
+      structP
     "union" -> do
       maybeTagType <- optional $ do
         _ <- symbol "("
-        tagTypeP <* char ')'
+        tagTypeP <* char ')' <* some (char ' ')
       let tagType = fromMaybe (StandardTypeTag $ FieldName "type") maybeTagType
-      some (char ' ') *> case tagType of
+      case tagType of
         StandardTypeTag fieldName ->
           unionP fieldName
         EmbeddedTypeTag fieldName ->
           embeddedUnionP fieldName
     "untagged union" ->
-      some (char ' ') *> untaggedUnionP
+      untaggedUnionP
     "enum" ->
-      some (char ' ') *> enumerationP
+      enumerationP
     "declare" ->
-      some (char ' ') *> declarationP
+      declarationP
     other ->
       reportError $ "Unknown type definition keyword: " <> unpack other
   addDefinition definition
