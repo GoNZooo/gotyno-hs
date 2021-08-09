@@ -230,6 +230,73 @@ spec
                   )
               ]
         result `shouldBe` Right [expectedModule]
+      it "Accepts CRLF as line endings without changing behavior" $ do
+        result <- parseModules ["test/examples/crlf.gotyno"]
+        let expectedModule =
+              Module
+                { name = ModuleName "crlf",
+                  imports = [],
+                  declarationNames = [],
+                  sourceFile = "test/examples/crlf.gotyno",
+                  definitions = expectedDefinitions
+                }
+            expectedDefinitions =
+              [ TypeDefinition
+                  ( DefinitionName
+                      "UsingExtraSpaces"
+                  )
+                  ( Struct
+                      ( PlainStruct [StructField (FieldName "field") (BasicType BasicString)]
+                      )
+                  ),
+                TypeDefinition
+                  (DefinitionName "DefinitionWithoutManyNewlines")
+                  (Struct (PlainStruct [StructField (FieldName "field2") (BasicType U32)])),
+                TypeDefinition
+                  (DefinitionName "SomeUnionName")
+                  ( Union
+                      (FieldName "type")
+                      ( PlainUnion
+                          [ Constructor (ConstructorName "One") (Just (BasicType U32)),
+                            Constructor (ConstructorName "Two") Nothing
+                          ]
+                      )
+                  ),
+                TypeDefinition
+                  (DefinitionName "Name")
+                  ( EmbeddedUnion
+                      (FieldName "kind")
+                      [ EmbeddedConstructor (ConstructorName "NoPayload") Nothing,
+                        EmbeddedConstructor
+                          (ConstructorName "WithPayload")
+                          ( Just
+                              ( DefinitionReference
+                                  ( TypeDefinition
+                                      (DefinitionName "UsingExtraSpaces")
+                                      ( Struct
+                                          ( PlainStruct
+                                              [ StructField
+                                                  (FieldName "field")
+                                                  (BasicType BasicString)
+                                              ]
+                                          )
+                                      )
+                                  )
+                              )
+                          )
+                      ]
+                  ),
+                TypeDefinition
+                  (DefinitionName "EnumName")
+                  ( Enumeration
+                      [ EnumerationValue
+                          (EnumerationIdentifier "value1")
+                          (LiteralString "value1"),
+                        EnumerationValue (EnumerationIdentifier "value2") (LiteralString "value1")
+                      ]
+                  )
+              ]
+        result `shouldBe` Right [expectedModule]
 
     describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do

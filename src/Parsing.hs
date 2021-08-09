@@ -120,9 +120,9 @@ test state text parser = do
 
 moduleP :: ModuleName -> FilePath -> Parser Module
 moduleP name sourceFile = do
-  imports <- fromMaybe [] <$> optional (sepEndBy1 importP newline <* newline)
+  imports <- fromMaybe [] <$> optional (sepEndBy1 importP eol <* eol)
   addImports imports
-  definitions <- sepEndBy1 typeDefinitionP (some newline) <* eof
+  definitions <- sepEndBy1 typeDefinitionP (some eol) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
@@ -201,7 +201,7 @@ declarationP = do
 
 untaggedUnionP :: Parser TypeDefinition
 untaggedUnionP = do
-  name <- lexeme readCurrentDefinitionName <* string "{\n"
+  name <- lexeme readCurrentDefinitionName <* string "{" <* eol
   cases <- untaggedUnionCasesP
   char '}'
   pure $ TypeDefinition name $ UntaggedUnion cases
@@ -212,7 +212,7 @@ untaggedUnionCasesP = do
 
 untaggedUnionCaseP :: Parser FieldType
 untaggedUnionCaseP =
-  some (char ' ') *> fieldTypeP [] <* newline
+  some (char ' ') *> fieldTypeP [] <* eol
 
 tagTypeP :: Parser TagType
 tagTypeP = do
@@ -231,7 +231,7 @@ readCurrentDefinitionName = do
 structP :: Parser TypeDefinition
 structP = do
   (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
-  _ <- string "{\n"
+  _ <- string "{" <* eol
   case maybeTypeVariables of
     Just typeVariables -> genericStructP name $ List.map TypeVariable typeVariables
     Nothing -> plainStructP name
@@ -258,7 +258,7 @@ constructorP typeVariables = do
   payload <- case maybeColon of
     Just _ -> Just <$> fieldTypeP typeVariables
     Nothing -> pure Nothing
-  many (char ' ') *> newline
+  many (char ' ') *> eol
   pure $ Constructor (ConstructorName name) payload
 
 constructorNameP :: Parser Text
@@ -270,14 +270,14 @@ constructorNameP = do
 unionP :: FieldName -> Parser TypeDefinition
 unionP typeTag = do
   (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
-  _ <- string "{\n"
+  _ <- string "{" <* eol
   case maybeTypeVariables of
     Just typeVariables -> genericUnionP typeTag name $ List.map TypeVariable typeVariables
     Nothing -> plainUnionP typeTag name
 
 embeddedUnionP :: FieldName -> Parser TypeDefinition
 embeddedUnionP typeTag = do
-  name <- lexeme readCurrentDefinitionName <* string "{\n"
+  name <- lexeme readCurrentDefinitionName <* string "{" <* eol
   constructors <- embeddedUnionStructConstructorsP []
   _ <- char '}'
   pure $ TypeDefinition name (EmbeddedUnion typeTag constructors)
@@ -299,8 +299,8 @@ embeddedUnionStructConstructorP typeVariables = do
   constructorName <- some (char ' ') *> embeddedConstructorNameP
   maybeDefinition <-
     choice
-      [ Nothing <$ many (char ' ') <* newline,
-        Just <$> (symbol ": " *> structReferenceP typeVariables <* many (char ' ') <* newline)
+      [ Nothing <$ many (char ' ') <* eol,
+        Just <$> (symbol ": " *> structReferenceP typeVariables <* many (char ' ') <* eol)
       ]
   pure $ EmbeddedConstructor (ConstructorName constructorName) maybeDefinition
 
@@ -326,7 +326,7 @@ embeddedConstructorNameP = pack <$> some alphaNumChar
 
 enumerationP :: Parser TypeDefinition
 enumerationP = do
-  name <- lexeme readCurrentDefinitionName <* "{\n"
+  name <- lexeme readCurrentDefinitionName <* "{" <* eol
   values <- enumerationValuesP
   char '}'
   pure $ TypeDefinition name $ Enumeration values
@@ -338,7 +338,7 @@ enumerationValueP :: Parser EnumerationValue
 enumerationValueP = do
   some (char ' ')
   identifier <- (pack >>> EnumerationIdentifier) <$> someTill alphaNumChar (symbol " = ")
-  value <- literalP <* many (char ' ') <* newline
+  value <- literalP <* many (char ' ') <* eol
   pure $ EnumerationValue identifier value
 
 plainUnionP :: FieldName -> DefinitionName -> Parser TypeDefinition
@@ -364,7 +364,7 @@ fieldP typeVariables = do
   name <- fieldNameP
   symbol ": "
   fieldType <- fieldTypeP typeVariables
-  newline
+  eol
   pure $ StructField name fieldType
 
 fieldNameP :: Parser FieldName

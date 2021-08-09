@@ -1,0 +1,22 @@
+struct  UsingExtraSpaces  {
+    field:  String  
+}
+struct DefinitionWithoutManyNewlines    {
+   field2:      U32
+}
+
+
+union   SomeUnionName   {
+  One:    U32
+    Two  
+}
+
+union(tag = kind, embedded)   Name   {
+    NoPayload  
+ WithPayload:  UsingExtraSpaces    
+}
+
+enum  EnumName   {
+ value1 =   "value1"    
+     value2 = "value1"    
+}
