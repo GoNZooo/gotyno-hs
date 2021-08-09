@@ -572,7 +572,7 @@ complexTypeP typeVariables =
     ]
 
 sliceTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-sliceTypeP typeVariables = SliceType <$> precededBy (string "[]") (fieldTypeP typeVariables)
+sliceTypeP typeVariables = SliceType <$> (string "[]" *> fieldTypeP typeVariables)
 
 arrayTypeP :: [TypeVariable] -> Parser ComplexTypeValue
 arrayTypeP typeVariables = do
@@ -580,15 +580,10 @@ arrayTypeP typeVariables = do
   ArrayType size <$> fieldTypeP typeVariables
 
 optionalTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-optionalTypeP typeVariables = OptionalType <$> precededBy (char '?') (fieldTypeP typeVariables)
+optionalTypeP typeVariables = OptionalType <$> (char '?' *> fieldTypeP typeVariables)
 
 pointerTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-pointerTypeP typeVariables = PointerType <$> precededBy (char '*') (fieldTypeP typeVariables)
-
-precededBy :: Parser ignored -> Parser a -> Parser a
-precededBy precededParser parser = do
-  _ <- precededParser
-  parser
+pointerTypeP typeVariables = PointerType <$> (char '*' *> fieldTypeP typeVariables)
 
 integerSizes :: [Int]
 integerSizes = [8, 16, 32, 64, 128]
