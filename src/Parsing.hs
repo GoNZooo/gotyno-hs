@@ -403,7 +403,7 @@ definitionReferenceP typeVariables = do
   soughtName@(DefinitionName n) <- DefinitionName <$> choice (List.map string definitionNames)
   maybeDefinition <- getDefinition soughtName
   maybeTypeVariables <-
-    optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
+    optional $ between (char '<') (char '>') $ appliedTypeVariablesP typeVariables
   ensureMatchingGenericity maybeDefinition maybeTypeVariables
   case maybeDefinition of
     Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
@@ -451,6 +451,9 @@ ensureMatchingGenericity (Just definition) maybeTypeParameters = do
             " applied"
           ]
     else pure ()
+
+appliedTypeVariablesP :: [TypeVariable] -> Parser [FieldType]
+appliedTypeVariablesP typeVariables = sepBy1 (fieldTypeP typeVariables) (string ", ")
 
 isGenericType :: TypeDefinition -> Bool
 isGenericType (TypeDefinition _name (Struct (GenericStruct _typeVariables _fields))) = True
@@ -522,7 +525,7 @@ importedReferenceP typeVariables = do
       case List.find (\(TypeDefinition name _typeData) -> name == definitionName) definitions of
         Just definition@(TypeDefinition foundDefinitionName typeData) -> do
           maybeTypeVariables <-
-            optional $ between (char '<') (char '>') $ sepBy1 (fieldTypeP typeVariables) (string ", ")
+            optional $ between (char '<') (char '>') $ appliedTypeVariablesP typeVariables
           pure $ case maybeTypeVariables of
             Just appliedTypeVariables ->
               AppliedImportedGenericReference
