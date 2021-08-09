@@ -201,7 +201,7 @@ declarationP = do
 
 untaggedUnionP :: Parser TypeDefinition
 untaggedUnionP = do
-  name <- readCurrentDefinitionName <* string " {\n"
+  name <- lexeme readCurrentDefinitionName <* string "{\n"
   cases <- untaggedUnionCasesP
   char '}'
   pure $ TypeDefinition name $ UntaggedUnion cases
