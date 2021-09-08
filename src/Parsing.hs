@@ -41,7 +41,6 @@ import RIO
     ($>),
     (&),
     (*>),
-    (.),
     (/=),
     (<$),
     (<$>),
@@ -65,7 +64,6 @@ import Types
 
 data AppState = AppState
   { modulesReference :: !(IORef [Module]),
-    currentImportsReference :: !(IORef [Import]),
     currentDeclarationNamesReference :: !(IORef (Set ModuleName)),
     currentDefinitionsReference :: !(IORef [TypeDefinition]),
     currentDefinitionNameReference :: !(IORef (Maybe DefinitionName))
@@ -77,14 +75,12 @@ parseModules :: [FilePath] -> IO (Either [String] [Module])
 parseModules files = do
   modulesReference <- newIORef []
   currentDefinitionsReference <- newIORef []
-  currentImportsReference <- newIORef []
   currentDeclarationNamesReference <- newIORef Set.empty
   currentDefinitionNameReference <- newIORef Nothing
   let state =
         AppState
           { currentDefinitionsReference,
             currentDefinitionNameReference,
-            currentImportsReference,
             currentDeclarationNamesReference,
             modulesReference
           }
@@ -121,8 +117,7 @@ test state text parser = do
 moduleP :: ModuleName -> FilePath -> Parser Module
 moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP eol <* eol)
-  setImports imports
-  definitions <- sepEndBy1 typeDefinitionP (some eol) <* eof
+  definitions <- sepEndBy1 (typeDefinitionP imports) (some eol) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
   pure Module {name, imports, definitions, sourceFile, declarationNames}
 
@@ -137,12 +132,12 @@ importP = do
     Nothing ->
       reportError $ "Unknown module referenced: " <> importName
 
-typeDefinitionP :: Parser TypeDefinition
-typeDefinitionP = do
+typeDefinitionP :: [Import] -> Parser TypeDefinition
+typeDefinitionP imports = do
   keyword <- choice $ symbol <$> ["struct", "untagged union", "union", "enum", "declare"]
   definition <- case Text.stripEnd keyword of
     "struct" ->
-      structP
+      structP imports
     "union" -> do
       maybeTagType <- optional $ do
         _ <- symbol "("
@@ -150,11 +145,11 @@ typeDefinitionP = do
       let tagType = fromMaybe (StandardTypeTag $ FieldName "type") maybeTagType
       case tagType of
         StandardTypeTag fieldName ->
-          unionP fieldName
+          unionP imports fieldName
         EmbeddedTypeTag fieldName ->
-          embeddedUnionP fieldName
+          embeddedUnionP imports fieldName
     "untagged union" ->
-      untaggedUnionP
+      untaggedUnionP imports
     "enum" ->
       enumerationP
     "declare" ->
@@ -174,20 +169,20 @@ declarationP = do
   addDeclarationName externalModule
   pure $ TypeDefinition name $ DeclaredType externalModule typeVariables
 
-untaggedUnionP :: Parser TypeDefinition
-untaggedUnionP = do
+untaggedUnionP :: [Import] -> Parser TypeDefinition
+untaggedUnionP imports = do
   name <- lexeme readCurrentDefinitionName <* string "{" <* eol
-  cases <- untaggedUnionCasesP
+  cases <- untaggedUnionCasesP imports
   char '}'
   pure $ TypeDefinition name $ UntaggedUnion cases
 
-untaggedUnionCasesP :: Parser [FieldType]
+untaggedUnionCasesP :: [Import] -> Parser [FieldType]
 untaggedUnionCasesP = do
-  some untaggedUnionCaseP
+  untaggedUnionCaseP >>> some
 
-untaggedUnionCaseP :: Parser FieldType
-untaggedUnionCaseP =
-  some (char ' ') *> fieldTypeP [] <* eol
+untaggedUnionCaseP :: [Import] -> Parser FieldType
+untaggedUnionCaseP imports =
+  some (char ' ') *> fieldTypeP imports [] <* eol
 
 tagTypeP :: Parser TagType
 tagTypeP = do
@@ -197,35 +192,35 @@ tagTypeP = do
   let tagField = fromMaybe (FieldName "type") maybeTagName
   pure $ maybe (StandardTypeTag tagField) (const $ EmbeddedTypeTag tagField) maybeEmbedded
 
-structP :: Parser TypeDefinition
-structP = do
+structP :: [Import] -> Parser TypeDefinition
+structP imports = do
   (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
   _ <- string "{" <* eol
   case maybeTypeVariables of
-    Just typeVariables -> genericStructP name $ List.map TypeVariable typeVariables
-    Nothing -> plainStructP name
+    Just typeVariables -> genericStructP imports name $ List.map TypeVariable typeVariables
+    Nothing -> plainStructP imports name
 
-genericStructP :: DefinitionName -> [TypeVariable] -> Parser TypeDefinition
-genericStructP name typeVariables = do
-  fields <- fieldsP typeVariables
+genericStructP :: [Import] -> DefinitionName -> [TypeVariable] -> Parser TypeDefinition
+genericStructP imports name typeVariables = do
+  fields <- fieldsP imports typeVariables
   char '}'
   pure $ TypeDefinition name $ Struct $ GenericStruct typeVariables fields
 
-plainStructP :: DefinitionName -> Parser TypeDefinition
-plainStructP name = do
-  fields <- fieldsP []
+plainStructP :: [Import] -> DefinitionName -> Parser TypeDefinition
+plainStructP imports name = do
+  fields <- fieldsP imports []
   char '}'
   pure $ TypeDefinition name $ Struct $ PlainStruct fields
 
-constructorsP :: [TypeVariable] -> Parser [Constructor]
-constructorsP typeVariables = some $ some (char ' ') *> constructorP typeVariables
+constructorsP :: [Import] -> [TypeVariable] -> Parser [Constructor]
+constructorsP imports typeVariables = some $ some (char ' ') *> constructorP imports typeVariables
 
-constructorP :: [TypeVariable] -> Parser Constructor
-constructorP typeVariables = do
+constructorP :: [Import] -> [TypeVariable] -> Parser Constructor
+constructorP imports typeVariables = do
   name <- constructorNameP
   maybeColon <- optional $ symbol ": "
   payload <- case maybeColon of
-    Just _ -> Just <$> fieldTypeP typeVariables
+    Just _ -> Just <$> fieldTypeP imports typeVariables
     Nothing -> pure Nothing
   many (char ' ') *> eol
   pure $ Constructor (ConstructorName name) payload
@@ -236,46 +231,46 @@ constructorNameP = do
   rest <- many alphaNumChar
   pure $ pack $ firstLetter : rest
 
-unionP :: FieldName -> Parser TypeDefinition
-unionP typeTag = do
+unionP :: [Import] -> FieldName -> Parser TypeDefinition
+unionP imports typeTag = do
   (name, maybeTypeVariables) <- nameAndMaybeTypeVariablesP
   _ <- string "{" <* eol
   case maybeTypeVariables of
-    Just typeVariables -> genericUnionP typeTag name $ List.map TypeVariable typeVariables
-    Nothing -> plainUnionP typeTag name
+    Just typeVariables -> genericUnionP imports typeTag name $ List.map TypeVariable typeVariables
+    Nothing -> plainUnionP imports typeTag name
 
-embeddedUnionP :: FieldName -> Parser TypeDefinition
-embeddedUnionP typeTag = do
+embeddedUnionP :: [Import] -> FieldName -> Parser TypeDefinition
+embeddedUnionP imports typeTag = do
   name <- lexeme readCurrentDefinitionName <* string "{" <* eol
-  constructors <- embeddedUnionStructConstructorsP []
+  constructors <- embeddedUnionStructConstructorsP imports []
   _ <- char '}'
   pure $ TypeDefinition name (EmbeddedUnion typeTag constructors)
 
-genericUnionP :: FieldName -> DefinitionName -> [TypeVariable] -> Parser TypeDefinition
-genericUnionP typeTag name typeVariables = do
-  constructors <- constructorsP typeVariables
+genericUnionP :: [Import] -> FieldName -> DefinitionName -> [TypeVariable] -> Parser TypeDefinition
+genericUnionP imports typeTag name typeVariables = do
+  constructors <- constructorsP imports typeVariables
   _ <- char '}'
   let union = Union typeTag unionType
       unionType = GenericUnion typeVariables constructors
   pure $ TypeDefinition name union
 
-embeddedUnionStructConstructorsP :: [TypeVariable] -> Parser [EmbeddedConstructor]
-embeddedUnionStructConstructorsP typeVariables =
-  some $ embeddedUnionStructConstructorP typeVariables
+embeddedUnionStructConstructorsP :: [Import] -> [TypeVariable] -> Parser [EmbeddedConstructor]
+embeddedUnionStructConstructorsP imports =
+  embeddedUnionStructConstructorP imports >>> some
 
-embeddedUnionStructConstructorP :: [TypeVariable] -> Parser EmbeddedConstructor
-embeddedUnionStructConstructorP typeVariables = do
+embeddedUnionStructConstructorP :: [Import] -> [TypeVariable] -> Parser EmbeddedConstructor
+embeddedUnionStructConstructorP imports typeVariables = do
   constructorName <- some (char ' ') *> embeddedConstructorNameP
   maybeDefinition <-
     choice
       [ Nothing <$ many (char ' ') <* eol,
-        Just <$> (symbol ": " *> structReferenceP typeVariables <* many (char ' ') <* eol)
+        Just <$> (symbol ": " *> structReferenceP imports typeVariables <* many (char ' ') <* eol)
       ]
   pure $ EmbeddedConstructor (ConstructorName constructorName) maybeDefinition
 
-structReferenceP :: [TypeVariable] -> Parser DefinitionReference
-structReferenceP typeVariables = do
-  definition <- definitionReferenceP typeVariables
+structReferenceP :: [Import] -> [TypeVariable] -> Parser DefinitionReference
+structReferenceP imports typeVariables = do
+  definition <- definitionReferenceP imports typeVariables
   case definition of
     (DefinitionReference (TypeDefinition _name (Struct (PlainStruct _)))) ->
       pure definition
@@ -310,9 +305,9 @@ enumerationValueP = do
   value <- literalP <* many (char ' ') <* eol
   pure $ EnumerationValue identifier value
 
-plainUnionP :: FieldName -> DefinitionName -> Parser TypeDefinition
-plainUnionP typeTag name = do
-  constructors <- constructorsP []
+plainUnionP :: [Import] -> FieldName -> DefinitionName -> Parser TypeDefinition
+plainUnionP imports typeTag name = do
+  constructors <- constructorsP imports []
   _ <- char '}'
   pure $ TypeDefinition name $ Union typeTag (PlainUnion constructors)
 
@@ -324,15 +319,15 @@ pascalWordP = do
   initialUppercaseCharacter <- upperChar
   ((initialUppercaseCharacter :) >>> pack) <$> many alphaNumChar
 
-fieldsP :: [TypeVariable] -> Parser [StructField]
-fieldsP = some . fieldP
+fieldsP :: [Import] -> [TypeVariable] -> Parser [StructField]
+fieldsP imports = fieldP imports >>> some
 
-fieldP :: [TypeVariable] -> Parser StructField
-fieldP typeVariables = do
+fieldP :: [Import] -> [TypeVariable] -> Parser StructField
+fieldP imports typeVariables = do
   _ <- some $ char ' '
   name <- fieldNameP
   symbol ": "
-  fieldType <- fieldTypeP typeVariables
+  fieldType <- fieldTypeP imports typeVariables
   eol
   pure $ StructField name fieldType
 
@@ -352,8 +347,8 @@ recursiveReferenceP = do
     Nothing ->
       reportError "Recursive reference not valid when we have no current definition name"
 
-definitionReferenceP :: [TypeVariable] -> Parser DefinitionReference
-definitionReferenceP typeVariables = do
+definitionReferenceP :: [Import] -> [TypeVariable] -> Parser DefinitionReference
+definitionReferenceP imports typeVariables = do
   definitions <- getDefinitions
   let definitionNames =
         definitions
@@ -362,7 +357,7 @@ definitionReferenceP typeVariables = do
   soughtName@(DefinitionName n) <- DefinitionName <$> choice (List.map string definitionNames)
   maybeDefinition <- getDefinition soughtName
   maybeTypeVariables <-
-    optional $ angleBracketed $ appliedTypeVariablesP typeVariables
+    optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
   ensureMatchingGenericity maybeDefinition maybeTypeVariables
   case maybeDefinition of
     Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
@@ -411,18 +406,19 @@ ensureMatchingGenericity (Just definition) maybeTypeParameters = do
           ]
     else pure ()
 
-appliedTypeVariablesP :: [TypeVariable] -> Parser [FieldType]
-appliedTypeVariablesP typeVariables = sepBy1 (fieldTypeP typeVariables) (string ", ")
+appliedTypeVariablesP :: [Import] -> [TypeVariable] -> Parser [FieldType]
+appliedTypeVariablesP imports typeVariables =
+  sepBy1 (fieldTypeP imports typeVariables) (string ", ")
 
-fieldTypeP :: [TypeVariable] -> Parser FieldType
-fieldTypeP typeVariables =
+fieldTypeP :: [Import] -> [TypeVariable] -> Parser FieldType
+fieldTypeP imports typeVariables =
   choice
     [ LiteralType <$> literalP,
-      ComplexType <$> complexTypeP typeVariables,
+      ComplexType <$> complexTypeP imports typeVariables,
       TypeVariableReferenceType <$> typeVariableReferenceP typeVariables,
-      DefinitionReferenceType <$> definitionReferenceP typeVariables,
+      DefinitionReferenceType <$> definitionReferenceP imports typeVariables,
       BasicType <$> basicTypeValueP,
-      DefinitionReferenceType <$> importedReferenceP typeVariables,
+      DefinitionReferenceType <$> importedReferenceP imports typeVariables,
       RecursiveReferenceType <$> recursiveReferenceP
     ]
     <* many (char ' ')
@@ -437,19 +433,17 @@ typeVariableReferenceP :: [TypeVariable] -> Parser TypeVariable
 typeVariableReferenceP typeVariables =
   TypeVariable <$> choice (List.map (\(TypeVariable t) -> string t) typeVariables)
 
-importedReferenceP :: [TypeVariable] -> Parser DefinitionReference
-importedReferenceP typeVariables = do
-  imports <- getImports
+importedReferenceP :: [Import] -> [TypeVariable] -> Parser DefinitionReference
+importedReferenceP imports typeVariables = do
   moduleName <-
     choice (List.map (\(Import Module {name = ModuleName name}) -> string name) imports) <* char '.'
   definitionName@(DefinitionName n) <- definitionNameP
-  maybeModule <- getImport moduleName
-  case maybeModule of
+  case findImport moduleName imports of
     Just (Import Module {name = sourceModule, definitions}) -> do
       case List.find (\(TypeDefinition name _typeData) -> name == definitionName) definitions of
         Just definition@(TypeDefinition foundDefinitionName typeData) -> do
           maybeTypeVariables <-
-            optional $ angleBracketed $ appliedTypeVariablesP typeVariables
+            optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
           pure $ case maybeTypeVariables of
             Just appliedTypeVariables ->
               AppliedImportedGenericReference
@@ -472,28 +466,29 @@ importedReferenceP typeVariables = do
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, floatP, booleanP, basicStringP]
 
-complexTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-complexTypeP typeVariables =
+complexTypeP :: [Import] -> [TypeVariable] -> Parser ComplexTypeValue
+complexTypeP imports typeVariables =
   choice
-    [ sliceTypeP typeVariables,
-      arrayTypeP typeVariables,
-      optionalTypeP typeVariables,
-      pointerTypeP typeVariables
+    [ sliceTypeP imports typeVariables,
+      arrayTypeP imports typeVariables,
+      optionalTypeP imports typeVariables,
+      pointerTypeP imports typeVariables
     ]
 
-sliceTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-sliceTypeP typeVariables = SliceType <$> (string "[]" *> fieldTypeP typeVariables)
+sliceTypeP :: [Import] -> [TypeVariable] -> Parser ComplexTypeValue
+sliceTypeP imports typeVariables = SliceType <$> (string "[]" *> fieldTypeP imports typeVariables)
 
-arrayTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-arrayTypeP typeVariables = do
+arrayTypeP :: [Import] -> [TypeVariable] -> Parser ComplexTypeValue
+arrayTypeP imports typeVariables = do
   size <- between (char '[') (char ']') decimal
-  ArrayType size <$> fieldTypeP typeVariables
+  ArrayType size <$> fieldTypeP imports typeVariables
 
-optionalTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-optionalTypeP typeVariables = OptionalType <$> (char '?' *> fieldTypeP typeVariables)
+optionalTypeP :: [Import] -> [TypeVariable] -> Parser ComplexTypeValue
+optionalTypeP imports typeVariables =
+  OptionalType <$> (char '?' *> fieldTypeP imports typeVariables)
 
-pointerTypeP :: [TypeVariable] -> Parser ComplexTypeValue
-pointerTypeP typeVariables = PointerType <$> (char '*' *> fieldTypeP typeVariables)
+pointerTypeP :: [Import] -> [TypeVariable] -> Parser ComplexTypeValue
+pointerTypeP imports typeVariables = PointerType <$> (char '*' *> fieldTypeP imports typeVariables)
 
 uintP :: Parser BasicTypeValue
 uintP = do
@@ -571,11 +566,6 @@ definitionNameP = do
   initialTitleCaseCharacter <- upperChar
   ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> many alphaNumChar
 
-setImports :: [Import] -> Parser ()
-setImports imports = do
-  AppState {currentImportsReference} <- ask
-  writeIORef currentImportsReference imports
-
 addDeclarationName :: ModuleName -> Parser ()
 addDeclarationName moduleName = do
   AppState {currentDeclarationNamesReference} <- ask
@@ -631,16 +621,9 @@ hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
 hasDefinition (TypeDefinition name _typeData) =
   any (\(TypeDefinition name' _typeData) -> name == name')
 
-getImports :: Parser [Import]
-getImports = do
-  AppState {currentImportsReference} <- ask
-  readIORef currentImportsReference
-
-getImport :: Text -> Parser (Maybe Import)
-getImport soughtName = do
-  AppState {currentImportsReference} <- ask
-  imports <- readIORef currentImportsReference
-  pure $ List.find (\(Import Module {name = ModuleName name}) -> soughtName == name) imports
+findImport :: Text -> [Import] -> Maybe Import
+findImport soughtName =
+  List.find (\(Import Module {name = ModuleName name}) -> soughtName == name)
 
 reportError :: String -> Parser a
 reportError = ErrorFail >>> Set.singleton >>> fancyFailure
