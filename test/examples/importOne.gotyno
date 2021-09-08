@@ -1,0 +1,3 @@
+struct SomeKind {
+    field: String
+}

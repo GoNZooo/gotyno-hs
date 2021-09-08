@@ -1,0 +1,3 @@
+struct SomeOtherOtherKind {
+    field: importOne.SomeKind
+}

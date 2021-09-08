@@ -1,0 +1,5 @@
+import importOne
+
+struct SomeOtherKind {
+    field: importOne.SomeKind
+}

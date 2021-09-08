@@ -298,6 +298,16 @@ spec
               ]
         result `shouldBe` Right [expectedModule]
 
+    describe "imports" $ do
+      it "Shouldn't be able to use imports from previously imported file without explicit import" $ do
+        result <-
+          parseModules
+            [ "test/examples/importOne.gotyno",
+              "test/examples/importTwo.gotyno",
+              "test/examples/importThree.gotyno"
+            ]
+        isLeft result `shouldBe` True
+
     describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {name, imports, definitions} <-
