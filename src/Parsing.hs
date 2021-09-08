@@ -121,7 +121,7 @@ test state text parser = do
 moduleP :: ModuleName -> FilePath -> Parser Module
 moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP eol <* eol)
-  addImports imports
+  setImports imports
   definitions <- sepEndBy1 typeDefinitionP (some eol) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
   pure Module {name, imports, definitions, sourceFile, declarationNames}
@@ -571,8 +571,8 @@ definitionNameP = do
   initialTitleCaseCharacter <- upperChar
   ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> many alphaNumChar
 
-addImports :: [Import] -> Parser ()
-addImports imports = do
+setImports :: [Import] -> Parser ()
+setImports imports = do
   AppState {currentImportsReference} <- ask
   writeIORef currentImportsReference imports
 
