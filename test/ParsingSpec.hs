@@ -109,7 +109,7 @@ spec
         isLeft result `shouldBe` True
         case result of
           Left e ->
-            PartialList.head e `shouldContain` "Type NotGeneric expects 0 type parameters"
+            PartialList.head e `shouldContain` "Type 'NotGeneric' expects 0 type parameters"
           Right _ ->
             error "We should not hit `Right` when expecting error"
 
@@ -119,7 +119,7 @@ spec
         case result of
           Left e ->
             PartialList.head e
-              `shouldContain` "Type GenericUnion expects 2 type parameters, 1 applied"
+              `shouldContain` "Type 'GenericUnion' expects 2 type parameters, 1 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
       it "Handles one missing argument out of 2" $ do
@@ -128,7 +128,7 @@ spec
         case result of
           Left e ->
             PartialList.head e
-              `shouldContain` "Type GenericUnion expects 2 type parameters, 1 applied"
+              `shouldContain` "Type 'GenericUnion' expects 2 type parameters, 1 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
       it "Handles two missing arguments out of 2" $ do
@@ -137,7 +137,7 @@ spec
         case result of
           Left e ->
             PartialList.head e
-              `shouldContain` "Type GenericUnion expects 2 type parameters, 0 applied"
+              `shouldContain` "Type 'GenericUnion' expects 2 type parameters, 0 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
       it "Handles one missing arguments out of 1" $ do
@@ -146,7 +146,7 @@ spec
         case result of
           Left e ->
             PartialList.head e
-              `shouldContain` "Type GenericUnion expects 1 type parameters, 0 applied"
+              `shouldContain` "Type 'GenericUnion' expects 1 type parameters, 0 applied"
           Right _ ->
             error "We should not hit `Right` when expecting error"
       it "Errors out when trying to apply a non-generic declared type" $ do
@@ -155,7 +155,35 @@ spec
         case result of
           Left e ->
             PartialList.head e
-              `shouldContain` "Type GenericUnion expects 0 type parameters, 1 applied"
+              `shouldContain` "Type 'GenericUnion' expects 0 type parameters, 1 applied"
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Errors out when trying to apply too few parameters to imported generic" $ do
+        result <-
+          parseModules
+            [ "test/examples/result.gotyno",
+              "test/examples/notEnoughAppliedImportedGenerics.gotyno"
+            ]
+        isLeft result `shouldBe` True
+        case result of
+          Left [e1] -> do
+            e1 `shouldContain` "Type 'result.Result' expects 2 type parameters, 0 applied"
+          Left errors ->
+            error $ "More/less errors than expected: " <> show errors
+          Right _ ->
+            error "We should not hit `Right` when expecting error"
+      it "Errors out when trying to apply too many type parameters to imported generic" $ do
+        result <-
+          parseModules
+            [ "test/examples/result.gotyno",
+              "test/examples/tooManyAppliedImportedTypeParameters.gotyno"
+            ]
+        isLeft result `shouldBe` True
+        case result of
+          Left [e1] -> do
+            e1 `shouldContain` "Type 'result.PlainType' expects 0 type parameters"
+          Left errors ->
+            error $ "More/less errors than expected: " <> show errors
           Right _ ->
             error "We should not hit `Right` when expecting error"
       it "Gives correct result when all are applied" $ do

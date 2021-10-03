@@ -11,7 +11,7 @@ data Module = Module
   }
   deriving (Eq, Show)
 
-newtype ModuleName = ModuleName Text
+newtype ModuleName = ModuleName {unModuleName :: Text}
   deriving (Eq, Show, Ord)
 
 newtype Import = Import Module

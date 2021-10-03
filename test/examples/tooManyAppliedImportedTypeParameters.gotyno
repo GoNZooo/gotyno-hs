@@ -1,0 +1,5 @@
+import result
+
+struct UsingGeneric <T>{
+    plainField: result.PlainType<T>
+}

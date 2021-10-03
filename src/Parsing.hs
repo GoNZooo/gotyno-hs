@@ -358,7 +358,7 @@ definitionReferenceP imports typeVariables = do
   maybeDefinition <- getDefinition soughtName
   maybeTypeVariables <-
     optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
-  ensureMatchingGenericity maybeDefinition maybeTypeVariables
+  ensureMatchingGenericity Nothing maybeDefinition maybeTypeVariables
   case maybeDefinition of
     Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
       case maybeTypeVariables of
@@ -382,23 +382,27 @@ definitionReferenceP imports typeVariables = do
           pure $ DefinitionReference definition
     Nothing -> reportError $ mconcat ["Unknown type reference: ", unpack n]
 
-ensureMatchingGenericity :: Maybe TypeDefinition -> Maybe [FieldType] -> Parser ()
-ensureMatchingGenericity Nothing _maybeTypeParameters = pure ()
-ensureMatchingGenericity (Just definition) maybeTypeParameters = do
+ensureMatchingGenericity :: Maybe ModuleName -> Maybe TypeDefinition -> Maybe [FieldType] -> Parser ()
+ensureMatchingGenericity _maybeModuleName Nothing _maybeTypeParameters = pure ()
+ensureMatchingGenericity maybeModuleName (Just definition) maybeTypeParameters = do
   let expectedTypeParameters =
         definition
           & Utilities.typeVariablesFromDefinition
           & fromMaybe []
           & length
-      name = definition & typeDefinitionName & unDefinitionName & unpack
+      name =
+        mconcat
+          [ maybe "" (unModuleName >>> (<> ".") >>> unpack) maybeModuleName,
+            definition & typeDefinitionName & unDefinitionName & unpack
+          ]
       appliedTypeParameters = maybeTypeParameters & fromMaybe [] & length
   if expectedTypeParameters /= appliedTypeParameters
     then
       reportError $
         mconcat
-          [ "Type ",
+          [ "Type '",
             name,
-            " expects ",
+            "' expects ",
             show expectedTypeParameters,
             " type parameters, ",
             show appliedTypeParameters,
@@ -444,6 +448,10 @@ importedReferenceP imports typeVariables = do
         Just definition@(TypeDefinition foundDefinitionName typeData) -> do
           maybeTypeVariables <-
             optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
+          ensureMatchingGenericity
+            (Just $ ModuleName moduleName)
+            (Just definition)
+            maybeTypeVariables
           pure $ case maybeTypeVariables of
             Just appliedTypeVariables ->
               AppliedImportedGenericReference

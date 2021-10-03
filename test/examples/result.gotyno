@@ -1,0 +1,8 @@
+union Result <L, R>{
+    Left: L
+    Right: R
+}
+
+struct PlainType {
+    field: String
+}
