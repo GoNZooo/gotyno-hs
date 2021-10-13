@@ -96,11 +96,11 @@ parseModules files = do
         pure $ Right module'
       Left e -> pure $ Left $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
 
-  case List.partition isLeft results of
+  pure $ case List.partition isLeft results of
     ([], maybeModules) ->
-      pure $ Right $ List.map partialFromRight maybeModules
+      Right $ List.map partialFromRight maybeModules
     (errors, _modules) ->
-      pure $ Left $ List.map partialFromLeft errors
+      Left $ List.map partialFromLeft errors
 
 run :: AppState -> Parser a -> Text -> IO (Either (ParseErrorBundle Text Void) a)
 run state parser = runParserT parser "" >>> runRIO state
