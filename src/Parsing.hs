@@ -87,7 +87,7 @@ parseModules files = do
   results <- for files $ \f -> do
     let moduleName = f & FilePath.takeBaseName & pack & ModuleName
     fileContents <- readFileUtf8 f
-    maybeModule <- run state fileContents $ moduleP moduleName f
+    maybeModule <- run state (moduleP moduleName f) fileContents
     writeIORef currentDefinitionsReference mempty
     writeIORef currentDeclarationNamesReference mempty
     case maybeModule of
@@ -102,14 +102,12 @@ parseModules files = do
     (errors, _modules) ->
       pure $ Left $ List.map partialFromLeft errors
 
-run :: AppState -> Text -> Parser a -> IO (Either (ParseErrorBundle Text Void) a)
-run state text parser = do
-  let parserResult = runParserT parser "" text
-  runRIO state parserResult
+run :: AppState -> Parser a -> Text -> IO (Either (ParseErrorBundle Text Void) a)
+run state parser = runParserT parser "" >>> runRIO state
 
 test :: (Show a) => AppState -> Text -> Parser a -> IO ()
 test state text parser = do
-  result <- run state text parser
+  result <- run state parser text
   case result of
     Right successValue -> pPrint successValue
     Left e -> putStrLn $ errorBundlePretty e
