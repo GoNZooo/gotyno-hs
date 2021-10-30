@@ -2,7 +2,7 @@ version: '3'
 
 services:
   gotyno-hs:
-    image: gonz/quanterall-development:lts-16.31
+    image: gonz/quanterall-development:lts-18.14
     volumes:
       - ..:/workspace:cached
       - ./build/stack-work:/workspace/.stack-work:cached
