@@ -133,7 +133,7 @@ importP = do
 typeDefinitionP :: [Import] -> Parser TypeDefinition
 typeDefinitionP imports = do
   keyword <- choice $ symbol <$> ["struct", "untagged union", "union", "enum", "declare"]
-  definition <- case Text.stripEnd keyword of
+  definition <- case keyword of
     "struct" ->
       structP imports
     "union" -> do
