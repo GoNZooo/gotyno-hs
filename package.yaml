@@ -79,6 +79,7 @@ ghc-options:
 - -Wincomplete-uni-patterns
 - -Wpartial-fields
 - -Wredundant-constraints
+- -Werror=incomplete-patterns
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
