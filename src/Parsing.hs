@@ -3,7 +3,6 @@ module Parsing (parseModules, test) where
 import qualified CodeGeneration.Utilities as Utilities
 import RIO
   ( Bool (..),
-    Char,
     Either (..),
     FilePath,
     IO,
@@ -536,10 +535,7 @@ literalP :: Parser LiteralTypeValue
 literalP = choice [literalStringP, literalIntegerP, literalFloatP, literalBooleanP]
 
 literalStringP :: Parser LiteralTypeValue
-literalStringP = (pack >>> LiteralString) <$> between (char '"') (char '"') (many stringCharacterP)
-
-stringCharacterP :: Parser Char
-stringCharacterP = alphaNumChar <|> spaceChar
+literalStringP = (pack >>> LiteralString) <$> quoted printChar
 
 literalIntegerP :: Parser LiteralTypeValue
 literalIntegerP = LiteralInteger <$> decimal
@@ -662,3 +658,6 @@ spaceConsumer = Lexer.space space1 (Lexer.skipLineComment "# ") empty
 
 angleBracketed :: Parser a -> Parser a
 angleBracketed = between (char '<') (char '>')
+
+quoted :: Parser a -> Parser [a]
+quoted p = char '"' *> manyTill p (char '"')

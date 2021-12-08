@@ -325,6 +325,9 @@ spec
                   )
               ]
         result `shouldBe` Right [expectedModule]
+      it "Allows spaces in enum string values" $ do
+        result <- parseModules ["test/examples/enumWithSpaces.gotyno"]
+        shouldBeRight result
 
     describe "imports" $ do
       it "Shouldn't be able to use imports from previously imported file without explicit import" $ do
