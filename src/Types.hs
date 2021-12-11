@@ -1,6 +1,28 @@
 module Types where
 
 import RIO
+import RIO.Time (NominalDiffTime)
+
+data OutputDestination
+  = SameAsInput
+  | OutputPath !FilePath
+  | StandardOut
+  deriving (Eq, Show)
+
+data Languages = Languages
+  { typescript :: !(Maybe OutputDestination),
+    fsharp :: !(Maybe OutputDestination),
+    python :: !(Maybe OutputDestination)
+  }
+  deriving (Eq, Show)
+
+data Options = Options
+  { languages :: !Languages,
+    watchMode :: !Bool,
+    verbose :: !Bool,
+    inputs :: ![FilePath]
+  }
+  deriving (Eq, Show)
 
 data Module = Module
   { name :: !ModuleName,
@@ -135,3 +157,39 @@ data LiteralTypeValue
   | LiteralFloat !Float
   | LiteralBoolean !Bool
   deriving (Eq, Show)
+
+newtype CompilationState = CompilationState
+  {unCompilationState :: Either FailedCompilation SuccessfulCompilation}
+  deriving (Eq, Show, Generic)
+
+data SuccessfulCompilation = SuccessfulCompilation
+  { totalTime :: !NominalDiffTime,
+    parsingTime :: !NominalDiffTime,
+    moduleStatistics :: ![ModuleStatistics],
+    languageTimes :: !LanguageOutputStatistics
+  }
+  deriving (Eq, Show, Generic)
+
+data ModuleStatistics = ModuleStatistics
+  { name :: !Text,
+    path :: !FilePath,
+    time :: !NominalDiffTime,
+    language :: !OutputLanguage
+  }
+  deriving (Eq, Show, Generic)
+
+newtype FailedCompilation = FailedCompilation [String]
+  deriving (Eq, Show, Generic)
+
+data OutputLanguage
+  = FSharpOutput
+  | PythonOutput
+  | TypeScriptOutput
+  deriving (Eq, Show, Generic)
+
+data LanguageOutputStatistics = LanguageOutputStatistics
+  { fsharpTime :: !(Maybe NominalDiffTime),
+    pythonTime :: !(Maybe NominalDiffTime),
+    typescriptTime :: !(Maybe NominalDiffTime)
+  }
+  deriving (Eq, Show, Generic)

@@ -1,7 +1,8 @@
 module Main where
 
-import qualified Library
+import Library
 import Options.Applicative
+import Types
 import Prelude
 
 -- This `main` function just delegates to the library's definition of `main`
@@ -16,19 +17,19 @@ main = do
       programDescription = "Compile type definitions into encoders/decoders for languages"
   options <- execParser parserOptions
 
-  Library.runMain options
+  runMain options
 
-parseOptions :: Parser Library.Options
+parseOptions :: Parser Options
 parseOptions =
-  Library.Options
+  Options
     <$> parseLanguages
     <*> switch (long "watch" <> short 'w' <> help "Watch files and recompile automatically")
     <*> switch (long "verbose" <> short 'v' <> help "Output info about compilation")
     <*> some (argument str (metavar "GOTYNOFILE"))
 
-parseLanguages :: Parser Library.Languages
+parseLanguages :: Parser Languages
 parseLanguages =
-  Library.Languages
+  Languages
     <$> option
       (maybeReader parseOutputDestination)
       ( long "typescript"
@@ -54,7 +55,7 @@ parseLanguages =
           <> metavar "=|-|PATH"
       )
 
-parseOutputDestination :: String -> Maybe (Maybe Library.OutputDestination)
-parseOutputDestination "=" = pure $ Just Library.SameAsInput
-parseOutputDestination "-" = pure $ Just Library.StandardOut
-parseOutputDestination other = pure $ Just $ Library.OutputPath other
+parseOutputDestination :: String -> Maybe (Maybe OutputDestination)
+parseOutputDestination "=" = pure $ Just SameAsInput
+parseOutputDestination "-" = pure $ Just StandardOut
+parseOutputDestination other = pure $ Just $ OutputPath other
