@@ -158,8 +158,10 @@ data LiteralTypeValue
   | LiteralBoolean !Bool
   deriving (Eq, Show)
 
-newtype CompilationState = CompilationState
-  {unCompilationState :: Either FailedCompilation SuccessfulCompilation}
+data CompilationState = CompilationState
+  { state :: Either FailedCompilation SuccessfulCompilation,
+    options :: Options
+  }
   deriving (Eq, Show, Generic)
 
 data SuccessfulCompilation = SuccessfulCompilation

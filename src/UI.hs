@@ -7,6 +7,7 @@ module UI
 where
 
 import Brick
+import Compilation (compile)
 import qualified Graphics.Vty as Vty
 import Numeric (showFFloat)
 import RIO
@@ -43,8 +44,10 @@ attrMap' =
   attrMap Vty.defAttr [(successAttr, fg Vty.green), (failureAttr, fg Vty.red)]
 
 drawCompilationState :: CompilationState -> [Widget Name]
-drawCompilationState (CompilationState (Right compilation)) = [drawSuccessfulCompilation compilation]
-drawCompilationState (CompilationState (Left compilation)) = [drawFailedCompilation compilation]
+drawCompilationState CompilationState {state = Right compilation} =
+  [drawSuccessfulCompilation compilation]
+drawCompilationState CompilationState {state = Left compilation} =
+  [drawFailedCompilation compilation]
 
 drawSuccessfulCompilation :: SuccessfulCompilation -> Widget Name
 drawSuccessfulCompilation
@@ -100,12 +103,15 @@ handleEvent ::
   CompilationState ->
   BrickEvent Name CompilationEvent ->
   EventM Name (Next CompilationState)
-handleEvent CompilationState {} (AppEvent (CompilationSucceeded succeeded)) =
-  continue $ CompilationState $ Right succeeded
-handleEvent CompilationState {} (AppEvent (CompilationFailed failed)) =
-  continue $ CompilationState $ Left failed
+handleEvent s (AppEvent (CompilationSucceeded succeeded)) =
+  continue $ s {state = Right succeeded}
+handleEvent s (AppEvent (CompilationFailed failed)) =
+  continue $ s {state = Left failed}
 handleEvent state (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt state
 handleEvent state (VtyEvent (Vty.EvKey (Vty.KChar 'q') [])) = halt state
+handleEvent CompilationState {options} (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
+  newCompilationState <- liftIO $ compile options
+  continue newCompilationState
 handleEvent state _ = continue state
 
 showOutputLanguage :: OutputLanguage -> String
