@@ -60,13 +60,13 @@ runMain
 
 watchInputsWithTUI :: Options -> IO ()
 watchInputsWithTUI options@Options {inputs = relativeInputs, verbose} = do
-  compilationStateChannel <- newBChan 5
   compilationState <- compile options
   inputs <- traverse Directory.makeAbsolute relativeInputs
   let debounceInterval = 0.01 :: Time.NominalDiffTime
       fsNotifyConfig =
         FSNotify.defaultConfig {FSNotify.confDebounce = FSNotify.Debounce debounceInterval}
       inputDirectories = inputs & fmap FilePath.takeDirectory & List.nub
+  compilationStateChannel <- newBChan 5
   _notifyThread <- async $
     FSNotify.withManagerConf fsNotifyConfig $ \watchManager -> do
       let eventPredicate (FSNotify.Modified modifiedInput _modificationTime _someBool) =

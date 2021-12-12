@@ -26,10 +26,10 @@ data Name = Gotyno
 app :: App CompilationState CompilationEvent Name
 app =
   App
-    { appDraw = drawCompilationState,
+    { appDraw = drawApplication,
       appChooseCursor = neverShowCursor,
       appHandleEvent = handleEvent,
-      appStartEvent = return,
+      appStartEvent = pure,
       appAttrMap = const attrMap'
     }
 
@@ -43,10 +43,10 @@ attrMap' :: AttrMap
 attrMap' =
   attrMap Vty.defAttr [(successAttr, fg Vty.green), (failureAttr, fg Vty.red)]
 
-drawCompilationState :: CompilationState -> [Widget Name]
-drawCompilationState CompilationState {state = Right compilation} =
+drawApplication :: CompilationState -> [Widget Name]
+drawApplication CompilationState {state = Right compilation} =
   [drawSuccessfulCompilation compilation]
-drawCompilationState CompilationState {state = Left compilation} =
+drawApplication CompilationState {state = Left compilation} =
   [drawFailedCompilation compilation]
 
 drawSuccessfulCompilation :: SuccessfulCompilation -> Widget Name
@@ -77,7 +77,7 @@ drawAllModuleStatistics = fmap drawModuleStatistics >>> vBox
 
 drawModuleStatistics :: ModuleStatistics -> Widget Name
 drawModuleStatistics ModuleStatistics {name, time, language} = do
-  let moduleOutput = Text.unpack name <> " (" <> showOutputLanguage language <> ")" <> ": "
+  let moduleOutput = Text.unpack name <> " (" <> showOutputLanguage language <> "): "
       timeOutput = showFFloat @Double (Just 4) (realToFrac time) "s"
   [ padLeft (Pad 4) $
       str moduleOutput <+> str timeOutput
@@ -91,13 +91,11 @@ drawTimeOutput label time =
 
 drawFailedCompilation :: FailedCompilation -> Widget Name
 drawFailedCompilation (FailedCompilation errors) =
-  vBox
-    [ withAttr failureAttr $ str "Compilation failed:",
-      withAttr failureAttr $ padLeft (Pad 2) $ vBox (map drawError errors)
-    ]
-
-drawError :: String -> Widget Name
-drawError = str >>> withAttr failureAttr
+  [ str "Compilation failed:",
+    padLeft (Pad 2) $ vBox (map str errors)
+  ]
+    & map (withAttr failureAttr)
+    & vBox
 
 handleEvent ::
   CompilationState ->
@@ -112,7 +110,9 @@ handleEvent state (VtyEvent (Vty.EvKey (Vty.KChar 'q') [])) = halt state
 handleEvent CompilationState {options} (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
   newCompilationState <- liftIO $ compile options
   continue newCompilationState
-handleEvent state _ = continue state
+handleEvent state (VtyEvent _) = continue state
+handleEvent state MouseDown {} = continue state
+handleEvent state MouseUp {} = continue state
 
 showOutputLanguage :: OutputLanguage -> String
 showOutputLanguage TypeScriptOutput = "TypeScript"
