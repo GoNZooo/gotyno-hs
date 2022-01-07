@@ -1104,6 +1104,8 @@ outputFieldType (ComplexType (ArrayType _size fieldType@(ComplexType (OptionalTy
   mconcat ["(", outputFieldType fieldType, ")", "[]"]
 outputFieldType (ComplexType (ArrayType _size fieldType)) =
   mconcat [outputFieldType fieldType, "[]"]
+outputFieldType (ComplexType (SliceType fieldType@(ComplexType (OptionalType _)))) =
+  mconcat ["(", outputFieldType fieldType, ")", "[]"]
 outputFieldType (ComplexType (SliceType fieldType)) =
   mconcat [outputFieldType fieldType, "[]"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
