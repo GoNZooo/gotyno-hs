@@ -329,14 +329,6 @@ spec
         result <- parseModules ["test/examples/enumWithSpaces.gotyno"]
         shouldBeRight result
 
-      it "Allows you to have a field that is an array of arrays of `?String`" $ do
-        arrayOfArraysOfNullableStringTsOutput <- readFileUtf8 "./test/reference-output/arrayOfArraysOfNullableStrings.ts"
-        module' <-
-          (getRight >>> PartialList.last)
-            <$> parseModules ["test/examples/arrayOfArraysOfNullableString.gotyno"]
-        let importTypeScriptOutput = TypeScript.outputModule module'
-        importTypeScriptOutput `shouldBe` arrayOfArraysOfNullableStringTsOutput
-
     describe "imports" $ do
       it "Shouldn't be able to use imports from previously imported file without explicit import" $ do
         result <-
@@ -410,6 +402,14 @@ spec
             <$> parseModules ["examples/basic.gotyno", "examples/python.gotyno"]
         let pythonPythonOutput = Python.outputModule pythonModule
         pythonPythonOutput `shouldBe` pyPython
+    describe "Misc. expected behavior" $ do
+      it "Allows you to have a field that is an array of arrays of `?String`" $ do
+        arrayOfArraysOfNullableStringTsOutput <- readFileUtf8 "./test/reference-output/arrayOfArraysOfNullableStrings.ts"
+        module' <-
+          (getRight >>> PartialList.last)
+            <$> parseModules ["test/examples/arrayOfArraysOfNullableString.gotyno"]
+        let importTypeScriptOutput = TypeScript.outputModule module'
+        importTypeScriptOutput `shouldBe` arrayOfArraysOfNullableStringTsOutput
 
 getRight :: Either [String] r -> r
 getRight (Right r) = r
