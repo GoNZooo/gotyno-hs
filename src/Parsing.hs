@@ -519,8 +519,8 @@ intP = do
 
 floatP :: Parser BasicTypeValue
 floatP = do
-  int <- choice [string "F32", "F64"]
-  case int of
+  floatType <- choice ["F32", "F64"]
+  case floatType of
     "F32" -> pure F32
     "F64" -> pure F64
     other -> reportError $ "Invalid size for Fx: " <> unpack other

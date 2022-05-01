@@ -1002,7 +1002,7 @@ outputCaseUnion name constructors typeVariables =
         constructors
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
-                (mconcat [upperCaseFirstCharacter constructorName])
+                mconcat [upperCaseFirstCharacter constructorName]
                   <> maybe
                     ""
                     (typeVariablesFrom >>> maybeJoinTypeVariables)
