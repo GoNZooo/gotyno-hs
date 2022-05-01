@@ -1,0 +1,4 @@
+struct Coordinates {
+    x: F32
+    y: F32
+}

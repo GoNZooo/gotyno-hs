@@ -331,7 +331,7 @@ fieldP imports typeVariables = do
 fieldNameP :: Parser FieldName
 fieldNameP = do
   initialAlphaChar <- lowerChar <|> upperChar
-  ((initialAlphaChar :) >>> pack >>> FieldName) <$> some (alphaNumChar <|> char '_')
+  ((initialAlphaChar :) >>> pack >>> FieldName) <$> many (alphaNumChar <|> char '_')
 
 recursiveReferenceP :: Parser DefinitionName
 recursiveReferenceP = do

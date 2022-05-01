@@ -325,9 +325,34 @@ spec
                   )
               ]
         result `shouldBe` Right [expectedModule]
+
       it "Allows spaces in enum string values" $ do
         result <- parseModules ["test/examples/enumWithSpaces.gotyno"]
         shouldBeRight result
+
+      it "Supports one character long fieldnames" $ do
+        let expectedModule =
+              Module
+                { name = ModuleName "oneCharacterFieldNames",
+                  imports = [],
+                  declarationNames = [],
+                  sourceFile = "test/examples/oneCharacterFieldNames.gotyno",
+                  definitions = expectedDefinitions
+                }
+            expectedDefinitions =
+              [ TypeDefinition
+                  (DefinitionName "Coordinates")
+                  ( Struct
+                      ( PlainStruct
+                          [ StructField (FieldName "x") (BasicType F32),
+                            StructField (FieldName "y") (BasicType F32)
+                          ]
+                      )
+                  )
+              ]
+
+        parseModules ["test/examples/oneCharacterFieldNames.gotyno"]
+          `shouldReturn` Right [expectedModule]
 
     describe "imports" $ do
       it "Shouldn't be able to use imports from previously imported file without explicit import" $ do
