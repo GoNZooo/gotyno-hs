@@ -1,5 +1,6 @@
 module Main where
 
+import qualified HaskellOutputSpec
 import qualified ParsingSpec
 import RIO
 import Test.Hspec
@@ -9,4 +10,6 @@ main = do
   tsReferenceOutput <- ParsingSpec.typeScriptReferenceOutput
   fsReferenceOutput <- ParsingSpec.fSharpReferenceOutput
   pyReferenceOutput <- ParsingSpec.pythonReferenceOutput
-  hspec $ ParsingSpec.spec tsReferenceOutput fsReferenceOutput pyReferenceOutput
+  hspec $ do
+    ParsingSpec.spec tsReferenceOutput fsReferenceOutput pyReferenceOutput
+    HaskellOutputSpec.spec
