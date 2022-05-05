@@ -8,9 +8,9 @@ import Types
 outputModule :: Module -> Text
 outputModule Module {definitions, imports, declarationNames} =
   let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
-      importsOutput = imports & fmap outputImport & mconcat
+      importsOutput = imports & fmap outputImport & Text.intercalate "\n"
       outputImport (Import Module {name = ModuleName name}) =
-        mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
+        mconcat ["import * as ", name, " from \"./", name, "\";"]
       declarationImportOutput =
         declarationNames
           & fmap
@@ -21,7 +21,7 @@ outputModule Module {definitions, imports, declarationNames} =
    in mconcat
         [ modulePrelude,
           "\n\n",
-          importsOutput,
+          if Text.null importsOutput then "" else importsOutput <> "\n\n",
           declarationImportOutput,
           if null declarationNames then "" else "\n\n",
           definitionOutput
