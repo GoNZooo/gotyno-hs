@@ -18,6 +18,7 @@ outputModule Module {name = ModuleName name, definitions, imports, declarationNa
             ( \(ModuleName declarationModuleName) ->
                 mconcat
                   [ "import qualified ",
+                    "GotynoOutput.",
                     haskellifyModuleName declarationModuleName,
                     " as ",
                     haskellifyModuleName declarationModuleName
@@ -47,7 +48,7 @@ modulePrelude name =
       "import qualified Data.Aeson as JSON",
       "import GHC.Generics (Generic)",
       "import qualified Gotyno.Helpers as Helpers",
-      "import qualified Prelude"
+      "import Qtility"
     ]
 
 outputDefinition :: TypeDefinition -> Maybe Text
@@ -73,47 +74,69 @@ outputEmbeddedUnion unionName fieldName@(FieldName tag) constructors =
           constructorsAsConstructors
           []
       constructorsAsConstructors = embeddedConstructorsToConstructors constructors
-      constructorDecodersOutput = outputEmbeddedConstructorDecoders unionName constructors
-      tagDecoderPairsOutput =
-        constructors
-          & fmap
-            ( \(EmbeddedConstructor (ConstructorName name) _reference) ->
-                mconcat
-                  [ "                \"",
-                    name,
-                    "\", ",
-                    unDefinitionName unionName,
-                    ".",
-                    upperCaseFirstCharacter name,
-                    "Decoder\n"
-                  ]
-            )
-          & mconcat
-      decoderOutput =
+      toJsonOutput =
         mconcat
-          [ mconcat ["    static member Decoder: Decoder<", unDefinitionName unionName, "> =\n"],
-            "        GotynoCoders.decodeWithTypeTag\n",
-            mconcat ["            \"", tag, "\"\n"],
-            "            [|\n",
-            tagDecoderPairsOutput,
-            "            |]"
+          [ "instance ToJSON ",
+            unDefinitionName unionName,
+            " where",
+            "\n  ",
+            toJsonCaseOutput
           ]
-      constructorCasesOutput =
+      toJsonCaseOutput =
         constructors
-          & fmap (outputEmbeddedCase fieldName)
-          & Text.intercalate "\n\n"
-      encoderOutput =
+          & fmap constructorToJson
+          & Text.intercalate "\n  "
+      constructorToJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
         mconcat
-          [ mconcat ["    static member Encoder =\n"],
-            "        function\n",
-            constructorCasesOutput
+          [ "toJSON (",
+            n,
+            " payload) = toJSON payload & atKey \"",
+            tag,
+            "\" ?~ String \"",
+            n,
+            "\""
           ]
-   in Text.intercalate
-        "\n\n"
+      constructorToJson (EmbeddedConstructor (ConstructorName n) Nothing) =
+        mconcat
+          [ "toJSON ",
+            n,
+            " = object [] & atKey \"",
+            tag,
+            "\" ?~ String \"",
+            n,
+            "\""
+          ]
+      fromJsonOutput =
+        mconcat
+          [ "instance FromJSON ",
+            unDefinitionName unionName,
+            " where",
+            "\n  parseJSON = withObject \"",
+            unDefinitionName unionName,
+            "\" $ \\o -> do\n",
+            "    t :: Text <- o .: \"",
+            tag,
+            "\"\n",
+            "    case t of\n      ",
+            fromJsonCaseOutput,
+            "\n      tagValue -> fail $ \"Invalid type tag: \" <> show tagValue"
+          ]
+      fromJsonCaseOutput =
+        constructors
+          & fmap constructorFromJson
+          & Text.intercalate "\n      "
+      constructorFromJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
+        mconcat ["\"", n, "\" -> ", n, " <$> parseJSON (Object o)"]
+      constructorFromJson (EmbeddedConstructor (ConstructorName n) Nothing) =
+        mconcat ["\"", n, "\" -> pure ", n]
+   in mconcat
         [ typeOutput,
-          constructorDecodersOutput,
-          decoderOutput,
-          encoderOutput
+          "\n",
+          "  deriving (Eq, Show, Generic)",
+          "\n\n",
+          toJsonOutput,
+          "\n\n",
+          fromJsonOutput
         ]
 
 outputEmbeddedCase :: FieldName -> EmbeddedConstructor -> Text
@@ -202,19 +225,24 @@ embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
-  let typeOutput = mconcat ["type ", unDefinitionName unionName, " =\n", unionOutput]
-      unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n"
+  let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
+      deriveLensAndJSONOutput =
+        mconcat ["deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''", unDefinitionName unionName]
+      unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
       outputCaseLine fieldType =
         mconcat
-          [ "    | ",
-            unDefinitionName unionName,
+          [ unDefinitionName unionName,
             fieldTypeName fieldType,
-            " of ",
+            " ",
             outputFieldType fieldType
           ]
-      decoderOutput = outputUntaggedUnionDecoder unionName cases
-      encoderOutput = outputUntaggedUnionEncoder unionName cases
-   in Text.intercalate "\n\n" [typeOutput, decoderOutput, encoderOutput]
+   in mconcat
+        [ typeOutput,
+          "\n",
+          "  deriving (Eq, Show, Generic)",
+          "\n\n",
+          deriveLensAndJSONOutput
+        ]
 
 outputUntaggedUnionDecoder :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnionDecoder (DefinitionName name) cases =
@@ -269,13 +297,13 @@ outputEnumerationType name values =
         values
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
-                mconcat ["    | ", fsharpifyConstructorName i]
+                mconcat ["    | ", haskellifyConstructorName i]
             )
           & Text.intercalate "\n"
    in mconcat [mconcat ["type ", unDefinitionName name, " =\n"], valuesOutput]
 
-fsharpifyConstructorName :: Text -> Text
-fsharpifyConstructorName = upperCaseFirstCharacter
+haskellifyConstructorName :: Text -> Text
+haskellifyConstructorName = upperCaseFirstCharacter
 
 outputEnumerationDecoder :: DefinitionName -> [EnumerationValue] -> Text
 outputEnumerationDecoder unionName values =
@@ -283,7 +311,7 @@ outputEnumerationDecoder unionName values =
         values
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) value) ->
-                mconcat [outputLiteral value, ", ", fsharpifyConstructorName i]
+                mconcat [outputLiteral value, ", ", haskellifyConstructorName i]
             )
           & Text.intercalate "; "
       outputLiteral (LiteralString s) = "\"" <> s <> "\""
@@ -315,14 +343,14 @@ outputEnumerationEncoder values =
           & fmap caseEncoder
           & Text.intercalate "\n"
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralString s)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.string \"", s, "\""]
+        mconcat ["        | ", haskellifyConstructorName i, " -> Encode.string \"", s, "\""]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralBoolean b)) =
         let value = bool "false" "true" b
-         in mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.boolean ", value]
+         in mconcat ["        | ", haskellifyConstructorName i, " -> Encode.boolean ", value]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralInteger integer)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.int32 ", tshow integer]
+        mconcat ["        | ", haskellifyConstructorName i, " -> Encode.int32 ", tshow integer]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralFloat f)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.float32 ", tshow f]
+        mconcat ["        | ", haskellifyConstructorName i, " -> Encode.float32 ", tshow f]
    in mconcat
         [ mconcat ["    static member Encoder =\n"],
           mconcat ["        function\n"],
@@ -332,29 +360,35 @@ outputEnumerationEncoder values =
 outputPlainStruct :: DefinitionName -> [StructField] -> Text
 outputPlainStruct name fields =
   let fieldsOutput = fields & fmap (outputField name) & Text.intercalate ",\n    "
+      deriveLensAndJSONOutput = mconcat ["deriveLensAndJSON ''", unDefinitionName name]
       _decoderOutput = outputStructDecoder name fields []
       _encoderOutput = outputStructEncoder fields []
    in mconcat
         [ mconcat ["data ", unDefinitionName name, " = ", unDefinitionName name, "\n"],
           "  { ",
           fieldsOutput,
-          "\n  }\n"
+          "\n  }",
+          "\n",
+          "  deriving (Eq, Show, Generic)",
+          "\n\n",
+          deriveLensAndJSONOutput
         ]
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
   let fullName = unDefinitionName name <> joinTypeVariables typeVariables
-      typeOutput =
-        mconcat
-          [ mconcat ["type ", fullName, " =\n"],
-            "    {\n",
-            fieldsOutput,
-            "    }"
-          ]
-      fieldsOutput = fields & fmap (outputField name) & mconcat
-      decoderOutput = outputStructDecoder name fields typeVariables
-      encoderOutput = outputStructEncoder fields typeVariables
-   in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
+      deriveLensAndJSONOutput = mconcat ["deriveLensAndJSON ''", unDefinitionName name]
+      fieldsOutput = fields & fmap (outputField name) & Text.intercalate ",\n    "
+   in mconcat
+        [ mconcat ["data ", fullName, " = ", unDefinitionName name, "\n"],
+          "  { ",
+          fieldsOutput,
+          "\n  }",
+          "\n",
+          "  deriving (Eq, Show, Generic)",
+          "\n\n",
+          deriveLensAndJSONOutput
+        ]
 
 outputStructDecoder :: DefinitionName -> [StructField] -> [TypeVariable] -> Text
 outputStructDecoder (DefinitionName name) fields typeVariables =
@@ -604,16 +638,17 @@ outputUnion name typeTag unionType =
   let caseUnionOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
-      decoderOutput = outputUnionDecoder typeTag name (constructorsFrom unionType) typeVariables
-      encoderOutput = outputUnionEncoder typeTag (constructorsFrom unionType) typeVariables
+      deriveLensAndJSONOutput =
+        mconcat ["deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''", unDefinitionName name]
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
-   in Text.intercalate
-        "\n\n"
+   in mconcat
         [ caseUnionOutput,
-          decoderOutput,
-          encoderOutput
+          "\n",
+          "  deriving (Eq, Show, Generic)",
+          "\n\n",
+          deriveLensAndJSONOutput
         ]
 
 outputUnionDecoder :: FieldName -> DefinitionName -> [Constructor] -> [TypeVariable] -> Text
@@ -735,13 +770,13 @@ outputCaseUnion name constructors typeVariables =
         constructors
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
-                let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", upperCaseFirstCharacter constructorName, payload]
+                let payload = maybe "" (outputFieldType >>> (" " <>)) maybePayload
+                 in mconcat [upperCaseFirstCharacter constructorName, payload]
             )
-          & Text.intercalate "\n"
+          & Text.intercalate "\n  | "
       maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
    in mconcat
-        [ mconcat ["type ", unDefinitionName name, maybeTypeVariables, " =\n"],
+        [ mconcat ["data ", unDefinitionName name, maybeTypeVariables, "\n  = "],
           cases
         ]
 
@@ -823,10 +858,10 @@ outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldTyp
 outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =
   outputDefinitionReference definitionReference
-outputFieldType (TypeVariableReferenceType (TypeVariable t)) = fsharpifyTypeVariable t
+outputFieldType (TypeVariableReferenceType (TypeVariable t)) = haskellifyTypeVariable t
 
-fsharpifyTypeVariable :: Text -> Text
-fsharpifyTypeVariable t = t & Text.toLower & ("'" <>)
+haskellifyTypeVariable :: Text -> Text
+haskellifyTypeVariable = Text.toLower
 
 outputDefinitionReference :: DefinitionReference -> Text
 outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
@@ -948,6 +983,6 @@ fieldTypeName
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =
   typeVariables
-    & fmap (\(TypeVariable t) -> fsharpifyTypeVariable t)
-    & Text.intercalate ", "
-    & (\o -> "<" <> o <> ">")
+    & fmap (\(TypeVariable t) -> haskellifyTypeVariable t)
+    & Text.intercalate " "
+    & (" " <>)

@@ -1,0 +1,4 @@
+union ExampleGenericUnion <T, U>{
+    ConstructorOne: T
+    constructorTwo: U
+}

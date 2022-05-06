@@ -1,0 +1,5 @@
+untagged union ExampleUntaggedUnion {
+    String
+    F64
+    Boolean
+}

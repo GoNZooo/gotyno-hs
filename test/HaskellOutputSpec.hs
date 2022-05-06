@@ -3,17 +3,17 @@ module HaskellOutputSpec where
 import qualified CodeGeneration.Haskell as Haskell
 import Parsing
 import RIO
-import RIO.Directory (getCurrentDirectory)
 import qualified RIO.Text as Text
 import Test.Hspec
 import Types
 
 spec :: Spec
 spec = do
-  describe "`outputModule`" $ do
-    it "should output a basic struct" $ do
+  describe "`Haskell.outputModule`" $ do
+    it "should output a plain struct" $ do
       let expectedOutput =
-            Text.unlines
+            Text.intercalate
+              "\n"
               [ "{-# LANGUAGE StrictData #-}",
                 "{-# LANGUAGE TemplateHaskell #-}",
                 "",
@@ -23,16 +23,175 @@ spec = do
                 "import qualified Data.Aeson as JSON",
                 "import GHC.Generics (Generic)",
                 "import qualified Gotyno.Helpers as Helpers",
-                "import qualified Prelude",
+                "import Qtility",
                 "",
                 "data StructOne = StructOne",
                 "  { _structOneUnsigned_integer_field :: Int,",
                 "    _structOneStringField :: Text,",
                 "    _structOneBig_integer_field :: Helpers.BigInteger",
-                "  }"
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''StructOne"
               ]
-      currentDirectory <- getCurrentDirectory
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleStruct.gotyno"]
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output a generic struct" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleGenericStruct where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data Holder t u = Holder",
+                "  { _holderField1 :: t,",
+                "    _holderField2 :: u",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''Holder"
+              ]
+      Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericStruct.gotyno"]
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output a plain union" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExamplePlainUnion where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data ExamplePlainUnion",
+                "  = ConstructorOne Text",
+                "  | ConstructorTwo Helpers.BigInteger",
+                "  | LowerCaseConstructor",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''ExamplePlainUnion"
+              ]
+      Right [parsedModule] <- parseModules ["test/examples/haskellExamplePlainUnion.gotyno"]
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output a generic union" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleGenericUnion where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data ExampleGenericUnion t u",
+                "  = ConstructorOne t",
+                "  | ConstructorTwo u",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''ExampleGenericUnion"
+              ]
+      Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericUnion.gotyno"]
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output an untagged union" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleUntaggedUnion where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data ExampleUntaggedUnion",
+                "  = ExampleUntaggedUnionString Text",
+                "  | ExampleUntaggedUnionF64 Double",
+                "  | ExampleUntaggedUnionBoolean Bool",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''ExampleUntaggedUnion"
+              ]
+      Right [parsedModule] <- parseModules ["test/examples/haskellExampleUntaggedUnion.gotyno"]
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output an embedded union" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleEmbeddedUnion where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data Payload1 = Payload1",
+                "  { _payload1Field1 :: Text",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''Payload1",
+                "",
+                "data Payload2 = Payload2",
+                "  { _payload2Field2 :: Int",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''Payload2",
+                "",
+                "data ExampleEmbeddedUnion",
+                "  = Case1 Payload1",
+                "  | Case2 Payload2",
+                "  | NoPayload",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "instance ToJSON ExampleEmbeddedUnion where",
+                "  toJSON (Case1 payload) = toJSON payload & atKey \"typeTag\" ?~ String \"Case1\"",
+                "  toJSON (Case2 payload) = toJSON payload & atKey \"typeTag\" ?~ String \"Case2\"",
+                "  toJSON NoPayload = object [] & atKey \"typeTag\" ?~ String \"NoPayload\"",
+                "",
+                "instance FromJSON ExampleEmbeddedUnion where",
+                "  parseJSON = withObject \"ExampleEmbeddedUnion\" $ \\o -> do",
+                "    t :: Text <- o .: \"typeTag\"",
+                "    case t of",
+                "      \"Case1\" -> Case1 <$> parseJSON (Object o)",
+                "      \"Case2\" -> Case2 <$> parseJSON (Object o)",
+                "      \"NoPayload\" -> pure NoPayload",
+                "      tagValue -> fail $ \"Invalid type tag: \" <> show tagValue"
+              ]
+      result <- parseModules ["test/examples/haskellExampleEmbeddedUnion.gotyno"]
+      shouldBeRight result
+      let Right [parsedModule] = result
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
 
 getRight :: Either [String] r -> r
