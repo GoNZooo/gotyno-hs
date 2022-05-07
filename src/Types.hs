@@ -55,13 +55,13 @@ data ImportedTypeDefinition = ImportedTypeDefinition
 newtype TypeTag = TypeTag Text
   deriving (Eq, Show)
 
-newtype TypeVariable = TypeVariable Text
+newtype TypeVariable = TypeVariable {unTypeVariable :: Text}
   deriving (Eq, Show)
 
 newtype ConstructorName = ConstructorName Text
   deriving (Eq, Show)
 
-newtype FieldName = FieldName Text
+newtype FieldName = FieldName {unFieldName :: Text}
   deriving (Eq, Show)
 
 newtype EnumerationIdentifier = EnumerationIdentifier Text

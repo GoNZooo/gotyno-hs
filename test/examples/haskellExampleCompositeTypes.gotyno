@@ -1,0 +1,21 @@
+struct StructComposite {
+    field1: ?String
+    field2: []String
+    field3: [][]?String
+    field4: [10]String
+    field5: [10]?String
+    field6: ?[]?String
+    field7: ?[]??String
+    field8: ????String
+}
+
+union UnionComposite {
+    Case1: ?String
+    Case2: []String
+    Case3: [][]?String
+    Case4: [10]String
+    Case5: [10]?String
+    Case6: ?[]?String
+    Case7: ?[]??String
+    Case8: ????String
+}

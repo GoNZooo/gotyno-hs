@@ -84,7 +84,13 @@ spec = do
                 "  | LowerCaseConstructor",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''ExamplePlainUnion"
+                "instance ToJSON ExamplePlainUnion where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance FromJSON ExamplePlainUnion where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "makeLenses ''ExamplePlainUnion"
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExamplePlainUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -109,7 +115,13 @@ spec = do
                 "  | ConstructorTwo u",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''ExampleGenericUnion"
+                "instance (ToJSON t, ToJSON u) => ToJSON (ExampleGenericUnion t u) where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance (FromJSON t, FromJSON u) => FromJSON (ExampleGenericUnion t u) where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "makeLenses ''ExampleGenericUnion"
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -214,7 +226,7 @@ spec = do
                 "",
                 "data StructUsingImport = StructUsingImport",
                 "  { _structUsingImportField1 :: HaskellExampleStruct.StructOne,",
-                "    _structUsingImportField2 :: HaskellExampleGenericStruct.Holder Int Text",
+                "    _structUsingImportField2 :: (HaskellExampleGenericStruct.Holder Int Text)",
                 "  }",
                 "  deriving (Eq, Show, Generic)",
                 "",
@@ -222,10 +234,16 @@ spec = do
                 "",
                 "data UnionUsingImport",
                 "  = Case1 HaskellExampleStruct.StructOne",
-                "  | Case2 HaskellExampleGenericStruct.Holder HaskellExampleStruct.StructOne Helpers.BigInteger",
+                "  | Case2 (HaskellExampleGenericStruct.Holder HaskellExampleStruct.StructOne Helpers.BigInteger)",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''UnionUsingImport"
+                "instance ToJSON UnionUsingImport where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance FromJSON UnionUsingImport where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "makeLenses ''UnionUsingImport"
               ]
       result <-
         parseModules
@@ -233,6 +251,60 @@ spec = do
             "test/examples/haskellExampleGenericStruct.gotyno",
             "test/examples/haskellExampleUsingImport.gotyno"
           ]
+      shouldBeRight result
+      let parsedModule = result & getRight & PartialList.last
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output composite types correctly" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleCompositeTypes where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data StructComposite = StructComposite",
+                "  { _structCompositeField1 :: (Maybe Text),",
+                "    _structCompositeField2 :: [Text],",
+                "    _structCompositeField3 :: [[(Maybe Text)]],",
+                "    _structCompositeField4 :: [Text],",
+                "    _structCompositeField5 :: [(Maybe Text)],",
+                "    _structCompositeField6 :: (Maybe [(Maybe Text)]),",
+                "    _structCompositeField7 :: (Maybe [(Maybe (Maybe Text))]),",
+                "    _structCompositeField8 :: (Maybe (Maybe (Maybe (Maybe Text))))",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''StructComposite",
+                "",
+                "data UnionComposite",
+                "  = Case1 (Maybe Text)",
+                "  | Case2 [Text]",
+                "  | Case3 [[(Maybe Text)]]",
+                "  | Case4 [Text]",
+                "  | Case5 [(Maybe Text)]",
+                "  | Case6 (Maybe [(Maybe Text)])",
+                "  | Case7 (Maybe [(Maybe (Maybe Text))])",
+                "  | Case8 (Maybe (Maybe (Maybe (Maybe Text))))",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "instance ToJSON UnionComposite where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance FromJSON UnionComposite where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "makeLenses ''UnionComposite"
+              ]
+      result <-
+        parseModules ["test/examples/haskellExampleCompositeTypes.gotyno"]
       shouldBeRight result
       let parsedModule = result & getRight & PartialList.last
       Haskell.outputModule parsedModule `shouldBe` expectedOutput

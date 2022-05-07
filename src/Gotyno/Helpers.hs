@@ -3,7 +3,7 @@ module Gotyno.Helpers where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as JSON
 import Data.Aeson.Types (Parser)
-import RIO
+import Qtility
 import qualified RIO.Text as Text
 
 -- | Used for a more explicit style in `toJSON` instances. It also means we don't have to add type
@@ -30,3 +30,8 @@ checkEqualTo :: (Eq a, Show a) => a -> a -> Parser a
 checkEqualTo expected actual
   | expected == actual = pure actual
   | otherwise = fail $ "Expected: " <> show expected <> " but got: " <> show actual
+
+gotynoOptions :: String -> AesonOptions
+gotynoOptions typeTag =
+  defaultAesonOptions
+    & sumEncoding .~ TaggedObject {tagFieldName = typeTag, contentsFieldName = "data"}
