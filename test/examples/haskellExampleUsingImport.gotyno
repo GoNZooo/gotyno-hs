@@ -3,9 +3,10 @@ import haskellExampleGenericStruct
 
 struct StructUsingImport {
     field1: haskellExampleStruct.StructOne
+    field2: haskellExampleGenericStruct.Holder<U32, String>
 }
 
 union UnionUsingImport {
     Case1: haskellExampleStruct.StructOne
-    NoPayload
+    Case2: haskellExampleGenericStruct.Holder<haskellExampleStruct.StructOne, U64>
 }

@@ -881,24 +881,24 @@ outputDefinitionReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [name, "<", appliedFieldTypes, ">"]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
+     in mconcat [name, " ", appliedFieldTypes]
 outputDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [haskellifyModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
+     in mconcat [haskellifyModuleName moduleName, ".", name, " ", appliedFieldTypes]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-        maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
+        maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
      in mconcat [haskellifyModuleName moduleName, ".", name, maybeAppliedOutput]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
   mconcat [haskellifyModuleName moduleName, ".", name]

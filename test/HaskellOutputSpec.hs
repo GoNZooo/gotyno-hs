@@ -213,7 +213,8 @@ spec = do
                 "import qualified GotynoOutput.HaskellExampleGenericStruct as HaskellExampleGenericStruct",
                 "",
                 "data StructUsingImport = StructUsingImport",
-                "  { _structUsingImportField1 :: HaskellExampleStruct.StructOne",
+                "  { _structUsingImportField1 :: HaskellExampleStruct.StructOne,",
+                "    _structUsingImportField2 :: HaskellExampleGenericStruct.Holder Int Text",
                 "  }",
                 "  deriving (Eq, Show, Generic)",
                 "",
@@ -221,7 +222,7 @@ spec = do
                 "",
                 "data UnionUsingImport",
                 "  = Case1 HaskellExampleStruct.StructOne",
-                "  | NoPayload",
+                "  | Case2 HaskellExampleGenericStruct.Holder HaskellExampleStruct.StructOne Helpers.BigInteger",
                 "  deriving (Eq, Show, Generic)",
                 "",
                 "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''UnionUsingImport"
