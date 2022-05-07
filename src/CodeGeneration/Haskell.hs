@@ -9,9 +9,14 @@ import Types
 outputModule :: Module -> Text
 outputModule Module {name = ModuleName name, definitions, imports, declarationNames} =
   let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
-      importsOutput = imports & fmap outputImport & mconcat
+      importsOutput = imports & fmap outputImport & Text.intercalate "\n"
       outputImport (Import Module {name = ModuleName importName}) =
-        mconcat ["import qualified ", importName, " as ", importName, "\n\n"]
+        mconcat
+          [ "import qualified GotynoOutput.",
+            haskellifyModuleName importName,
+            " as ",
+            haskellifyModuleName importName
+          ]
       declarationImportsOutput =
         declarationNames
           & fmap

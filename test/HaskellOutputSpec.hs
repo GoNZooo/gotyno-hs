@@ -3,9 +3,9 @@ module HaskellOutputSpec where
 import qualified CodeGeneration.Haskell as Haskell
 import Parsing
 import RIO
+import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Test.Hspec
-import Types
 
 spec :: Spec
 spec = do
@@ -191,7 +191,49 @@ spec = do
               ]
       result <- parseModules ["test/examples/haskellExampleEmbeddedUnion.gotyno"]
       shouldBeRight result
-      let Right [parsedModule] = result
+      let parsedModule = result & getRight & PartialList.last
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output imports & usage of imports correctly" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleUsingImport where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "import qualified GotynoOutput.HaskellExampleStruct as HaskellExampleStruct",
+                "import qualified GotynoOutput.HaskellExampleGenericStruct as HaskellExampleGenericStruct",
+                "",
+                "data StructUsingImport = StructUsingImport",
+                "  { _structUsingImportField1 :: HaskellExampleStruct.StructOne",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''StructUsingImport",
+                "",
+                "data UnionUsingImport",
+                "  = Case1 HaskellExampleStruct.StructOne",
+                "  | NoPayload",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON' 'Helpers.gotynoUnionOptions ''UnionUsingImport"
+              ]
+      result <-
+        parseModules
+          [ "test/examples/haskellExampleStruct.gotyno",
+            "test/examples/haskellExampleGenericStruct.gotyno",
+            "test/examples/haskellExampleUsingImport.gotyno"
+          ]
+      shouldBeRight result
+      let parsedModule = result & getRight & PartialList.last
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
 
 getRight :: Either [String] r -> r
