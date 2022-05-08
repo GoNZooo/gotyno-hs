@@ -20,13 +20,7 @@ outputModule Module {name = ModuleName name, definitions, imports, declarationNa
         declarationNames
           & fmap
             ( \(ModuleName declarationModuleName) ->
-                mconcat
-                  [ "import qualified ",
-                    "GotynoOutput.",
-                    haskellifyModuleName declarationModuleName,
-                    " as ",
-                    haskellifyModuleName declarationModuleName
-                  ]
+                mconcat ["import qualified ", haskellifyModuleName declarationModuleName]
             )
           & Text.intercalate "\n"
    in mconcat
@@ -276,7 +270,6 @@ outputUnion name typeTag unionType =
                 "\""
               ]
           ]
-      lensOutput = mconcat ["makeLenses ''", unDefinitionName name]
    in mconcat
         [ caseUnionOutput,
           "\n",
@@ -284,9 +277,7 @@ outputUnion name typeTag unionType =
           "\n\n",
           toJsonOutput,
           "\n\n",
-          fromJsonOutput,
-          "\n\n",
-          lensOutput
+          fromJsonOutput
         ]
 
 outputCaseUnion :: DefinitionName -> [Constructor] -> [TypeVariable] -> Text

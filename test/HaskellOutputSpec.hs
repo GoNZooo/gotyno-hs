@@ -88,9 +88,7 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON ExamplePlainUnion where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
-                "",
-                "makeLenses ''ExamplePlainUnion"
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExamplePlainUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -119,9 +117,7 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance (FromJSON t, FromJSON u) => FromJSON (ExampleGenericUnion t u) where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
-                "",
-                "makeLenses ''ExampleGenericUnion"
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -241,9 +237,7 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON UnionUsingImport where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
-                "",
-                "makeLenses ''UnionUsingImport"
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
               ]
       result <-
         parseModules
@@ -299,12 +293,69 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON UnionComposite where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+              ]
+      result <- parseModules ["test/examples/haskellExampleCompositeTypes.gotyno"]
+      shouldBeRight result
+      let parsedModule = result & getRight & PartialList.last
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
+    it "should output declarations and their usage properly" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HasGeneric where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "import qualified External",
+                "import qualified Other",
+                "",
+                "data Result t e",
+                "  = Success t",
+                "  | Failure e",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "instance (ToJSON t, ToJSON e) => ToJSON (Result t e) where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance (FromJSON t, FromJSON e) => FromJSON (Result t e) where",
                 "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
                 "",
-                "makeLenses ''UnionComposite"
+                "data Holder t = Holder",
+                "  { _holderValue :: t",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''Holder",
+                "",
+                "data MaybeHolder t = MaybeHolder",
+                "  { _maybeHolderValue :: (External.Option t),",
+                "    _maybeHolderOtherValue :: Other.Plain",
+                "  }",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "deriveLensAndJSON ''MaybeHolder",
+                "",
+                "data HasGenericEvent t",
+                "  = PlainEvent Other.Plain",
+                "  | GenericEvent (External.Option t)",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "instance (ToJSON t) => ToJSON (HasGenericEvent t) where",
+                "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
+                "",
+                "instance (FromJSON t) => FromJSON (HasGenericEvent t) where",
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
               ]
-      result <-
-        parseModules ["test/examples/haskellExampleCompositeTypes.gotyno"]
+      result <- parseModules ["examples/hasGeneric.gotyno"]
       shouldBeRight result
       let parsedModule = result & getRight & PartialList.last
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
