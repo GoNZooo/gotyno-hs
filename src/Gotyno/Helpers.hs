@@ -1,6 +1,5 @@
 module Gotyno.Helpers where
 
-import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as JSON
 import Data.Aeson.Types (Parser)
 import Qtility

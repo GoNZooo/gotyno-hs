@@ -1,6 +1,7 @@
 module Compilation where
 
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Haskell as Haskell
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import qualified Data.Text.IO as TextIO
@@ -13,47 +14,58 @@ import qualified RIO.Time as Time
 import Types
 
 compile :: Options -> IO CompilationState
-compile options@Options {languages = Languages {typescript, fsharp, python}, inputs} = do
-  beforeTotal <- Time.getCurrentTime
-  beforeParsing <- Time.getCurrentTime
-  maybeModules <- Parsing.parseModules inputs
-  afterParsing <- Time.getCurrentTime
-  case maybeModules of
-    Right modules -> do
-      maybeTsResults <- forM typescript $ \destination -> do
-        beforeOutput <- Time.getCurrentTime
-        moduleStatistics <-
-          outputLanguage TypeScriptOutput modules TypeScript.outputModule "ts" destination
-        afterOutput <- Time.getCurrentTime
-        pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
-      maybeFsResults <- forM fsharp $ \destination -> do
-        beforeOutput <- Time.getCurrentTime
-        moduleStatistics <-
-          outputLanguage FSharpOutput modules FSharp.outputModule "fs" destination
-        afterOutput <- Time.getCurrentTime
-        pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
-      maybePythonResults <- forM python $ \destination -> do
-        beforeOutput <- Time.getCurrentTime
-        moduleStatistics <-
-          outputLanguage PythonOutput modules Python.outputModule "py" destination
-        afterOutput <- Time.getCurrentTime
-        pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
-      afterTotal <- Time.getCurrentTime
-      let totalTime = Time.diffUTCTime afterTotal beforeTotal
-          parsingTime = Time.diffUTCTime afterParsing beforeParsing
-          languageData = catMaybes [maybeTsResults, maybeFsResults, maybePythonResults]
-          moduleStatistics = languageData & map snd & mconcat
-          languageTimes =
-            LanguageOutputStatistics
-              { typescriptTime = fmap fst maybeTsResults,
-                fsharpTime = fmap fst maybeFsResults,
-                pythonTime = fmap fst maybePythonResults
-              }
-          compilation =
-            SuccessfulCompilation {totalTime, parsingTime, moduleStatistics, languageTimes}
-      pure $ CompilationState {state = Right compilation, options}
-    Left errors ->
-      pure $ CompilationState {state = Left $ FailedCompilation errors, options}
+compile
+  options@Options
+    { languages = Languages {typescript, fsharp, python, haskell},
+      inputs
+    } = do
+    beforeTotal <- Time.getCurrentTime
+    beforeParsing <- Time.getCurrentTime
+    maybeModules <- Parsing.parseModules inputs
+    afterParsing <- Time.getCurrentTime
+    case maybeModules of
+      Right modules -> do
+        maybeTsResults <- forM typescript $ \destination -> do
+          beforeOutput <- Time.getCurrentTime
+          moduleStatistics <-
+            outputLanguage TypeScriptOutput modules TypeScript.outputModule "ts" destination
+          afterOutput <- Time.getCurrentTime
+          pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
+        maybeFsResults <- forM fsharp $ \destination -> do
+          beforeOutput <- Time.getCurrentTime
+          moduleStatistics <-
+            outputLanguage FSharpOutput modules FSharp.outputModule "fs" destination
+          afterOutput <- Time.getCurrentTime
+          pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
+        maybePythonResults <- forM python $ \destination -> do
+          beforeOutput <- Time.getCurrentTime
+          moduleStatistics <-
+            outputLanguage PythonOutput modules Python.outputModule "py" destination
+          afterOutput <- Time.getCurrentTime
+          pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
+        maybeHaskellResults <- forM haskell $ \destination -> do
+          beforeOutput <- Time.getCurrentTime
+          moduleStatistics <-
+            outputLanguage HaskellOutput modules Haskell.outputModule "hs" destination
+          afterOutput <- Time.getCurrentTime
+          pure (Time.diffUTCTime afterOutput beforeOutput, moduleStatistics)
+        afterTotal <- Time.getCurrentTime
+        let totalTime = Time.diffUTCTime afterTotal beforeTotal
+            parsingTime = Time.diffUTCTime afterParsing beforeParsing
+            languageData = catMaybes [maybeTsResults, maybeFsResults, maybePythonResults]
+            moduleStatistics = languageData & map snd & mconcat
+            languageTimes =
+              LanguageOutputStatistics
+                { typescriptTime = fmap fst maybeTsResults,
+                  fsharpTime = fmap fst maybeFsResults,
+                  pythonTime = fmap fst maybePythonResults,
+                  haskellTime = fmap fst maybeHaskellResults
+                }
+            compilation =
+              SuccessfulCompilation {totalTime, parsingTime, moduleStatistics, languageTimes}
+        pure $ CompilationState {state = Right compilation, options}
+      Left errors ->
+        pure $ CompilationState {state = Left $ FailedCompilation errors, options}
 
 outputLanguage ::
   OutputLanguage ->

@@ -12,7 +12,8 @@ data OutputDestination
 data Languages = Languages
   { typescript :: !(Maybe OutputDestination),
     fsharp :: !(Maybe OutputDestination),
-    python :: !(Maybe OutputDestination)
+    python :: !(Maybe OutputDestination),
+    haskell :: !(Maybe OutputDestination)
   }
   deriving (Eq, Show)
 
@@ -187,11 +188,13 @@ data OutputLanguage
   = FSharpOutput
   | PythonOutput
   | TypeScriptOutput
+  | HaskellOutput
   deriving (Eq, Show, Generic)
 
 data LanguageOutputStatistics = LanguageOutputStatistics
   { fsharpTime :: !(Maybe NominalDiffTime),
     pythonTime :: !(Maybe NominalDiffTime),
-    typescriptTime :: !(Maybe NominalDiffTime)
+    typescriptTime :: !(Maybe NominalDiffTime),
+    haskellTime :: !(Maybe NominalDiffTime)
   }
   deriving (Eq, Show, Generic)
