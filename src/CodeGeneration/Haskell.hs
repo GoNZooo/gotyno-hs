@@ -168,7 +168,55 @@ outputUntaggedUnion unionName cases =
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
 outputEnumeration name values =
   let typeOutput = outputEnumerationType name values
-   in mconcat [typeOutput]
+      toJsonOutput =
+        mconcat
+          [ "instance ToJSON ",
+            unDefinitionName name,
+            " where\n",
+            constructorToJsonOutput
+          ]
+      constructorToJsonOutput =
+        values
+          & fmap
+            ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
+                let n =
+                      mconcat
+                        [ haskellifyConstructorName $ unDefinitionName name,
+                          haskellifyConstructorName i
+                        ]
+                 in mconcat
+                      [ "  toJSON ",
+                        n,
+                        " = ",
+                        outputLiteral literal
+                      ]
+            )
+          & Text.intercalate "\n"
+      outputLiteral (LiteralString s) = mconcat ["String \"", s, "\""]
+      outputLiteral (LiteralInteger i) = mconcat ["Number $ fromInteger", tshow i]
+      outputLiteral (LiteralFloat f) = mconcat ["Number ", tshow f]
+      outputLiteral (LiteralBoolean b) = mconcat ["Boolean ", tshow b]
+      fromJsonOutput =
+        mconcat
+          [ "instance FromJSON ",
+            unDefinitionName name,
+            " where\n  parseJSON = Helpers.enumFromJSON [",
+            constructorFromJsonOutput,
+            "]"
+          ]
+      constructorFromJsonOutput =
+        values
+          & fmap
+            ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
+                let n =
+                      mconcat
+                        [ haskellifyConstructorName $ unDefinitionName name,
+                          haskellifyConstructorName i
+                        ]
+                 in mconcat ["(", outputLiteral literal, ", ", n, ")"]
+            )
+          & Text.intercalate ", "
+   in mconcat [typeOutput, "\n\n", toJsonOutput, "\n\n", fromJsonOutput]
 
 outputEnumerationType :: DefinitionName -> [EnumerationValue] -> Text
 outputEnumerationType name values =
@@ -176,10 +224,17 @@ outputEnumerationType name values =
         values
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
-                mconcat ["    | ", haskellifyConstructorName i]
+                mconcat
+                  [ haskellifyConstructorName $ unDefinitionName name,
+                    haskellifyConstructorName i
+                  ]
             )
-          & Text.intercalate "\n"
-   in mconcat [mconcat ["type ", unDefinitionName name, " =\n"], valuesOutput]
+          & Text.intercalate "\n  | "
+   in mconcat
+        [ mconcat ["data ", unDefinitionName name, "\n  = "],
+          valuesOutput,
+          "\n  deriving (Eq, Show, Generic)"
+        ]
 
 haskellifyConstructorName :: Text -> Text
 haskellifyConstructorName = upperCaseFirstCharacter

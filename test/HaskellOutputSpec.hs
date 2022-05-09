@@ -360,6 +360,40 @@ spec = do
       let parsedModule = result & getRight & PartialList.last
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
 
+    it "should output enums correctly" $ do
+      let expectedOutput =
+            Text.intercalate
+              "\n"
+              [ "{-# LANGUAGE StrictData #-}",
+                "{-# LANGUAGE TemplateHaskell #-}",
+                "",
+                "module GotynoOutput.HaskellExampleEnum where",
+                "",
+                "import Data.Aeson (FromJSON (..), ToJSON (..))",
+                "import qualified Data.Aeson as JSON",
+                "import GHC.Generics (Generic)",
+                "import qualified Gotyno.Helpers as Helpers",
+                "import Qtility",
+                "",
+                "data ExampleEnum",
+                "  = ExampleEnumZero",
+                "  | ExampleEnumOne",
+                "  | ExampleEnumTwo",
+                "  deriving (Eq, Show, Generic)",
+                "",
+                "instance ToJSON ExampleEnum where",
+                "  toJSON ExampleEnumZero = String \"zero\"",
+                "  toJSON ExampleEnumOne = String \"one\"",
+                "  toJSON ExampleEnumTwo = String \"two\"",
+                "",
+                "instance FromJSON ExampleEnum where",
+                "  parseJSON = Helpers.enumFromJSON [(String \"zero\", ExampleEnumZero), (String \"one\", ExampleEnumOne), (String \"two\", ExampleEnumTwo)]"
+              ]
+      result <- parseModules ["test/examples/haskellExampleEnum.gotyno"]
+      shouldBeRight result
+      let parsedModule = result & getRight & PartialList.last
+      Haskell.outputModule parsedModule `shouldBe` expectedOutput
+
 getRight :: Either [String] r -> r
 getRight (Right r) = r
 getRight (Left e) = error $ mconcat e
