@@ -66,11 +66,12 @@ drawSuccessfulCompilation
       & vBox
 
 drawLanguageTimes :: LanguageOutputStatistics -> Widget Name
-drawLanguageTimes LanguageOutputStatistics {typescriptTime, fsharpTime, pythonTime} =
+drawLanguageTimes LanguageOutputStatistics {typescriptTime, fsharpTime, pythonTime, haskellTime} =
   let tsWidget = maybe emptyWidget (drawTimeOutput "TypeScript output") typescriptTime
       fsWidget = maybe emptyWidget (drawTimeOutput "F# output") fsharpTime
       pyWidget = maybe emptyWidget (drawTimeOutput "Python output") pythonTime
-   in vBox [tsWidget, fsWidget, pyWidget]
+      hsWidget = maybe emptyWidget (drawTimeOutput "Haskell output") haskellTime
+   in vBox [tsWidget, fsWidget, pyWidget, hsWidget]
 
 drawAllModuleStatistics :: [ModuleStatistics] -> Widget Name
 drawAllModuleStatistics = fmap drawModuleStatistics >>> vBox
@@ -118,3 +119,4 @@ showOutputLanguage :: OutputLanguage -> String
 showOutputLanguage TypeScriptOutput = "TypeScript"
 showOutputLanguage FSharpOutput = "F#"
 showOutputLanguage PythonOutput = "Python"
+showOutputLanguage HaskellOutput = "Haskell"

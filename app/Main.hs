@@ -54,6 +54,14 @@ parseLanguages =
           <> value Nothing
           <> metavar "=|-|PATH"
       )
+    <*> option
+      (maybeReader parseOutputDestination)
+      ( long "haskell"
+          <> long "hs"
+          <> help "Set Haskell output"
+          <> value Nothing
+          <> metavar "=|-|PATH"
+      )
 
 parseOutputDestination :: String -> Maybe (Maybe OutputDestination)
 parseOutputDestination "=" = pure $ Just SameAsInput

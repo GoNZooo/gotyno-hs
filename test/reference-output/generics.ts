@@ -1,7 +1,6 @@
 import * as svt from "simple-validation-tools";
 
 import * as basic from "./basic";
-
 import * as hasGeneric from "./hasGeneric";
 
 export type UsingGenerics = {

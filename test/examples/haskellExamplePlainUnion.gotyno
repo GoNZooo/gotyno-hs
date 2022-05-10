@@ -1,0 +1,5 @@
+union ExamplePlainUnion {
+    ConstructorOne: String
+    ConstructorTwo: U128
+    lowerCaseConstructor
+}

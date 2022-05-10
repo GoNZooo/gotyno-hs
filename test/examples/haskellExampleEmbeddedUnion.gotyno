@@ -1,0 +1,13 @@
+struct Payload1 {
+    field1: String
+}
+
+struct Payload2 {
+    field2: U32
+}
+
+union(tag = typeTag, embedded) ExampleEmbeddedUnion {
+    Case1: Payload1
+    Case2: Payload2
+    NoPayload
+}

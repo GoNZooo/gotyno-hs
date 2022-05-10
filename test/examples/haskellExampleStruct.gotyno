@@ -1,0 +1,5 @@
+struct StructOne {
+    unsigned_integer_field: U32
+    stringField: String
+    big_integer_field: U64
+}

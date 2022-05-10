@@ -21,7 +21,7 @@ instance FromJSON Recruiter where
     recruiterName <- o .: "Name"
     recruiterEmails <- o .: "emails"
     recruiterRecruiter <- o .:? "recruiter"
-    Helpers.StringEncodedInteger recruiterCreated <- o .: "created"
+    Helpers.BigInteger recruiterCreated <- o .: "created"
     pure $
       Recruiter
         { recruiterType,
@@ -38,7 +38,7 @@ instance ToJSON Recruiter where
         "name" .= recruiterName value,
         "emails" .= recruiterEmails value,
         "recruiter" .= recruiterRecruiter value,
-        "created" .= Helpers.StringEncodedInteger (recruiterCreated value)
+        "created" .= Helpers.BigInteger (recruiterCreated value)
       ]
 
 -- struct Recruiter {

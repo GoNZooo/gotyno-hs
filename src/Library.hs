@@ -3,6 +3,7 @@ module Library where
 import Brick
 import Brick.BChan
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Haskell as Haskell
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Compilation
@@ -24,7 +25,7 @@ runMain options@Options {watchMode = True} = do
   watchInputsWithTUI options
 runMain
   Options
-    { languages = Languages {typescript, fsharp, python},
+    { languages = Languages {typescript, fsharp, python, haskell},
       inputs,
       verbose
     } = do
@@ -44,17 +45,23 @@ runMain
         forM_ python $
           outputLanguage PythonOutput modules Python.outputModule "py" >>> void
         endPython <- Time.getCurrentTime
+        startHaskell <- Time.getCurrentTime
+        forM_ haskell $
+          outputLanguage HaskellOutput modules Haskell.outputModule "hs" >>> void
+        endHaskell <- Time.getCurrentTime
         end <- Time.getCurrentTime
         let diff = Time.diffUTCTime end start
             diffParsing = Time.diffUTCTime postParsing start
             diffTS = Time.diffUTCTime endTS startTS
             diffFS = Time.diffUTCTime endFS startFS
             diffPython = Time.diffUTCTime endPython startPython
+            diffHaskell = Time.diffUTCTime endHaskell startHaskell
         when verbose $ do
           putStrLn $ "Parsing took: " <> show diffParsing
           putStrLn $ "Outputting TypeScript took: " <> show diffTS
           putStrLn $ "Outputting FSharp took: " <> show diffFS
           putStrLn $ "Outputting Python took: " <> show diffPython
+          putStrLn $ "Outputting Haskell took: " <> show diffHaskell
           putStrLn $ "Entire compilation took: " <> show diff
       Left errors -> forM_ errors putStrLn
 

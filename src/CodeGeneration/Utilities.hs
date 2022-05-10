@@ -11,6 +11,12 @@ upperCaseFirstCharacter t =
     Just (c, rest) -> Text.cons (Char.toUpper c) rest
     Nothing -> t
 
+lowerCaseFirstCharacter :: Text -> Text
+lowerCaseFirstCharacter t =
+  case Text.uncons t of
+    Just (c, rest) -> Text.cons (Char.toLower c) rest
+    Nothing -> t
+
 typeVariablesFrom :: FieldType -> Maybe [TypeVariable]
 typeVariablesFrom (TypeVariableReferenceType typeVariable) = pure [typeVariable]
 typeVariablesFrom (ComplexType (ArrayType _size fieldType)) = typeVariablesFrom fieldType

@@ -3,7 +3,20 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    size: 59139
+    subdir: qtility
+    url: https://github.com/quanterall/qtility/archive/033d93db928801cf0bb5b48d0b65db29a02194fb.tar.gz
+    name: qtility
+    version: 1.0.0
+    sha256: a15b4639b2e125448274b4d8a8e34619707c68e5788338bf49157f6e1b661614
+    pantry-tree:
+      size: 1474
+      sha256: 7b24507fa538f6325b1140a012cf0a97cf3f7002676b8421ee23d18875a46683
+  original:
+    subdir: qtility
+    url: https://github.com/quanterall/qtility/archive/033d93db928801cf0bb5b48d0b65db29a02194fb.tar.gz
 snapshots:
 - completed:
     size: 586069

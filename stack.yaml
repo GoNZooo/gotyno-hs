@@ -8,5 +8,12 @@ allow-different-user: true
 ghc-options:
   "$locals": -fwrite-ide-info
 
+extra-deps:
+- github: quanterall/qtility
+  commit: 033d93db928801cf0bb5b48d0b65db29a02194fb
+  subdirs:
+  - qtility
+  # nix-sha256: sha256-92asx1Xzh2mxgCbayFh6L3p6cSXznlw+jkoOTqibEiI=
+
 nix:
   enable: false
