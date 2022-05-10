@@ -3,6 +3,7 @@ module Gotyno.Helpers where
 import qualified Data.Aeson as JSON
 import Data.Aeson.Types (Parser)
 import Qtility
+import qualified RIO.List as List
 import qualified RIO.Text as Text
 
 -- | Used for a more explicit style in `toJSON` instances. It also means we don't have to add type
@@ -34,3 +35,13 @@ gotynoOptions :: String -> AesonOptions
 gotynoOptions typeTag =
   defaultAesonOptions
     & sumEncoding .~ TaggedObject {tagFieldName = typeTag, contentsFieldName = "data"}
+
+enumFromJSON :: [(Value, a)] -> Value -> Parser a
+enumFromJSON values v =
+  let expectedValues = values & map (fst >>> tshow) & Text.intercalate ", " & Text.unpack
+      actualValue = show v
+   in values
+        & List.lookup v
+        & maybe
+          (fail $ mconcat ["Expected one of: ", expectedValues, " but got: ", actualValue])
+          pure
