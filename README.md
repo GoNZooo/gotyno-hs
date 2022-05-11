@@ -34,9 +34,12 @@ Watching directory: '<ABSOLUTE-PATH-TO-EXAMPLES-DIRECTORY>'
 - F#
 - Python
 
-## Planned support
+## Newly introduced / beta languages
 
 - Haskell
+
+## Planned support
+
 - PureScript
 
 ## Maybe supported in the future
