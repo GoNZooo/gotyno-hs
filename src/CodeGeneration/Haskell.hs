@@ -437,9 +437,20 @@ outputBasicType F64 = "Double"
 outputBasicType Boolean = "Bool"
 
 fieldTypeName :: FieldType -> Text
-fieldTypeName (LiteralType _) = error "Just don't use literals in untagged unions"
-fieldTypeName (RecursiveReferenceType _) =
-  error "Just don't use recursive references in untagged unions"
+fieldTypeName (LiteralType (LiteralString s)) = mconcat ["\"", s, "\""]
+fieldTypeName (LiteralType (LiteralBoolean b)) = mconcat ["Bool", tshow b]
+fieldTypeName (LiteralType (LiteralFloat f)) =
+  mconcat
+    [ "Float",
+      f & tshow
+        & Text.map
+          ( \case
+              '.' -> '_'
+              c -> c
+          )
+    ]
+fieldTypeName (LiteralType (LiteralInteger i)) = mconcat ["Integer", tshow i]
+fieldTypeName (RecursiveReferenceType (DefinitionName name)) = name
 fieldTypeName (BasicType BasicString) = "String"
 fieldTypeName (BasicType F32) = "F32"
 fieldTypeName (BasicType F64) = "F64"
