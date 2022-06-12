@@ -160,8 +160,8 @@ data LiteralTypeValue
   deriving (Eq, Show)
 
 data CompilationState = CompilationState
-  { state :: Either FailedCompilation SuccessfulCompilation,
-    options :: Options
+  { state :: !(Either FailedCompilation SuccessfulCompilation),
+    options :: !Options
   }
   deriving (Eq, Show, Generic)
 

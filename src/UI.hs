@@ -16,8 +16,8 @@ import qualified RIO.Time as Time
 import Types
 
 data CompilationEvent
-  = CompilationSucceeded SuccessfulCompilation
-  | CompilationFailed FailedCompilation
+  = CompilationSucceeded !SuccessfulCompilation
+  | CompilationFailed !FailedCompilation
   deriving (Eq, Show, Generic)
 
 data Name = Gotyno
