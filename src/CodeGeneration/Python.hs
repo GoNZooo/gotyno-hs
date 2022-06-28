@@ -23,8 +23,7 @@ outputModule Module {definitions, imports, declarationNames} =
             [ "import json\n",
               "import typing\n",
               "from dataclasses import dataclass\n",
-              "from gotyno_validation import validation\n",
-              "from gotyno_validation import encoding\n\n"
+              "from gotyno_validation import encoding, validation\n\n"
             ],
           importsOutput,
           if null imports then "" else "\n\n",

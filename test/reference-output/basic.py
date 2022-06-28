@@ -1,8 +1,7 @@
 import json
 import typing
 from dataclasses import dataclass
-from gotyno_validation import validation
-from gotyno_validation import encoding
+from gotyno_validation import encoding, validation
 
 @dataclass(frozen=True)
 class Recruiter:
