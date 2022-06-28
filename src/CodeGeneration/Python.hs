@@ -692,7 +692,7 @@ decoderForDefinitionReference
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
   let baseClassOutput = outputUnionBaseClass name typeTag (constructorsFrom unionType) typeVariables
-      casesOutput = outputUnionCases fullUnionName typeVariables typeTag (constructorsFrom unionType)
+      casesOutput = outputUnionCases fullUnionName typeTag (constructorsFrom unionType)
       fullUnionName =
         if null typeVariables
           then name
@@ -883,14 +883,13 @@ outputUnionDecoder unionName typeVariables =
             ]
         ]
 
-outputUnionCases :: Text -> [TypeVariable] -> FieldName -> [Constructor] -> Text
-outputUnionCases unionName unionTypeVariables tag =
-  fmap (outputUnionCase unionName unionTypeVariables tag) >>> Text.intercalate "\n\n"
+outputUnionCases :: Text -> FieldName -> [Constructor] -> Text
+outputUnionCases unionName tag =
+  fmap (outputUnionCase unionName tag) >>> Text.intercalate "\n\n"
 
-outputUnionCase :: Text -> [TypeVariable] -> FieldName -> Constructor -> Text
+outputUnionCase :: Text -> FieldName -> Constructor -> Text
 outputUnionCase
   unionName
-  unionTypeVariables
   fieldName@(FieldName tag)
   constructor@(Constructor (ConstructorName name) maybePayload) =
     let payloadTypeVariables =
