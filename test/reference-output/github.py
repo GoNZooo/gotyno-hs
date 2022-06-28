@@ -336,7 +336,7 @@ class PushData:
 class WebhookEvent:
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['WebhookEvent']:
-        return validation.validate_with_type_tags(value, 'type', {'push': Push.validate})
+        return validation.validate_with_type_tags(value, 'type', {'push': PushData.validate})
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['WebhookEvent']:

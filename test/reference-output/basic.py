@@ -14,7 +14,7 @@ class Recruiter:
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Recruiter']:
-        return validation.validate_interface(value, {'type': validation.validate_literal('Recruiter'), 'Name': validation.validate_string, 'emails': validation.validate_list(validation.validate_optional(validation.validate_string)), 'recruiter': validation.validate_optional(Recruiter.decode), 'created': validation.validate_bigint}, Recruiter)
+        return validation.validate_interface(value, {'type': validation.validate_literal('Recruiter'), 'Name': validation.validate_string, 'emails': validation.validate_list(validation.validate_optional(validation.validate_string)), 'recruiter': validation.validate_optional(Recruiter.validate), 'created': validation.validate_bigint}, Recruiter)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Recruiter']:
@@ -419,7 +419,7 @@ class Person:
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Person']:
-        return validation.validate_interface(value, {'name': validation.validate_string, 'age': validation.validate_int, 'efficiency': validation.validate_float, 'on_vacation': validation.validate_bool, 'hobbies': validation.validate_list(validation.validate_string), 'last_fifteen_comments': validation.validate_list(validation.validate_string), 'recruiter': Recruiter.validate, 'spouse': Maybe.validate(Person.decode)}, Person)
+        return validation.validate_interface(value, {'name': validation.validate_string, 'age': validation.validate_int, 'efficiency': validation.validate_float, 'on_vacation': validation.validate_bool, 'hobbies': validation.validate_list(validation.validate_string), 'last_fifteen_comments': validation.validate_list(validation.validate_string), 'recruiter': Recruiter.validate, 'spouse': Maybe.validate(Person.validate)}, Person)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Person']:

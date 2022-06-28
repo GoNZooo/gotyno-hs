@@ -14,14 +14,14 @@ class UsingGenerics:
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['UsingGenerics']:
-        return validation.validate_interface(value, {'field1': (basic.Maybe.validate validation.validate_string), 'field2': (basic.Either.validate validation.validate_string validation.validate_int)}, UsingGenerics)
+        return validation.validate_interface(value, {'field1': basic.Maybe.validate(validation.validate_string), 'field2': basic.Either.validate(validation.validate_string, validation.validate_int)}, UsingGenerics)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['UsingGenerics']:
         return validation.validate_from_string(string, UsingGenerics.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'field1': basic.Maybe.to_json(encoding.basic_to_json)(self.field1), 'field2': basic.Either.to_json(encoding.basic_to_json encoding.basic_to_json)(self.field2)}
+        return {'field1': self.field1.to_json(encoding.basic_to_json), 'field2': self.field2.to_json(encoding.basic_to_json, encoding.basic_to_json)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
@@ -34,7 +34,7 @@ class UsingOwnGenerics(typing.Generic[T]):
     @staticmethod
     def validate(validate_T: validation.Validator[T]) -> validation.Validator['UsingOwnGenerics[T]']:
         def validate_UsingOwnGenericsT(value: validation.Unknown) -> validation.ValidationResult['UsingOwnGenerics[T]']:
-            return validation.validate_interface(value, {'field1': (basic.Maybe.validate validate_T)}, UsingOwnGenerics)
+            return validation.validate_interface(value, {'field1': basic.Maybe.validate(validate_T)}, UsingOwnGenerics)
         return validate_UsingOwnGenericsT
 
     @staticmethod
@@ -42,7 +42,7 @@ class UsingOwnGenerics(typing.Generic[T]):
         return validation.validate_from_string(string, UsingOwnGenerics.validate(validate_T))
 
     def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'field1': basic.Maybe.to_json(T_to_json)(self.field1)}
+        return {'field1': self.field1.to_json(T_to_json)}
 
     def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
         return json.dumps(self.to_json(T_to_json))

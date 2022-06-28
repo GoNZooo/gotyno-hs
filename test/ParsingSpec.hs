@@ -27,7 +27,8 @@ data FSharpReferenceOutput = FSharpReferenceOutput
 
 data PythonReferenceOutput = PythonReferenceOutput
   { python :: !Text,
-    basic :: !Text
+    basic :: !Text,
+    generics :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -71,13 +72,14 @@ pythonReferenceOutput :: IO PythonReferenceOutput
 pythonReferenceOutput = do
   python <- readFileUtf8 "./test/reference-output/python.py"
   basic <- readFileUtf8 "./test/reference-output/basic.py"
-  pure PythonReferenceOutput {python, basic}
+  generics <- readFileUtf8 "./test/reference-output/generics.py"
+  pure PythonReferenceOutput {python, basic, generics}
 
 spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> PythonReferenceOutput -> Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
-  (PythonReferenceOutput pyPython pyBasic) = do
+  (PythonReferenceOutput pyPython pyBasic pyGenerics) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -410,8 +412,10 @@ spec
                 )
         let genericsTypeScriptOutput = TypeScript.outputModule genericsModule
             genericsFSharpOutput = FSharp.outputModule genericsModule
+            genericsPythonOutput = Python.outputModule genericsModule
         genericsTypeScriptOutput `shouldBe` tsGenerics
         genericsFSharpOutput `shouldBe` fsGenerics
+        genericsPythonOutput `shouldBe` pyGenerics
 
       it "Mirrors reference output for `github.gotyno`" $ do
         gitHubModule <-

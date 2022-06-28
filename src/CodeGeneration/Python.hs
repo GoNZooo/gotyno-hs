@@ -617,7 +617,7 @@ validatorForFieldType (ComplexType complexType) = validatorForComplexType comple
 validatorForFieldType (DefinitionReferenceType definitionReference) =
   decoderForDefinitionReference definitionReference
 validatorForFieldType (TypeVariableReferenceType (TypeVariable name)) = "validate_" <> name
-validatorForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".decode"
+validatorForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".validate"
 
 validatorForBasicType :: BasicTypeValue -> Text
 validatorForBasicType BasicString = "validation.validate_string"
@@ -667,7 +667,7 @@ decoderForDefinitionReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
+    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate ", "
      in mconcat [name, ".validate(", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( AppliedImportedGenericReference
@@ -675,7 +675,7 @@ decoderForDefinitionReference
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
+    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate ", "
      in mconcat [moduleName, ".", name, ".validate(", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
@@ -683,7 +683,7 @@ decoderForDefinitionReference
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
-    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate " "
+    let appliedDecoders = appliedTypes & fmap validatorForFieldType & Text.intercalate ", "
      in mconcat [moduleName, ".", name, ".validate(", appliedDecoders, ")"]
 decoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
