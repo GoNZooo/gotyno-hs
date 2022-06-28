@@ -31,12 +31,16 @@ Watching directory: '<ABSOLUTE-PATH-TO-EXAMPLES-DIRECTORY>'
 ## Supported languages
 
 - TypeScript
-- F#
-- Python
 
 ## Newly introduced / beta languages
 
+These are languages that likely could be brought up to full support status with some work, given an
+active user and a small-ish amount of bug reports. These have been tested to *some* extent but I
+can't personally vouch for them in a production context right now.
+
 - Haskell
+- F#
+- Python
 
 ## Planned support
 
