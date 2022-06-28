@@ -21,7 +21,7 @@ class Recruiter:
         return validation.validate_from_string(string, Recruiter.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'Recruiter', 'Name': self.Name, 'emails': encoding.list_to_json((encoding.optional_to_json(encoding.basic_to_json)))(self.emails), 'recruiter': encoding.optional_to_json((Recruiter.to_json))(self.recruiter), 'created': encoding.bigint_to_json(self.created)}
+        return {'type': 'Recruiter', 'Name': self.Name, 'emails': encoding.list_to_json(encoding.optional_to_json(encoding.basic_to_json))(self.emails), 'recruiter': encoding.optional_to_json(Recruiter.to_json)(self.recruiter), 'created': encoding.bigint_to_json(self.created)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
