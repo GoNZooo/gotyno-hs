@@ -20,7 +20,8 @@ outputModule Module {definitions, imports, declarationNames} =
           & Text.intercalate "\n"
    in mconcat
         [ mconcat
-            [ "import json\n",
+            [ "import enum\n",
+              "import json\n",
               "import typing\n",
               "from dataclasses import dataclass\n",
               "from gotyno_validation import encoding, validation\n\n"
@@ -266,7 +267,7 @@ outputEnumerationType name values =
                 mconcat ["    ", i, " = ", literalValue literal]
             )
           & Text.intercalate "\n"
-      literalValue (LiteralString s) = "'" <> s <> "'"
+      literalValue (LiteralString s) = "\"" <> s <> "\""
       literalValue (LiteralInteger i) = tshow i
       literalValue (LiteralFloat f) = tshow f
       literalValue (LiteralBoolean b) = tshow b

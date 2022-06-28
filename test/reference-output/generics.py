@@ -1,3 +1,4 @@
+import enum
 import json
 import typing
 from dataclasses import dataclass

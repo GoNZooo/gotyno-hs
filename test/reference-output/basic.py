@@ -1,3 +1,4 @@
+import enum
 import json
 import typing
 from dataclasses import dataclass
@@ -111,11 +112,11 @@ class SearchesParameters:
         return json.dumps(self.to_json())
 
 class StillSize(enum.Enum):
-    w92 = 'w92'
-    w185 = 'w185'
-    w300 = 'w300'
-    h632 = 'h632'
-    original = 'original'
+    w92 = "w92"
+    w185 = "w185"
+    w300 = "w300"
+    h632 = "h632"
+    original = "original"
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['StillSize']:

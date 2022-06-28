@@ -1,3 +1,4 @@
+import enum
 import json
 import typing
 from dataclasses import dataclass
@@ -187,9 +188,9 @@ class PossiblyHolder:
         return json.dumps(self.to_json())
 
 class Color(enum.Enum):
-    red = 'ff0000'
-    green = '00ff00'
-    blue = '0000ff'
+    red = "ff0000"
+    green = "00ff00"
+    blue = "0000ff"
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Color']:
