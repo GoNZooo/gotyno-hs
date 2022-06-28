@@ -440,6 +440,16 @@ spec
         let importTypeScriptOutput = TypeScript.outputModule module'
         importTypeScriptOutput `shouldBe` arrayOfArraysOfNullableStringTsOutput
 
+    describe "Specific regressions" $ do
+      it "Does not emit `to_json` in Python when a constructor has no type variable in payload" $ do
+        exceptionNotificationPythonReferenceOutput <-
+          readFileUtf8 "./test/reference-output/exceptionNotification.py"
+        exceptionNotificationModule <-
+          (getRight >>> PartialList.head)
+            <$> parseModules ["./test/examples/exceptionNotification.gotyno"]
+        let exceptionNotificationPythonOutput = Python.outputModule exceptionNotificationModule
+        exceptionNotificationPythonOutput `shouldBe` exceptionNotificationPythonReferenceOutput
+
 getRight :: Either [String] r -> r
 getRight (Right r) = r
 getRight (Left e) = error $ mconcat e

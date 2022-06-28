@@ -143,11 +143,11 @@ class NotReally(Possibly[T]):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['NotReally']:
         return validation.validate_from_string(string, NotReally.validate)
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+    def to_json(self) -> typing.Dict[str, typing.Any]:
         return {'type': 'NotReally'}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class Definitely(Possibly[T]):

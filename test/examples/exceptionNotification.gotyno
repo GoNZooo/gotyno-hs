@@ -1,0 +1,18 @@
+struct ExceptionPayload <T>{
+    notificationId: String
+    input: T
+    errorName: String
+    errorMessage: String
+    errorStack: ?String
+}
+
+struct ExceptionS3Reference {
+    notificationId: String
+    bucket: String
+    key: String
+}
+
+union ExceptionNotification <T>{
+    ExceptionNotificationPayload: ExceptionPayload<T>
+    ExceptionNotificationS3Reference: ExceptionS3Reference
+}

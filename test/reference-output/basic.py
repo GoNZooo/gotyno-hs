@@ -321,11 +321,11 @@ class Nothing(Maybe[T]):
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Nothing']:
         return validation.validate_from_string(string, Nothing.validate)
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+    def to_json(self) -> typing.Dict[str, typing.Any]:
         return {'type': 'Nothing'}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class Just(Maybe[T]):
@@ -380,11 +380,11 @@ class Left(Either[L, R]):
     def decode(string: typing.Union[str, bytes], validate_L: validation.Validator[L]) -> validation.ValidationResult['Left[L]']:
         return validation.validate_from_string(string, Left.validate(validate_L))
 
-    def to_json(self, L_to_json: encoding.ToJSON[L], R_to_json: encoding.ToJSON[R]) -> typing.Dict[str, typing.Any]:
+    def to_json(self, L_to_json: encoding.ToJSON[L]) -> typing.Dict[str, typing.Any]:
         return {'type': 'Left', 'data': L_to_json(self.data)}
 
-    def encode(self, L_to_json: encoding.ToJSON[L], R_to_json: encoding.ToJSON[R]) -> str:
-        return json.dumps(self.to_json(L_to_json, R_to_json))
+    def encode(self, L_to_json: encoding.ToJSON[L]) -> str:
+        return json.dumps(self.to_json(L_to_json))
 
 @dataclass(frozen=True)
 class Right(Either[L, R]):
@@ -400,11 +400,11 @@ class Right(Either[L, R]):
     def decode(string: typing.Union[str, bytes], validate_R: validation.Validator[R]) -> validation.ValidationResult['Right[R]']:
         return validation.validate_from_string(string, Right.validate(validate_R))
 
-    def to_json(self, L_to_json: encoding.ToJSON[L], R_to_json: encoding.ToJSON[R]) -> typing.Dict[str, typing.Any]:
+    def to_json(self, R_to_json: encoding.ToJSON[R]) -> typing.Dict[str, typing.Any]:
         return {'type': 'Right', 'data': R_to_json(self.data)}
 
-    def encode(self, L_to_json: encoding.ToJSON[L], R_to_json: encoding.ToJSON[R]) -> str:
-        return json.dumps(self.to_json(L_to_json, R_to_json))
+    def encode(self, R_to_json: encoding.ToJSON[R]) -> str:
+        return json.dumps(self.to_json(R_to_json))
 
 @dataclass(frozen=True)
 class Person:

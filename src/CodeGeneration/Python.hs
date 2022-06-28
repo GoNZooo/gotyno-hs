@@ -994,7 +994,7 @@ outputUnionCase
                       ")"
                     ]
                 ]
-        encoderOutput = outputEncoderForUnionConstructor unionTypeVariables fieldName constructor
+        encoderOutput = outputEncoderForUnionConstructor payloadTypeVariables fieldName constructor
      in mconcat
           [ "@dataclass(frozen=True)\n",
             mconcat ["class ", name, "(", unionName, "):\n"],
