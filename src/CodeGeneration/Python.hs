@@ -191,8 +191,7 @@ embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
   let typeOutput = mconcat [unionName, " = ", "typing.Union[", unionOutput, "]"]
-      unionOutput = cases & fmap outputCase & Text.intercalate ", "
-      outputCase fieldType = outputFieldType fieldType
+      unionOutput = cases & fmap outputFieldType & Text.intercalate ", "
       interfaceOutput = outputUntaggedUnionInterface unionName cases
    in mconcat [typeOutput, "\n", interfaceOutput]
 
