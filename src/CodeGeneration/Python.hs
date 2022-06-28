@@ -1076,7 +1076,7 @@ outputFieldType (ComplexType (ArrayType _size fieldType)) =
 outputFieldType (ComplexType (SliceType fieldType)) =
   mconcat ["typing.List[", outputFieldType fieldType, "]"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
-outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
+outputFieldType (RecursiveReferenceType (DefinitionName name)) = mconcat ["'", name, "'"]
 outputFieldType (DefinitionReferenceType definitionReference) =
   outputDefinitionReference definitionReference
 outputFieldType (TypeVariableReferenceType (TypeVariable t)) = t

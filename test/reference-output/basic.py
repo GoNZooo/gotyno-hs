@@ -9,7 +9,7 @@ class Recruiter:
     type: typing.Literal['Recruiter']
     Name: str
     emails: typing.List[typing.Optional[str]]
-    recruiter: typing.Optional[Recruiter]
+    recruiter: typing.Optional['Recruiter']
     created: int
 
     @staticmethod
@@ -415,7 +415,7 @@ class Person:
     hobbies: typing.List[str]
     last_fifteen_comments: typing.List[str]
     recruiter: Recruiter
-    spouse: Maybe[Person]
+    spouse: Maybe['Person']
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Person']:
