@@ -440,7 +440,7 @@ spec
         let importTypeScriptOutput = TypeScript.outputModule module'
         importTypeScriptOutput `shouldBe` arrayOfArraysOfNullableStringTsOutput
 
-    describe "Specific regressions" $ do
+    describe "Specific bugs in Python output" $ do
       it "Does not emit `to_json` in Python when a constructor has no type variable in payload" $ do
         exceptionNotificationPythonReferenceOutput <-
           readFileUtf8 "./test/reference-output/exceptionNotification.py"
@@ -460,6 +460,15 @@ spec
               Python.outputModule untaggedUnionWithDeclarationModule
         untaggedUnionWithDeclarationPythonOutput
           `shouldBe` untaggedUnionWithDeclarationPythonReferenceOutput
+
+      it "Translates 'None' constructor to 'None_' automatically" $ do
+        optionTypePythonReferenceOutput <-
+          readFileUtf8 "./test/reference-output/optionType.py"
+        optionTypeModule <-
+          (getRight >>> PartialList.head)
+            <$> parseModules ["./test/examples/optionType.gotyno"]
+        let optionTypePythonOutput = Python.outputModule optionTypeModule
+        optionTypePythonOutput `shouldBe` optionTypePythonReferenceOutput
 
 getRight :: Either [String] r -> r
 getRight (Right r) = r

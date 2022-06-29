@@ -746,7 +746,7 @@ outputUnionValidator name (FieldName tag) constructors typeVariables =
                       [ "'",
                         constructorName,
                         "': ",
-                        upperCaseFirstCharacter constructorName,
+                        constructorName & upperCaseFirstCharacter & sanitizeName,
                         ".validate",
                         maybeTypeVariableValidatorArguments
                       ]
@@ -857,8 +857,9 @@ outputUnionCase :: Text -> FieldName -> Constructor -> Text
 outputUnionCase
   unionName
   fieldName@(FieldName tag)
-  constructor@(Constructor (ConstructorName name) maybePayload) =
-    let payloadTypeVariables =
+  constructor@(Constructor (ConstructorName constructorName) maybePayload) =
+    let name = sanitizeName constructorName
+        payloadTypeVariables =
           fromMaybe [] $ foldMap typeVariablesFrom maybePayload
         fullName =
           if null payloadTypeVariables
@@ -889,7 +890,7 @@ outputUnionCase
             [ "        return validation.validate_with_type_tag(value, '",
               tag,
               "', '",
-              name,
+              constructorName,
               "', ",
               interface,
               ", ",
@@ -911,7 +912,7 @@ outputUnionCase
                     [ "            return validation.validate_with_type_tag(value, '",
                       tag,
                       "', '",
-                      name,
+                      constructorName,
                       "', ",
                       interface,
                       ", ",
@@ -970,6 +971,10 @@ outputUnionCase
             "\n\n",
             encoderOutput
           ]
+
+sanitizeName :: Text -> Text
+sanitizeName "None" = "None_"
+sanitizeName name = name
 
 outputEncoderForUnionConstructor :: FieldName -> Constructor -> Text
 outputEncoderForUnionConstructor

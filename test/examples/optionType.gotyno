@@ -1,0 +1,4 @@
+union Option <T>{
+    None
+    Some: T
+}
