@@ -42,11 +42,11 @@ class Holder(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Holder[T]']:
         return validation.validate_from_string(string, Holder.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'value': T_to_json(self.value)}
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'value': encoding.general_to_json(self.value)}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 class EventWithKind:
     @staticmethod
@@ -127,7 +127,7 @@ class Possibly(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Possibly[T]']:
         return validation.validate_from_string(string, Possibly.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+    def to_json(self) -> typing.Dict[str, typing.Any]:
         raise NotImplementedError('`to_json` is not implemented for base class `Possibly`')
 
     def encode(self) -> str:
@@ -163,11 +163,11 @@ class Definitely(Possibly[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['Definitely[T]']:
         return validation.validate_from_string(string, Definitely.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'type': 'Definitely', 'data': T_to_json(self.data)}
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'Definitely', 'data': encoding.general_to_json(self.data)}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class PossiblyHolder:
@@ -182,7 +182,7 @@ class PossiblyHolder:
         return validation.validate_from_string(string, PossiblyHolder.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'value': self.value.to_json(encoding.basic_to_json)}
+        return {'value': self.value.to_json()}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

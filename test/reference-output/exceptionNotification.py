@@ -23,11 +23,11 @@ class ExceptionPayload(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['ExceptionPayload[T]']:
         return validation.validate_from_string(string, ExceptionPayload.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'notificationId': self.notificationId, 'input': T_to_json(self.input), 'errorName': self.errorName, 'errorMessage': self.errorMessage, 'errorStack': encoding.optional_to_json(encoding.basic_to_json)(self.errorStack)}
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'notificationId': self.notificationId, 'input': encoding.general_to_json(self.input), 'errorName': self.errorName, 'errorMessage': self.errorMessage, 'errorStack': encoding.optional_to_json(encoding.basic_to_json)(self.errorStack)}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class ExceptionS3Reference:
@@ -61,7 +61,7 @@ class ExceptionNotification(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['ExceptionNotification[T]']:
         return validation.validate_from_string(string, ExceptionNotification.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
+    def to_json(self) -> typing.Dict[str, typing.Any]:
         raise NotImplementedError('`to_json` is not implemented for base class `ExceptionNotification`')
 
     def encode(self) -> str:
@@ -81,11 +81,11 @@ class ExceptionNotificationPayload(ExceptionNotification[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['ExceptionNotificationPayload[T]']:
         return validation.validate_from_string(string, ExceptionNotificationPayload.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'type': 'ExceptionNotificationPayload', 'data': self.data.to_json(T_to_json)}
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'type': 'ExceptionNotificationPayload', 'data': self.data.to_json()}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class ExceptionNotificationS3Reference(ExceptionNotification[T]):

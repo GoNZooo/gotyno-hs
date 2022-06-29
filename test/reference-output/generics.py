@@ -21,7 +21,7 @@ class UsingGenerics:
         return validation.validate_from_string(string, UsingGenerics.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'field1': self.field1.to_json(encoding.basic_to_json), 'field2': self.field2.to_json(encoding.basic_to_json, encoding.basic_to_json)}
+        return {'field1': self.field1.to_json(), 'field2': self.field2.to_json()}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
@@ -41,11 +41,11 @@ class UsingOwnGenerics(typing.Generic[T]):
     def decode(string: typing.Union[str, bytes], validate_T: validation.Validator[T]) -> validation.ValidationResult['UsingOwnGenerics[T]']:
         return validation.validate_from_string(string, UsingOwnGenerics.validate(validate_T))
 
-    def to_json(self, T_to_json: encoding.ToJSON[T]) -> typing.Dict[str, typing.Any]:
-        return {'field1': self.field1.to_json(T_to_json)}
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'field1': self.field1.to_json()}
 
-    def encode(self, T_to_json: encoding.ToJSON[T]) -> str:
-        return json.dumps(self.to_json(T_to_json))
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class KnownForMovie:

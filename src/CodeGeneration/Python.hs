@@ -310,7 +310,7 @@ outputPlainStruct :: Text -> [StructField] -> Text
 outputPlainStruct name fields =
   let fieldsOutput = fields & fmap (outputField 4) & Text.intercalate "\n"
       validatorOutput = outputStructValidator name fields []
-      encoderOutput = outputStructEncoder fields []
+      encoderOutput = outputStructEncoder fields
       decoderOutput = outputStructDecoder name []
    in mconcat
         [ mconcat ["@dataclass(frozen=True)\nclass ", name, ":\n"],
@@ -334,7 +334,7 @@ outputGenericStruct name typeVariables fields =
       fieldsOutput = fields & fmap (outputField 4) & Text.intercalate "\n"
       validatorOutput = outputStructValidator name fields typeVariables
       decoderOutput = outputStructDecoder name typeVariables
-      encoderOutput = outputStructEncoder fields typeVariables
+      encoderOutput = outputStructEncoder fields
       typeVariableOutput = typeVariables & fmap outputTypeVariableDefinition & Text.intercalate "\n"
       outputTypeVariableDefinition (TypeVariable t) = mconcat [t, " = typing.TypeVar('", t, "')"]
    in mconcat
@@ -453,32 +453,14 @@ outputStructDecoder name typeVariables =
         typeVariableValidatorsAsArguments typeVariables
    in mconcat ["    @staticmethod\n", decodeFunctionOutput]
 
-outputStructEncoder :: [StructField] -> [TypeVariable] -> Text
-outputStructEncoder fields typeVariables =
-  let interface =
-        mconcat
-          ["{", fields & fmap outputEncoderForField & Text.intercalate ", ", "}"]
-      maybeTypeVariableToJSONArguments =
-        if null typeVariables
-          then ""
-          else
-            ", "
-              <> ( typeVariables
-                     & fmap
-                       ( \(TypeVariable t) ->
-                           mconcat [t, "_to_json: encoding.ToJSON[", t, "]"]
-                       )
-                     & Text.intercalate ", "
-                 )
-      maybePassedInToJSONs =
-        if null typeVariables
-          then ""
-          else typeVariables & fmap (\(TypeVariable t) -> t <> "_to_json") & Text.intercalate ", "
+outputStructEncoder :: [StructField] -> Text
+outputStructEncoder fields =
+  let interface = mconcat ["{", fields & fmap outputEncoderForField & Text.intercalate ", ", "}"]
    in mconcat
-        [ mconcat ["    def to_json(self", maybeTypeVariableToJSONArguments, ") -> typing.Dict[str, typing.Any]:\n"],
+        [ mconcat ["    def to_json(self) -> typing.Dict[str, typing.Any]:\n"],
           mconcat ["        return ", interface, "\n\n"],
-          mconcat ["    def encode(self", maybeTypeVariableToJSONArguments, ") -> str:\n"],
-          mconcat ["        return json.dumps(self.to_json(", maybePassedInToJSONs, "))"]
+          mconcat ["    def encode(self) -> str:\n"],
+          mconcat ["        return json.dumps(self.to_json())"]
         ]
 
 outputValidatorForField :: StructField -> Text
@@ -510,25 +492,21 @@ outputEncoderForField
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
-      (DefinitionReferenceType (AppliedGenericReference appliedTypeVariables _definition))
+      (DefinitionReferenceType (AppliedGenericReference _appliedTypeVariables _definition))
     ) =
-    let passedInToJSONs =
-          appliedTypeVariables & fmap encoderForFieldType & Text.intercalate ", "
-     in mconcat ["'", fieldName, "': self.", fieldName, ".to_json(", passedInToJSONs, ")"]
+    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
       ( DefinitionReferenceType
           ( AppliedImportedGenericReference
               _moduleName
-              (AppliedTypes appliedTypeVariables)
+              _appliedTypes
               _definition
             )
         )
     ) =
-    let passedInToJSONs =
-          appliedTypeVariables & fmap encoderForFieldType & Text.intercalate ", "
-     in mconcat ["'", fieldName, "': self.", fieldName, ".to_json(", passedInToJSONs, ")"]
+    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
 outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
     [ "'",
@@ -546,7 +524,7 @@ encoderForFieldType (BasicType basicType) = encoderForBasicType basicType
 encoderForFieldType (ComplexType complexType) = encoderForComplexType complexType
 encoderForFieldType (DefinitionReferenceType definitionReference) =
   encoderForDefinitionReference definitionReference
-encoderForFieldType (TypeVariableReferenceType (TypeVariable name)) = name <> "_to_json"
+encoderForFieldType (TypeVariableReferenceType (TypeVariable _name)) = "encoding.general_to_json"
 encoderForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".to_json"
 
 encoderForBasicType :: BasicTypeValue -> Text
@@ -720,21 +698,9 @@ outputUnionBaseClass name tag constructors typeVariables =
         if null typeVariables
           then ""
           else mconcat ["(typing.Generic", joinTypeVariables typeVariables, ")"]
-      maybeTypeVariableToJSONArguments =
-        if null typeVariables
-          then ""
-          else
-            mconcat
-              [ ", ",
-                typeVariables
-                  & fmap (\(TypeVariable t) -> mconcat [t, "_to_json: encoding.ToJSON[", t, "]"])
-                  & Text.intercalate ","
-              ]
       stubsOutput =
         mconcat
-          [ "    def to_json(self",
-            maybeTypeVariableToJSONArguments,
-            ") -> typing.Dict[str, typing.Any]:\n",
+          [ "    def to_json(self) -> typing.Dict[str, typing.Any]:\n",
             mconcat
               [ "        raise NotImplementedError('`to_json` is not implemented for base class `",
                 name,
@@ -993,7 +959,7 @@ outputUnionCase
                       ")"
                     ]
                 ]
-        encoderOutput = outputEncoderForUnionConstructor payloadTypeVariables fieldName constructor
+        encoderOutput = outputEncoderForUnionConstructor fieldName constructor
      in mconcat
           [ "@dataclass(frozen=True)\n",
             mconcat ["class ", name, "(", unionName, "):\n"],
@@ -1005,43 +971,23 @@ outputUnionCase
             encoderOutput
           ]
 
-outputEncoderForUnionConstructor :: [TypeVariable] -> FieldName -> Constructor -> Text
+outputEncoderForUnionConstructor :: FieldName -> Constructor -> Text
 outputEncoderForUnionConstructor
-  unionTypeVariables
   (FieldName tag)
   (Constructor (ConstructorName name) maybePayload) =
     let maybeDataField =
           maybe "" (dataEncoder >>> (", 'data': " <>)) maybePayload
         dataEncoder (BasicType _) = "self.data"
-        dataEncoder (DefinitionReferenceType _) =
-          mconcat ["self.data.to_json(", maybePassedInToJSONs, ")"]
+        dataEncoder (DefinitionReferenceType _) = "self.data.to_json()"
+        dataEncoder (TypeVariableReferenceType _typeVariable) =
+          "encoding.general_to_json(self.data)"
         dataEncoder fieldType = mconcat [encoderForFieldType fieldType, "(self.data)"]
-        maybeTypeVariableToJSONArguments =
-          if null unionTypeVariables
-            then ""
-            else
-              mconcat
-                [ ", ",
-                  unionTypeVariables
-                    & fmap
-                      ( \(TypeVariable t) ->
-                          mconcat [t, "_to_json: encoding.ToJSON[", t, "]"]
-                      )
-                    & Text.intercalate ", "
-                ]
         interface = mconcat ["{", mconcat ["'", tag, "': '", name, "'", maybeDataField], "}"]
-        maybePassedInToJSONs =
-          if null unionTypeVariables
-            then ""
-            else
-              unionTypeVariables
-                & fmap (\(TypeVariable t) -> t <> "_to_json")
-                & Text.intercalate ", "
      in mconcat
-          [ mconcat ["    def to_json(self", maybeTypeVariableToJSONArguments, ") -> typing.Dict[str, typing.Any]:\n"],
+          [ mconcat ["    def to_json(self) -> typing.Dict[str, typing.Any]:\n"],
             mconcat ["        return ", interface, "\n\n"],
-            mconcat ["    def encode(self", maybeTypeVariableToJSONArguments, ") -> str:\n"],
-            mconcat ["        return json.dumps(self.to_json(", maybePassedInToJSONs, "))"]
+            mconcat ["    def encode(self) -> str:\n"],
+            mconcat ["        return json.dumps(self.to_json())"]
           ]
 
 typeVariableValidatorsAsArguments :: [TypeVariable] -> Text
