@@ -1,10 +1,15 @@
 import basic
 
+declare controlTypes.Option<T>
+declare controlTypes.PlainDeclaration
+
 struct SomeType {
     type: "SomeType"
     some_field: String
     some_other_field: I32
     maybe_some_field: ?String
+    some_option_field: Option<String>
+    some_plain_field: PlainDeclaration
 }
 
 struct Holder <T>{
@@ -15,6 +20,8 @@ union(tag = kind) EventWithKind {
     NotificationWithKind: String
     LaunchWithKind
     AnotherEventWithKind: SomeType
+    EventWithOption: Option<U32>
+    EventWithPlainDeclaration: PlainDeclaration
 }
 
 union Possibly <T>{

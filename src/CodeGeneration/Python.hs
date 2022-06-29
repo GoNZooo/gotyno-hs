@@ -507,6 +507,22 @@ outputEncoderForField
         )
     ) =
     mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+outputEncoderForField
+  ( StructField
+      (FieldName fieldName)
+      ( DefinitionReferenceType
+          (GenericDeclarationReference _moduleName _definitionName _appliedTypes)
+        )
+    ) =
+    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+outputEncoderForField
+  ( StructField
+      (FieldName fieldName)
+      ( DefinitionReferenceType
+          (DeclarationReference _moduleName _definitionName)
+        )
+    ) =
+    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
 outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
     [ "'",

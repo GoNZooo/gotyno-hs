@@ -6,23 +6,27 @@ from gotyno_validation import encoding, validation
 
 from . import basic
 
+from . import controlTypes
+
 @dataclass(frozen=True)
 class SomeType:
     type: typing.Literal['SomeType']
     some_field: str
     some_other_field: int
     maybe_some_field: typing.Optional[str]
+    some_option_field: controlTypes.Option[str]
+    some_plain_field: controlTypes.PlainDeclaration
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['SomeType']:
-        return validation.validate_interface(value, {'type': validation.validate_literal('SomeType'), 'some_field': validation.validate_string, 'some_other_field': validation.validate_int, 'maybe_some_field': validation.validate_optional(validation.validate_string)}, SomeType)
+        return validation.validate_interface(value, {'type': validation.validate_literal('SomeType'), 'some_field': validation.validate_string, 'some_other_field': validation.validate_int, 'maybe_some_field': validation.validate_optional(validation.validate_string), 'some_option_field': controlTypes.Option.validate(validation.validate_string), 'some_plain_field': controlTypes.PlainDeclaration.validate}, SomeType)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['SomeType']:
         return validation.validate_from_string(string, SomeType.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'SomeType', 'some_field': self.some_field, 'some_other_field': self.some_other_field, 'maybe_some_field': encoding.optional_to_json(encoding.basic_to_json)(self.maybe_some_field)}
+        return {'type': 'SomeType', 'some_field': self.some_field, 'some_other_field': self.some_other_field, 'maybe_some_field': encoding.optional_to_json(encoding.basic_to_json)(self.maybe_some_field), 'some_option_field': self.some_option_field.to_json(), 'some_plain_field': self.some_plain_field.to_json()}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
@@ -51,7 +55,7 @@ class Holder(typing.Generic[T]):
 class EventWithKind:
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['EventWithKind']:
-        return validation.validate_with_type_tags(value, 'kind', {'NotificationWithKind': NotificationWithKind.validate, 'LaunchWithKind': LaunchWithKind.validate, 'AnotherEventWithKind': AnotherEventWithKind.validate})
+        return validation.validate_with_type_tags(value, 'kind', {'NotificationWithKind': NotificationWithKind.validate, 'LaunchWithKind': LaunchWithKind.validate, 'AnotherEventWithKind': AnotherEventWithKind.validate, 'EventWithOption': EventWithOption.validate, 'EventWithPlainDeclaration': EventWithPlainDeclaration.validate})
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EventWithKind']:
@@ -111,6 +115,42 @@ class AnotherEventWithKind(EventWithKind):
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
         return {'kind': 'AnotherEventWithKind', 'data': self.data.to_json()}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class EventWithOption(EventWithKind):
+    data: controlTypes.Option[int]
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['EventWithOption']:
+        return validation.validate_with_type_tag(value, 'kind', 'EventWithOption', {'data': controlTypes.Option.validate(validation.validate_int)}, EventWithOption)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EventWithOption']:
+        return validation.validate_from_string(string, EventWithOption.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'kind': 'EventWithOption', 'data': self.data.to_json()}
+
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
+
+@dataclass(frozen=True)
+class EventWithPlainDeclaration(EventWithKind):
+    data: controlTypes.PlainDeclaration
+
+    @staticmethod
+    def validate(value: validation.Unknown) -> validation.ValidationResult['EventWithPlainDeclaration']:
+        return validation.validate_with_type_tag(value, 'kind', 'EventWithPlainDeclaration', {'data': controlTypes.PlainDeclaration.validate}, EventWithPlainDeclaration)
+
+    @staticmethod
+    def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['EventWithPlainDeclaration']:
+        return validation.validate_from_string(string, EventWithPlainDeclaration.validate)
+
+    def to_json(self) -> typing.Dict[str, typing.Any]:
+        return {'kind': 'EventWithPlainDeclaration', 'data': self.data.to_json()}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
