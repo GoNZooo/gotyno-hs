@@ -1,0 +1,6 @@
+declare supportTypes.StringMap<T>
+
+untagged union ValidationError {
+    StringMap<ValidationError>
+    String
+}

@@ -1161,9 +1161,9 @@ fieldTypeName
     definitionName
 fieldTypeName
   ( DefinitionReferenceType
-      (ImportedDefinitionReference _ (TypeDefinition (DefinitionName definitionName) _))
+      (ImportedDefinitionReference moduleName (TypeDefinition (DefinitionName definitionName) _))
     ) =
-    definitionName
+    mconcat [unModuleName moduleName, ".", definitionName]
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedGenericReference
@@ -1175,24 +1175,24 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedImportedGenericReference
-          _moduleName
+          moduleName
           (AppliedTypes _fieldTypes)
           (TypeDefinition (DefinitionName definitionName) _)
         )
     ) =
-    definitionName
+    mconcat [unModuleName moduleName, ".", definitionName]
 fieldTypeName
   ( DefinitionReferenceType
       ( GenericDeclarationReference
-          (ModuleName _moduleName)
+          moduleName
           (DefinitionName definitionName)
           (AppliedTypes _fieldTypes)
         )
     ) =
-    definitionName
+    mconcat [unModuleName moduleName, ".", definitionName]
 fieldTypeName
-  (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
-    definitionName
+  (DefinitionReferenceType (DeclarationReference moduleName (DefinitionName definitionName))) =
+    mconcat [unModuleName moduleName, ".", definitionName]
 
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =

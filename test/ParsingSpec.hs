@@ -450,6 +450,17 @@ spec
         let exceptionNotificationPythonOutput = Python.outputModule exceptionNotificationModule
         exceptionNotificationPythonOutput `shouldBe` exceptionNotificationPythonReferenceOutput
 
+      it "Emits module name in `to_json` interface for untagged unions with declared types" $ do
+        untaggedUnionWithDeclarationPythonReferenceOutput <-
+          readFileUtf8 "./test/reference-output/untaggedUnionWithDeclaration.py"
+        untaggedUnionWithDeclarationModule <-
+          (getRight >>> PartialList.head)
+            <$> parseModules ["./test/examples/untaggedUnionWithDeclaration.gotyno"]
+        let untaggedUnionWithDeclarationPythonOutput =
+              Python.outputModule untaggedUnionWithDeclarationModule
+        untaggedUnionWithDeclarationPythonOutput
+          `shouldBe` untaggedUnionWithDeclarationPythonReferenceOutput
+
 getRight :: Either [String] r -> r
 getRight (Right r) = r
 getRight (Left e) = error $ mconcat e
