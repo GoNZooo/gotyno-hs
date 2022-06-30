@@ -12,7 +12,7 @@ compiler and all the Haskell libraries that are used as well.
 
 Once we have `stack` installed we can simply run the following in this project directory:
 
-```
+```bash
 stack install
 ```
 
@@ -130,7 +130,7 @@ All supported type names are uppercase and type definitions currently are enforc
 
 ### Structs
 
-```
+```gotyno
 struct Recruiter {
     name: String
 }
@@ -154,7 +154,7 @@ struct Generic <T>{
 
 ### Enums
 
-```
+```gotyno
 enum Colors {
     red = "FF0000"
     green = "00FF00"
@@ -166,7 +166,7 @@ enum Colors {
 
 #### Tagged
 
-```
+```gotyno
 union InteractionEvent {
     Click: Coordinates
     KeyPress: KeyCode
@@ -189,7 +189,7 @@ union Result<E, T>{
 Sometimes a union that carries no extra tags is required, though usually these will have to be
 identified less automatically, perhaps via custom tags in their respective payload:
 
-```
+```gotyno
 struct SomeType {
     type: "SomeType"
     some_field: F32
@@ -217,7 +217,7 @@ generated, and the literal string fields can still be used for identifying which
 The above can also be accomplished by setting the tag key to be embedded in options passed to the
 `union` keyword (we can also set which key is used):
 
-```
+```gotyno
 struct SomeType {
     some_field: F32
     some_other_field: ?String
@@ -250,7 +250,7 @@ When a type that is outside of Gotyno files is needed, we can use a declaration 
 exists. It will function much like an import in the generated code and it's up to the user to supply
 the required functionality for each language in the required file:
 
-```
+```gotyno
 declare external.Option<T>
 
 declare otherExternalModule.Plain
