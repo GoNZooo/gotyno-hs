@@ -18,9 +18,18 @@ outputModule Module {definitions, imports, declarationNames} =
                 mconcat ["from . import ", name]
             )
           & Text.intercalate "\n"
+      disabledRules =
+        [ "too-many-lines",
+          "invalid-name",
+          "line-too-long",
+          "missing-module-docstring",
+          "missing-class-docstring",
+          "missing-function-docstring"
+        ]
    in mconcat
         [ mconcat
-            [ "import enum\n",
+            [ mconcat ["# pylint: disable=", Text.intercalate ", " disabledRules, "\n"],
+              "import enum\n",
               "import json\n",
               "import typing\n",
               "from dataclasses import dataclass\n",

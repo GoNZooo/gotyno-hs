@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines, invalid-name, line-too-long, missing-module-docstring, missing-class-docstring, missing-function-docstring
 import enum
 import json
 import typing
