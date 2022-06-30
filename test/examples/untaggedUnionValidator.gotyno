@@ -1,0 +1,21 @@
+declare controlTypes.Option<T>
+
+struct SplitName {
+    firstName: String
+    lastName: String
+}
+
+struct FullName {
+    fullName: String
+}
+
+untagged union Name {
+    SplitName
+    FullName
+}
+
+struct CompanyPerson {
+    name: Option<Name>
+    title: Option<String>
+    isCurrent: Option<Boolean>
+}

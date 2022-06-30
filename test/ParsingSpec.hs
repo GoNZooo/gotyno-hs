@@ -477,6 +477,15 @@ spec
         let fromFieldPythonOutput = Python.outputModule fromFieldModule
         fromFieldPythonOutput `shouldBe` fromFieldPythonReferenceOutput
 
+      it "Refers to interface of untagged union instead of name of type when validating" $ do
+        untaggedUnionValidatorPythonReferenceOutput <-
+          readFileUtf8 "./test/reference-output/untaggedUnionValidator.py"
+        untaggedUnionValidatorModule <-
+          (getRight >>> PartialList.head)
+            <$> parseModules ["./test/examples/untaggedUnionValidator.gotyno"]
+        let untaggedUnionValidatorPythonOutput = Python.outputModule untaggedUnionValidatorModule
+        untaggedUnionValidatorPythonOutput `shouldBe` untaggedUnionValidatorPythonReferenceOutput
+
 getRight :: Either [String] r -> r
 getRight (Right r) = r
 getRight (Left e) = error $ mconcat e

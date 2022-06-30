@@ -646,9 +646,16 @@ validatorForComplexType (OptionalType fieldType) =
 
 decoderForDefinitionReference :: DefinitionReference -> Text
 decoderForDefinitionReference
-  ( DefinitionReference
-      (TypeDefinition (DefinitionName name) _typeData)
+  (DefinitionReference (TypeDefinition (DefinitionName name) (UntaggedUnion _members))) =
+    name <> "Interface.validate"
+decoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
     ) =
+    mconcat [moduleName, ".", name, "Interface.validate"]
+decoderForDefinitionReference
+  (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
     name <> ".validate"
 decoderForDefinitionReference
   ( ImportedDefinitionReference
