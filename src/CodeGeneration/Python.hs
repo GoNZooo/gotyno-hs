@@ -577,6 +577,17 @@ encoderForComplexType (OptionalType fieldType) =
 encoderForDefinitionReference :: DefinitionReference -> Text
 encoderForDefinitionReference
   ( DefinitionReference
+      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
+    ) =
+    name <> "Interface.to_json"
+encoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName moduleName)
+      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
+    ) =
+    mconcat [moduleName, ".", name, "Interface.to_json"]
+encoderForDefinitionReference
+  ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     name <> ".to_json"
