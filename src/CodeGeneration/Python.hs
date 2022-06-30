@@ -485,16 +485,16 @@ outputEncoderForField
           "': ",
           encoderForFieldType basicType,
           "(self.",
-          fieldName,
+          sanitizeFieldName fieldName,
           ")"
         ]
-    | otherwise = mconcat ["'", fieldName, "': self.", fieldName]
+    | otherwise = mconcat ["'", fieldName, "': self.", sanitizeFieldName fieldName]
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
       (DefinitionReferenceType (AppliedGenericReference _appliedTypeVariables _definition))
     ) =
-    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+    mconcat ["'", fieldName, "': self.", sanitizeFieldName fieldName, ".to_json()"]
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
@@ -506,7 +506,7 @@ outputEncoderForField
             )
         )
     ) =
-    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+    mconcat ["'", fieldName, "': self.", sanitizeFieldName fieldName, ".to_json()"]
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
@@ -514,7 +514,7 @@ outputEncoderForField
           (GenericDeclarationReference _moduleName _definitionName _appliedTypes)
         )
     ) =
-    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+    mconcat ["'", fieldName, "': self.", sanitizeFieldName fieldName, ".to_json()"]
 outputEncoderForField
   ( StructField
       (FieldName fieldName)
@@ -530,7 +530,7 @@ outputEncoderForField (StructField (FieldName fieldName) fieldType) =
       "': ",
       encoderForFieldType fieldType,
       "(self.",
-      fieldName,
+      sanitizeFieldName fieldName,
       ")"
     ]
 
@@ -992,6 +992,10 @@ sanitizeName :: Text -> Text
 sanitizeName "None" = "None_"
 sanitizeName name = name
 
+sanitizeFieldName :: Text -> Text
+sanitizeFieldName "from" = "from_"
+sanitizeFieldName other = other
+
 outputEncoderForUnionConstructor :: FieldName -> Constructor -> Text
 outputEncoderForUnionConstructor
   (FieldName tag)
@@ -1027,7 +1031,7 @@ validatorsForTypeVariables = fmap (TypeVariableReferenceType >>> validatorForFie
 outputField :: Int -> StructField -> Text
 outputField indentation (StructField (FieldName name) fieldType) =
   let indent = Text.pack $ replicate indentation ' '
-   in indent <> mconcat [name, ": ", outputFieldType fieldType]
+   in indent <> mconcat [sanitizeFieldName name, ": ", outputFieldType fieldType]
 
 outputFieldType :: FieldType -> Text
 outputFieldType (LiteralType (LiteralString text)) = "typing.Literal['" <> text <> "']"

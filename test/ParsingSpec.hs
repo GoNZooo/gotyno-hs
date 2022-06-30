@@ -462,13 +462,20 @@ spec
           `shouldBe` untaggedUnionWithDeclarationPythonReferenceOutput
 
       it "Translates 'None' constructor to 'None_' automatically" $ do
-        optionTypePythonReferenceOutput <-
-          readFileUtf8 "./test/reference-output/optionType.py"
+        optionTypePythonReferenceOutput <- readFileUtf8 "./test/reference-output/optionType.py"
         optionTypeModule <-
           (getRight >>> PartialList.head)
             <$> parseModules ["./test/examples/optionType.gotyno"]
         let optionTypePythonOutput = Python.outputModule optionTypeModule
         optionTypePythonOutput `shouldBe` optionTypePythonReferenceOutput
+
+      it "Translates `from` field name into `from_`" $ do
+        fromFieldPythonReferenceOutput <- readFileUtf8 "./test/reference-output/fromField.py"
+        fromFieldModule <-
+          (getRight >>> PartialList.head)
+            <$> parseModules ["./test/examples/fromField.gotyno"]
+        let fromFieldPythonOutput = Python.outputModule fromFieldModule
+        fromFieldPythonOutput `shouldBe` fromFieldPythonReferenceOutput
 
 getRight :: Either [String] r -> r
 getRight (Right r) = r

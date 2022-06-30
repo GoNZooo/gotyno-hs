@@ -1,0 +1,3 @@
+struct AStruct {
+    from: U32
+}
