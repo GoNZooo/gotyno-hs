@@ -200,13 +200,6 @@ embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
 
 outputUntaggedUnion :: Text -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
-  let typeOutput = mconcat [unionName, " = ", "typing.Union[", unionOutput, "]"]
-      unionOutput = cases & fmap outputFieldType & Text.intercalate ", "
-      interfaceOutput = outputUntaggedUnionInterface unionName cases
-   in mconcat [typeOutput, "\n", interfaceOutput]
-
-outputUntaggedUnionInterface :: Text -> [FieldType] -> Text
-outputUntaggedUnionInterface unionName cases =
   let oneOfValidatorsOutput =
         mconcat
           [ "[",
@@ -226,8 +219,11 @@ outputUntaggedUnionInterface unionName cases =
               & Text.intercalate ", ",
             "}"
           ]
+      unionOutput = cases & fmap outputFieldType & Text.intercalate ", "
    in mconcat
-        [ mconcat ["class ", unionName, "Interface:\n"],
+        [ "@dataclass(frozen=True)\n",
+          mconcat ["class ", unionName, ":\n"],
+          mconcat ["    data: typing.Union[", unionOutput, "]\n\n"],
           "    @staticmethod\n",
           mconcat
             [ "    def validate(value: validation.Unknown) -> validation.ValidationResult['",
@@ -235,8 +231,10 @@ outputUntaggedUnionInterface unionName cases =
               "']:\n"
             ],
           mconcat
-            [ "        return validation.validate_one_of(value, ",
+            [ "        return validation.validate_one_of_with_constructor(value, ",
               oneOfValidatorsOutput,
+              ", ",
+              unionName,
               ")\n\n"
             ],
           "    @staticmethod\n",
@@ -248,15 +246,13 @@ outputUntaggedUnionInterface unionName cases =
           mconcat
             [ "        return validation.validate_from_string(string, ",
               unionName,
-              "Interface.validate)\n\n"
+              ".validate)\n\n"
             ],
-          "    @staticmethod\n",
-          "    def to_json(value) -> typing.Any:\n",
+          "    def to_json(self) -> typing.Any:\n",
           mconcat
-            ["        return encoding.one_of_to_json(value, ", oneOfToJSONInterface, ")\n\n"],
-          "    @staticmethod\n",
-          "    def encode(value) -> str:\n",
-          "        return json.dumps(value.to_json())"
+            ["        return encoding.one_of_to_json(self.data, ", oneOfToJSONInterface, ")\n\n"],
+          "    def encode(self) -> str:\n",
+          "        return json.dumps(self.to_json())"
         ]
 
 outputEnumeration :: Text -> [EnumerationValue] -> Text
@@ -577,17 +573,6 @@ encoderForComplexType (OptionalType fieldType) =
 encoderForDefinitionReference :: DefinitionReference -> Text
 encoderForDefinitionReference
   ( DefinitionReference
-      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
-    ) =
-    name <> "Interface.to_json"
-encoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
-    ) =
-    mconcat [moduleName, ".", name, "Interface.to_json"]
-encoderForDefinitionReference
-  ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     name <> ".to_json"
@@ -603,7 +588,7 @@ encoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [name, ".to_json(", appliedEncoders, ")"]
+     in mconcat [name, ".to_json"]
 encoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
@@ -611,7 +596,7 @@ encoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
+     in mconcat [moduleName, ".", name, ".to_json"]
 encoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -619,7 +604,7 @@ encoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json(", appliedEncoders, ")"]
+     in mconcat [moduleName, ".", name, ".to_json"]
 encoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
     mconcat [moduleName, ".", name, ".to_json"]
@@ -665,15 +650,6 @@ validatorForComplexType (OptionalType fieldType) =
   mconcat ["validation.validate_optional(", validatorForFieldType fieldType, ")"]
 
 decoderForDefinitionReference :: DefinitionReference -> Text
-decoderForDefinitionReference
-  (DefinitionReference (TypeDefinition (DefinitionName name) (UntaggedUnion _members))) =
-    name <> "Interface.validate"
-decoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) (UntaggedUnion _members))
-    ) =
-    mconcat [moduleName, ".", name, "Interface.validate"]
 decoderForDefinitionReference
   (DefinitionReference (TypeDefinition (DefinitionName name) _typeData)) =
     name <> ".validate"

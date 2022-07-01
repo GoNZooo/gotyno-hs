@@ -96,23 +96,23 @@ class KnownForShow:
     def encode(self) -> str:
         return json.dumps(self.to_json())
 
-KnownFor = typing.Union[KnownForShow, KnownForMovie, str, float]
-class KnownForInterface:
+@dataclass(frozen=True)
+class KnownFor:
+    data: typing.Union[KnownForShow, KnownForMovie, str, float]
+
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['KnownFor']:
-        return validation.validate_one_of(value, [KnownForShow.validate, KnownForMovie.validate, validation.validate_string, validation.validate_float])
+        return validation.validate_one_of_with_constructor(value, [KnownForShow.validate, KnownForMovie.validate, validation.validate_string, validation.validate_float], KnownFor)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['KnownFor']:
-        return validation.validate_from_string(string, KnownForInterface.validate)
+        return validation.validate_from_string(string, KnownFor.validate)
 
-    @staticmethod
-    def to_json(value) -> typing.Any:
-        return encoding.one_of_to_json(value, {KnownForShow: KnownForShow.to_json, KnownForMovie: KnownForMovie.to_json, str: encoding.basic_to_json, float: encoding.basic_to_json})
+    def to_json(self) -> typing.Any:
+        return encoding.one_of_to_json(self.data, {KnownForShow: KnownForShow.to_json, KnownForMovie: KnownForMovie.to_json, str: encoding.basic_to_json, float: encoding.basic_to_json})
 
-    @staticmethod
-    def encode(value) -> str:
-        return json.dumps(value.to_json())
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class KnownForMovieWithoutTypeTag:

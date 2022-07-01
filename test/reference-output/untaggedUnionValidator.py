@@ -44,23 +44,23 @@ class FullName:
     def encode(self) -> str:
         return json.dumps(self.to_json())
 
-Name = typing.Union[SplitName, FullName]
-class NameInterface:
+@dataclass(frozen=True)
+class Name:
+    data: typing.Union[SplitName, FullName]
+
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Name']:
-        return validation.validate_one_of(value, [SplitName.validate, FullName.validate])
+        return validation.validate_one_of_with_constructor(value, [SplitName.validate, FullName.validate], Name)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Name']:
-        return validation.validate_from_string(string, NameInterface.validate)
+        return validation.validate_from_string(string, Name.validate)
 
-    @staticmethod
-    def to_json(value) -> typing.Any:
-        return encoding.one_of_to_json(value, {SplitName: SplitName.to_json, FullName: FullName.to_json})
+    def to_json(self) -> typing.Any:
+        return encoding.one_of_to_json(self.data, {SplitName: SplitName.to_json, FullName: FullName.to_json})
 
-    @staticmethod
-    def encode(value) -> str:
-        return json.dumps(value.to_json())
+    def encode(self) -> str:
+        return json.dumps(self.to_json())
 
 @dataclass(frozen=True)
 class CompanyPerson:
@@ -70,7 +70,7 @@ class CompanyPerson:
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['CompanyPerson']:
-        return validation.validate_interface(value, {'name': controlTypes.Option.validate(NameInterface.validate), 'title': controlTypes.Option.validate(validation.validate_string), 'isCurrent': controlTypes.Option.validate(validation.validate_bool)}, CompanyPerson)
+        return validation.validate_interface(value, {'name': controlTypes.Option.validate(Name.validate), 'title': controlTypes.Option.validate(validation.validate_string), 'isCurrent': controlTypes.Option.validate(validation.validate_bool)}, CompanyPerson)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['CompanyPerson']:
