@@ -45,13 +45,13 @@ can't personally vouch for them in a production context right now.
 ## Planned support
 
 - PureScript
+- Elixir
 
 ## Maybe supported in the future
 
 - Kotlin
 - Swift
 - Scala 3 (if it's better now)
-- Elixir
 
 ## Options you can pass to the compiler
 
