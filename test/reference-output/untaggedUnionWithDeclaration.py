@@ -20,7 +20,7 @@ class ValidationError:
         return validation.validate_from_string(string, ValidationError.validate)
 
     def to_json(self) -> typing.Any:
-        return encoding.one_of_to_json(self.data, {supportTypes.StringMap: supportTypes.StringMap.to_json, str: encoding.basic_to_json})
+        return encoding.one_of_to_json(self.data, {supportTypes.StringMap: encoding.general_to_json, str: encoding.basic_to_json})
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

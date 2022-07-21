@@ -549,8 +549,7 @@ encoderForFieldType :: FieldType -> Text
 encoderForFieldType (LiteralType literalType) = encoderForLiteralType literalType
 encoderForFieldType (BasicType basicType) = encoderForBasicType basicType
 encoderForFieldType (ComplexType complexType) = encoderForComplexType complexType
-encoderForFieldType (DefinitionReferenceType definitionReference) =
-  encoderForDefinitionReference definitionReference
+encoderForFieldType (DefinitionReferenceType _definitionReference) = "encoding.general_to_json"
 encoderForFieldType (TypeVariableReferenceType (TypeVariable _name)) = "encoding.general_to_json"
 encoderForFieldType (RecursiveReferenceType (DefinitionName name)) = name <> ".to_json"
 
@@ -575,76 +574,6 @@ encoderForComplexType (SliceType fieldType) =
   mconcat ["encoding.list_to_json(", encoderForFieldType fieldType, ")"]
 encoderForComplexType (OptionalType fieldType) =
   mconcat ["encoding.optional_to_json(", encoderForFieldType fieldType, ")"]
-
-encoderForDefinitionReference :: DefinitionReference -> Text
-encoderForDefinitionReference
-  ( DefinitionReference
-      ( TypeDefinition
-          (DefinitionName _name)
-          (Union _fieldName (PlainUnion _constructors))
-        )
-    ) =
-    "encoding.general_to_json"
-encoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName _moduleName)
-      ( TypeDefinition
-          (DefinitionName _name)
-          (Union _fieldName (PlainUnion _constructors))
-        )
-    ) =
-    "encoding.general_to_json"
-encoderForDefinitionReference
-  ( DefinitionReference
-      ( TypeDefinition
-          (DefinitionName _name)
-          (Struct (PlainStruct _fields))
-        )
-    ) =
-    "encoding.general_to_json"
-encoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName _moduleName)
-      ( TypeDefinition
-          (DefinitionName _name)
-          (Struct (PlainStruct _fields))
-        )
-    ) =
-    "encoding.general_to_json"
-encoderForDefinitionReference
-  ( DefinitionReference
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    name <> ".to_json"
-encoderForDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [moduleName, ".", name, ".to_json"]
-encoderForDefinitionReference
-  ( AppliedGenericReference
-      _appliedTypes
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [name, ".to_json"]
-encoderForDefinitionReference
-  ( AppliedImportedGenericReference
-      (ModuleName moduleName)
-      (AppliedTypes _appliedTypes)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [moduleName, ".", name, ".to_json"]
-encoderForDefinitionReference
-  ( GenericDeclarationReference
-      (ModuleName moduleName)
-      (DefinitionName name)
-      (AppliedTypes _appliedTypes)
-    ) =
-    mconcat [moduleName, ".", name, ".to_json"]
-encoderForDefinitionReference
-  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [moduleName, ".", name, ".to_json"]
 
 validatorForFieldType :: FieldType -> Text
 validatorForFieldType (LiteralType literalType) = validatorForLiteralType literalType
