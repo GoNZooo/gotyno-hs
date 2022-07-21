@@ -528,6 +528,12 @@ outputEncoderForField
         )
     ) =
     mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
+outputEncoderForField
+  ( StructField
+      (FieldName fieldName)
+      (DefinitionReferenceType (DefinitionReference _typeDefinition))
+    ) =
+    mconcat ["'", fieldName, "': self.", fieldName, ".to_json()"]
 outputEncoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
     [ "'",
@@ -573,6 +579,14 @@ encoderForComplexType (OptionalType fieldType) =
 encoderForDefinitionReference :: DefinitionReference -> Text
 encoderForDefinitionReference
   ( DefinitionReference
+      ( TypeDefinition
+          (DefinitionName _name)
+          (Union _fieldName (PlainUnion _constructors))
+        )
+    ) =
+    "encoding.general_to_json"
+encoderForDefinitionReference
+  ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     name <> ".to_json"
@@ -584,27 +598,24 @@ encoderForDefinitionReference
     mconcat [moduleName, ".", name, ".to_json"]
 encoderForDefinitionReference
   ( AppliedGenericReference
-      appliedTypes
+      _appliedTypes
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [name, ".to_json"]
+    mconcat [name, ".to_json"]
 encoderForDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName)
-      (AppliedTypes appliedTypes)
+      (AppliedTypes _appliedTypes)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json"]
+    mconcat [moduleName, ".", name, ".to_json"]
 encoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
       (DefinitionName name)
-      (AppliedTypes appliedTypes)
+      (AppliedTypes _appliedTypes)
     ) =
-    let appliedEncoders = appliedTypes & fmap encoderForFieldType & Text.intercalate " "
-     in mconcat [moduleName, ".", name, ".to_json"]
+    mconcat [moduleName, ".", name, ".to_json"]
 encoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
     mconcat [moduleName, ".", name, ".to_json"]

@@ -107,7 +107,7 @@ class SearchesParameters:
         return validation.validate_from_string(string, SearchesParameters.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'filters': encoding.list_to_json(GetSearchesFilter.to_json)(self.filters)}
+        return {'filters': encoding.list_to_json(encoding.general_to_json)(self.filters)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
@@ -427,7 +427,7 @@ class Person:
         return validation.validate_from_string(string, Person.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'name': self.name, 'age': self.age, 'efficiency': self.efficiency, 'on_vacation': self.on_vacation, 'hobbies': encoding.list_to_json(encoding.basic_to_json)(self.hobbies), 'last_fifteen_comments': encoding.list_to_json(encoding.basic_to_json)(self.last_fifteen_comments), 'recruiter': Recruiter.to_json(self.recruiter), 'spouse': self.spouse.to_json()}
+        return {'name': self.name, 'age': self.age, 'efficiency': self.efficiency, 'on_vacation': self.on_vacation, 'hobbies': encoding.list_to_json(encoding.basic_to_json)(self.hobbies), 'last_fifteen_comments': encoding.list_to_json(encoding.basic_to_json)(self.last_fifteen_comments), 'recruiter': self.recruiter.to_json(), 'spouse': self.spouse.to_json()}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
