@@ -586,6 +586,32 @@ encoderForDefinitionReference
     ) =
     "encoding.general_to_json"
 encoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName _moduleName)
+      ( TypeDefinition
+          (DefinitionName _name)
+          (Union _fieldName (PlainUnion _constructors))
+        )
+    ) =
+    "encoding.general_to_json"
+encoderForDefinitionReference
+  ( DefinitionReference
+      ( TypeDefinition
+          (DefinitionName _name)
+          (Struct (PlainStruct _fields))
+        )
+    ) =
+    "encoding.general_to_json"
+encoderForDefinitionReference
+  ( ImportedDefinitionReference
+      (ModuleName _moduleName)
+      ( TypeDefinition
+          (DefinitionName _name)
+          (Struct (PlainStruct _fields))
+        )
+    ) =
+    "encoding.general_to_json"
+encoderForDefinitionReference
   ( DefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =

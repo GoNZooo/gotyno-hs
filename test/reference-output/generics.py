@@ -109,7 +109,7 @@ class KnownFor:
         return validation.validate_from_string(string, KnownFor.validate)
 
     def to_json(self) -> typing.Any:
-        return encoding.one_of_to_json(self.data, {KnownForShow: KnownForShow.to_json, KnownForMovie: KnownForMovie.to_json, str: encoding.basic_to_json, float: encoding.basic_to_json})
+        return encoding.one_of_to_json(self.data, {KnownForShow: encoding.general_to_json, KnownForMovie: encoding.general_to_json, str: encoding.basic_to_json, float: encoding.basic_to_json})
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

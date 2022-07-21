@@ -271,7 +271,7 @@ class JoinChannels(Event):
         return validation.validate_from_string(string, JoinChannels.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'JoinChannels', 'data': encoding.list_to_json(Channel.to_json)(self.data)}
+        return {'type': 'JoinChannels', 'data': encoding.list_to_json(encoding.general_to_json)(self.data)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
@@ -289,7 +289,7 @@ class SetEmails(Event):
         return validation.validate_from_string(string, SetEmails.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'type': 'SetEmails', 'data': encoding.list_to_json(Email.to_json)(self.data)}
+        return {'type': 'SetEmails', 'data': encoding.list_to_json(encoding.general_to_json)(self.data)}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

@@ -57,7 +57,7 @@ class Name:
         return validation.validate_from_string(string, Name.validate)
 
     def to_json(self) -> typing.Any:
-        return encoding.one_of_to_json(self.data, {SplitName: SplitName.to_json, FullName: FullName.to_json})
+        return encoding.one_of_to_json(self.data, {SplitName: encoding.general_to_json, FullName: encoding.general_to_json})
 
     def encode(self) -> str:
         return json.dumps(self.to_json())
