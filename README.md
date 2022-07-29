@@ -44,12 +44,12 @@ can't personally vouch for them in a production context right now.
 
 ## Planned support
 
+- Kotlin
 - PureScript
 - Elixir
 
 ## Maybe supported in the future
 
-- Kotlin
 - Swift
 - Scala 3 (if it's better now)
 
