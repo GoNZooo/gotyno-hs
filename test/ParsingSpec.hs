@@ -1,6 +1,7 @@
 module ParsingSpec where
 
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Kotlin as Kotlin
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Parsing
@@ -31,6 +32,10 @@ data PythonReferenceOutput = PythonReferenceOutput
     generics :: !Text
   }
 
+newtype KotlinReferenceOutput = KotlinReferenceOutput
+  { basic :: Text
+  }
+
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
 typeScriptReferenceOutput = do
   basic <- basicReferenceOutput "ts"
@@ -48,6 +53,11 @@ fSharpReferenceOutput = do
   generics <- genericsReferenceOutput "fs"
   gitHub <- gitHubReferenceOutput "fs"
   pure FSharpReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+
+kotlinReferenceOutput :: IO KotlinReferenceOutput
+kotlinReferenceOutput = do
+  basic <- basicReferenceOutput "kt"
+  pure KotlinReferenceOutput {basic}
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -75,11 +85,17 @@ pythonReferenceOutput = do
   generics <- readFileUtf8 "./test/reference-output/generics.py"
   pure PythonReferenceOutput {python, basic, generics}
 
-spec :: TypeScriptReferenceOutput -> FSharpReferenceOutput -> PythonReferenceOutput -> Spec
+spec ::
+  TypeScriptReferenceOutput ->
+  FSharpReferenceOutput ->
+  PythonReferenceOutput ->
+  KotlinReferenceOutput ->
+  Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
-  (PythonReferenceOutput pyPython pyBasic pyGenerics) = do
+  (PythonReferenceOutput pyPython pyBasic pyGenerics)
+  (KotlinReferenceOutput ktBasic) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -379,9 +395,11 @@ spec
         let basicTypeScriptOutput = TypeScript.outputModule basicModule
             basicFSharpOutput = FSharp.outputModule basicModule
             basicPythonOutput = Python.outputModule basicModule
+            basicKotlinOutput = Kotlin.outputModule basicModule
         basicTypeScriptOutput `shouldBe` tsBasic
         basicFSharpOutput `shouldBe` fsBasic
         basicPythonOutput `shouldBe` pyBasic
+        basicKotlinOutput `shouldBe` ktBasic
 
       it "Mirrors reference output for `importExample.gotyno`" $ do
         importModule <-

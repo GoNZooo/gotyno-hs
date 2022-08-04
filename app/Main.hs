@@ -62,6 +62,14 @@ parseLanguages =
           <> value Nothing
           <> metavar "=|-|PATH"
       )
+    <*> option
+      (maybeReader parseOutputDestination)
+      ( long "kotlin"
+          <> long "kt"
+          <> help "Set Kotlin output"
+          <> value Nothing
+          <> metavar "=|-|PATH"
+      )
 
 parseOutputDestination :: String -> Maybe (Maybe OutputDestination)
 parseOutputDestination "=" = pure $ Just SameAsInput
