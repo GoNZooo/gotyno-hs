@@ -1,12 +1,13 @@
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
+import java.math.BigInteger
 
 data class Recruiter(
     val type: String = "Recruiter",
     val Name: String,
     val emails: Array<String?>,
     val recruiter: Recruiter?,
-    val created: gotynoHelpers.U64
+    val created: BigInteger
 )
 
 @JsonTypeInfo(

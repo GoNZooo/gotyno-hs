@@ -38,7 +38,8 @@ modulePrelude :: Text
 modulePrelude =
   mconcat
     [ "import com.fasterxml.jackson.annotation.*\n",
-      "import com.fasterxml.jackson.module.kotlin.*"
+      "import com.fasterxml.jackson.module.kotlin.*\n",
+      "import java.math.BigInteger"
     ]
 
 outputDefinition :: TypeDefinition -> Maybe Text
@@ -270,13 +271,13 @@ outputBasicType BasicString = "String"
 outputBasicType U8 = "UByte"
 outputBasicType U16 = "UShort"
 outputBasicType U32 = "UInt"
-outputBasicType U64 = "gotynoHelpers.U64"
-outputBasicType U128 = "gotynoHelpers.U128"
+outputBasicType U64 = "BigInteger"
+outputBasicType U128 = "BigInteger"
 outputBasicType I8 = "Byte"
 outputBasicType I16 = "Short"
 outputBasicType I32 = "Int"
-outputBasicType I64 = "gotynoHelpers.I64"
-outputBasicType I128 = "gotynoHelpers.U128"
+outputBasicType I64 = "BigInteger"
+outputBasicType I128 = "BigInteger"
 outputBasicType F32 = "Float"
 outputBasicType F64 = "Double"
 outputBasicType Boolean = "Boolean"
