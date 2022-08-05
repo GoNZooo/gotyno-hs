@@ -7,6 +7,7 @@ import CodeGeneration.Utilities
     upperCaseFirstCharacter,
   )
 import RIO
+import qualified RIO.List as List
 import qualified RIO.Text as Text
 import Types
 
@@ -118,7 +119,12 @@ outputEnumeration name values =
 
 outputPlainStruct :: DefinitionName -> [StructField] -> Text
 outputPlainStruct name fields =
-  let fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
+  let fieldsOutput = fields & List.sortBy literalCompare & fmap outputField & Text.intercalate ",\n    "
+      literalCompare (StructField _aName (LiteralType _al)) (StructField _bName (LiteralType _bl)) =
+        EQ
+      literalCompare (StructField _aName (LiteralType _al)) _other = GT
+      literalCompare _other (StructField _aName (LiteralType _bl)) = LT
+      literalCompare _a _b = EQ
       typeOutput = mconcat ["data class ", unDefinitionName name]
    in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n)"]
 

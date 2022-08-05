@@ -6,11 +6,11 @@ import java.math.BigInteger
 
 class Basic {
 data class Recruiter(
-    val type: String = "Recruiter",
     val Name: String,
     val emails: Array<String?>,
     val recruiter: Recruiter?,
-    val created: BigInteger
+    val created: BigInteger,
+    val type: String = "Recruiter"
 )
 
 @JsonTypeInfo(
