@@ -1,7 +1,10 @@
+package org.gotynoOutput
+
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import java.math.BigInteger
 
+class Basic {
 data class Recruiter(
     val type: String = "Recruiter",
     val Name: String,
@@ -31,12 +34,12 @@ data class SearchesParameters(
     val filters: Array<GetSearchesFilter>
 )
 
-enum class StillSize {
-    w92 = "w92",
-    w185 = "w185",
-    w300 = "w300",
-    h632 = "h632",
-    original = "original"
+enum class StillSize(val data: Any) {
+    w92("w92"),
+    w185("w185"),
+    w300("w300"),
+    h632("h632"),
+    original("original")
 }
 
 data class LogInData(
@@ -84,7 +87,7 @@ sealed class Event {
 sealed class Maybe<T> {
     @JsonTypeName("Nothing")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class Nothing(val data: Unit = Unit) : Maybe<T>()
+    data class Nothing<T>(val data: Unit = Unit) : Maybe<T>()
 
     @JsonTypeName("Just")
     data class Just<T>(val data: T) : Maybe<T>()
@@ -97,10 +100,10 @@ sealed class Maybe<T> {
 )
 sealed class Either<L, R> {
     @JsonTypeName("Left")
-    data class Left<L>(val data: L) : Either<L, R>()
+    data class Left<L, R>(val data: L) : Either<L, R>()
 
     @JsonTypeName("Right")
-    data class Right<R>(val data: R) : Either<L, R>()
+    data class Right<L, R>(val data: R) : Either<L, R>()
 }
 
 data class Person(
@@ -126,4 +129,5 @@ sealed class EmbeddedEvent {
     @JsonTypeName("SystemImploded")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     data class SystemImploded(val data: Unit = Unit) : EmbeddedEvent()
+}
 }

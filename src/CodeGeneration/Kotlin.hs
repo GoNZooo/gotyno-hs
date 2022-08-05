@@ -3,34 +3,40 @@ module CodeGeneration.Kotlin (outputModule) where
 import CodeGeneration.Utilities
   ( structFieldsFromReference,
     typeVariablesFrom,
-    typeVariablesFromDefinition,
     typeVariablesFromReference,
+    upperCaseFirstCharacter,
   )
 import RIO
 import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {name = ModuleName _name, definitions, imports, declarationNames} =
+outputModule Module {name = ModuleName name, definitions, imports, declarationNames} =
   let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
       importsOutput = imports & fmap outputImport & Text.intercalate "\n"
       outputImport (Import Module {name = ModuleName importName}) =
-        mconcat
-          -- @TODO: Figure out how to do relative imports
-          ["import qualified GotynoOutput.", importName, " as ", importName]
+        mconcat ["import org.gotynoOutput.", uppercaseModuleName importName]
       declarationImportsOutput =
         declarationNames
           & fmap
             ( \(ModuleName declarationModuleName) ->
-                mconcat ["import qualified ", declarationModuleName]
+                mconcat
+                  [ "import org.gotynoDeclarations.",
+                    uppercaseModuleName declarationModuleName
+                  ]
             )
           & Text.intercalate "\n"
+      moduleClassOutput = mconcat ["class ", uppercaseModuleName name, " {\n"]
    in mconcat
-        [ modulePrelude,
+        [ "package org.gotynoOutput\n\n",
+          modulePrelude,
           "\n\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
           if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
-          definitionOutput
+          moduleClassOutput,
+          definitionOutput,
+          "\n",
+          "}"
         ]
 
 modulePrelude :: Text
@@ -159,11 +165,8 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
   constructors & fmap outputDataClass & Text.intercalate "\n\n"
   where
     outputDataClass (Constructor name maybeFieldType) =
-      let maybeTypeVariables =
-            if null typeVariablesForConstructor
-              then ""
-              else mconcat ["<", joinTypeVariables typeVariablesForConstructor, ">"]
-          typeVariablesForConstructor = maybe [] (typeVariablesFrom >>> concat) maybeFieldType
+      let typeVariablesOutput =
+            if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataFieldOutput =
             mconcat ["val data: ", maybe "Unit = Unit" outputFieldType maybeFieldType]
           constructorInfo =
@@ -177,7 +180,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
             [ constructorInfo,
               "    data class ",
               unConstructorName name,
-              maybeTypeVariables,
+              typeVariablesOutput,
               "(",
               dataFieldOutput,
               ") : ",
@@ -193,12 +196,8 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
   constructors & fmap outputDataClass & Text.intercalate "\n\n"
   where
     outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
-      let maybeTypeVariables =
-            if null typeVariablesForConstructor
-              then ""
-              else mconcat ["<", joinTypeVariables typeVariablesForConstructor, ">"]
-          typeVariablesForConstructor =
-            maybe [] (typeVariablesFromReference >>> fromMaybe []) maybeDefinitionReference
+      let typeVariablesOutput =
+            if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
           outputFields =
             structFieldsFromReference >>> fmap outputField >>> Text.intercalate ", "
@@ -213,7 +212,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
             [ constructorInfo,
               "    data class ",
               unConstructorName name,
-              maybeTypeVariables,
+              typeVariablesOutput,
               "(",
               dataFieldOutput,
               ") : ",
@@ -390,3 +389,6 @@ fieldTypeName
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables typeVariables =
   typeVariables & fmap unTypeVariable & Text.intercalate ", "
+
+uppercaseModuleName :: Text -> Text
+uppercaseModuleName = upperCaseFirstCharacter
