@@ -4,6 +4,7 @@ import Brick
 import Brick.BChan
 import qualified CodeGeneration.FSharp as FSharp
 import qualified CodeGeneration.Haskell as Haskell
+import qualified CodeGeneration.Kotlin as Kotlin
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Compilation
@@ -25,7 +26,7 @@ runMain options@Options {watchMode = True} = do
   watchInputsWithTUI options
 runMain
   Options
-    { languages = Languages {typescript, fsharp, python, haskell},
+    { languages = Languages {typescript, fsharp, python, haskell, kotlin},
       inputs,
       verbose
     } = do
@@ -49,6 +50,10 @@ runMain
         forM_ haskell $
           outputLanguage HaskellOutput modules Haskell.outputModule "hs" >>> void
         endHaskell <- Time.getCurrentTime
+        startKotlin <- Time.getCurrentTime
+        forM_ kotlin $
+          outputLanguage KotlinOutput modules Kotlin.outputModule "kt" >>> void
+        endKotlin <- Time.getCurrentTime
         end <- Time.getCurrentTime
         let diff = Time.diffUTCTime end start
             diffParsing = Time.diffUTCTime postParsing start
@@ -56,12 +61,14 @@ runMain
             diffFS = Time.diffUTCTime endFS startFS
             diffPython = Time.diffUTCTime endPython startPython
             diffHaskell = Time.diffUTCTime endHaskell startHaskell
+            diffKotlin = Time.diffUTCTime endKotlin startKotlin
         when verbose $ do
           putStrLn $ "Parsing took: " <> show diffParsing
           putStrLn $ "Outputting TypeScript took: " <> show diffTS
           putStrLn $ "Outputting FSharp took: " <> show diffFS
           putStrLn $ "Outputting Python took: " <> show diffPython
           putStrLn $ "Outputting Haskell took: " <> show diffHaskell
+          putStrLn $ "Outputting Kotlin took: " <> show diffKotlin
           putStrLn $ "Entire compilation took: " <> show diff
       Left errors -> forM_ errors putStrLn
 

@@ -190,12 +190,14 @@ data OutputLanguage
   | PythonOutput
   | TypeScriptOutput
   | HaskellOutput
+  | KotlinOutput
   deriving (Eq, Show, Generic)
 
 data LanguageOutputStatistics = LanguageOutputStatistics
   { fsharpTime :: !(Maybe NominalDiffTime),
     pythonTime :: !(Maybe NominalDiffTime),
     typescriptTime :: !(Maybe NominalDiffTime),
-    haskellTime :: !(Maybe NominalDiffTime)
+    haskellTime :: !(Maybe NominalDiffTime),
+    kotlinTime :: !(Maybe NominalDiffTime)
   }
   deriving (Eq, Show, Generic)
