@@ -1,6 +1,10 @@
 module CodeGeneration.TypeScript (outputModule) where
 
-import CodeGeneration.Utilities (typeVariablesFrom, upperCaseFirstCharacter)
+import CodeGeneration.Utilities
+  ( structFieldsFromReference,
+    typeVariablesFrom,
+    upperCaseFirstCharacter,
+  )
 import RIO
 import qualified RIO.Text as Text
 import Types
@@ -249,11 +253,6 @@ outputEmbeddedCaseConstructor
               ],
             "}"
           ]
-
-structFieldsFromReference :: DefinitionReference -> [StructField]
-structFieldsFromReference
-  (DefinitionReference (TypeDefinition _name (Struct (PlainStruct fields)))) = fields
-structFieldsFromReference _other = error "struct fields from anything other than plain struct"
 
 embeddedConstructorsToConstructors :: [EmbeddedConstructor] -> [Constructor]
 embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor

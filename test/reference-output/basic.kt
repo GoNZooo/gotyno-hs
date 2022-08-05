@@ -120,8 +120,8 @@ data class Person(
     property = "type"
 )
 sealed class EmbeddedEvent {
-    @JsonTypeName("EmbeddedLogin")
-    data class EmbeddedLogin(val username: String, val password: String) : EmbeddedEvent()
+    @JsonTypeName("EmbeddedLogIn")
+    data class EmbeddedLogIn(val username: String, val password: String) : EmbeddedEvent()
 
     @JsonTypeName("SystemImploded")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)

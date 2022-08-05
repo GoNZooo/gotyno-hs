@@ -67,3 +67,8 @@ typeVariablesFromReference
      in if null typeVariables then Nothing else Just typeVariables
 typeVariablesFromReference (DeclarationReference _moduleName _definitionName) =
   Nothing
+
+structFieldsFromReference :: DefinitionReference -> [StructField]
+structFieldsFromReference
+  (DefinitionReference (TypeDefinition _name (Struct (PlainStruct fields)))) = fields
+structFieldsFromReference _other = error "struct fields from anything other than plain struct"

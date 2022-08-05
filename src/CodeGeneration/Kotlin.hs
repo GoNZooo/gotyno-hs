@@ -1,6 +1,11 @@
 module CodeGeneration.Kotlin (outputModule) where
 
-import CodeGeneration.Utilities (typeVariablesFrom, upperCaseFirstCharacter)
+import CodeGeneration.Utilities
+  ( structFieldsFromReference,
+    typeVariablesFrom,
+    typeVariablesFromDefinition,
+    typeVariablesFromReference,
+  )
 import RIO
 import qualified RIO.Text as Text
 import Types
@@ -11,16 +16,13 @@ outputModule Module {name = ModuleName _name, definitions, imports, declarationN
       importsOutput = imports & fmap outputImport & Text.intercalate "\n"
       outputImport (Import Module {name = ModuleName importName}) =
         mconcat
-          [ "import qualified GotynoOutput.",
-            haskellifyModuleName importName,
-            " as ",
-            haskellifyModuleName importName
-          ]
+          -- @TODO: Figure out how to do relative imports
+          ["import qualified GotynoOutput.", importName, " as ", importName]
       declarationImportsOutput =
         declarationNames
           & fmap
             ( \(ModuleName declarationModuleName) ->
-                mconcat ["import qualified ", haskellifyModuleName declarationModuleName]
+                mconcat ["import qualified ", declarationModuleName]
             )
           & Text.intercalate "\n"
    in mconcat
@@ -30,9 +32,6 @@ outputModule Module {name = ModuleName _name, definitions, imports, declarationN
           if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
           definitionOutput
         ]
-
-haskellifyModuleName :: Text -> Text
-haskellifyModuleName = upperCaseFirstCharacter
 
 modulePrelude :: Text
 modulePrelude =
@@ -57,26 +56,18 @@ outputDefinition (TypeDefinition name (EmbeddedUnion typeTag constructors)) =
   pure $ outputEmbeddedUnion name typeTag constructors
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
 
--- @TODO: add expansion of structs here to insert the fields of the struct into the constructors'
--- data classes
 outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName typeTag constructors =
-  let typeOutput = outputCaseUnion unionName typeTag constructorsAsConstructors []
-      constructorsAsConstructors = embeddedConstructorsToConstructors constructors
-   in mconcat
-        [ outputUnionTypeInfo typeTag,
-          "sealed class ",
-          unDefinitionName unionName,
-          " {\n",
-          typeOutput
-        ]
-
-embeddedConstructorsToConstructors :: [EmbeddedConstructor] -> [Constructor]
-embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor
-
-embeddedConstructorToConstructor :: EmbeddedConstructor -> Constructor
-embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
-  Constructor name (DefinitionReferenceType <$> reference)
+  mconcat
+    [ outputUnionTypeInfo typeTag,
+      "\n",
+      "sealed class ",
+      unDefinitionName unionName,
+      " {\n",
+      outputEmbeddedCaseUnion unionName typeTag constructors [],
+      "\n",
+      "}"
+    ]
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
@@ -173,7 +164,8 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
               then ""
               else mconcat ["<", joinTypeVariables typeVariablesForConstructor, ">"]
           typeVariablesForConstructor = maybe [] (typeVariablesFrom >>> concat) maybeFieldType
-          dataFieldOutput = mconcat ["val data: ", maybe "Unit = Unit" outputFieldType maybeFieldType]
+          dataFieldOutput =
+            mconcat ["val data: ", maybe "Unit = Unit" outputFieldType maybeFieldType]
           constructorInfo =
             mconcat $
               ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
@@ -181,6 +173,42 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
                   ["    @JsonInclude(JsonInclude.Include.NON_DEFAULT)\n"]
                   (const [])
                   maybeFieldType
+       in mconcat
+            [ constructorInfo,
+              "    data class ",
+              unConstructorName name,
+              maybeTypeVariables,
+              "(",
+              dataFieldOutput,
+              ") : ",
+              unDefinitionName unionName,
+              maybeUnionTypeVariableOutput,
+              "()"
+            ]
+    maybeUnionTypeVariableOutput =
+      if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+
+outputEmbeddedCaseUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> [TypeVariable] -> Text
+outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
+  constructors & fmap outputDataClass & Text.intercalate "\n\n"
+  where
+    outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
+      let maybeTypeVariables =
+            if null typeVariablesForConstructor
+              then ""
+              else mconcat ["<", joinTypeVariables typeVariablesForConstructor, ">"]
+          typeVariablesForConstructor =
+            maybe [] (typeVariablesFromReference >>> fromMaybe []) maybeDefinitionReference
+          dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
+          outputFields =
+            structFieldsFromReference >>> fmap outputField >>> Text.intercalate ", "
+          constructorInfo =
+            mconcat $
+              ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
+                <> maybe
+                  ["    @JsonInclude(JsonInclude.Include.NON_DEFAULT)\n"]
+                  (const [])
+                  maybeDefinitionReference
        in mconcat
             [ constructorInfo,
               "    data class ",
@@ -238,7 +266,7 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [haskellifyModuleName moduleName, ".", name]
+    mconcat [moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
