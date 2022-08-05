@@ -1,11 +1,6 @@
 module CodeGeneration.Kotlin (outputModule) where
 
-import CodeGeneration.Utilities
-  ( structFieldsFromReference,
-    typeVariablesFrom,
-    typeVariablesFromReference,
-    upperCaseFirstCharacter,
-  )
+import CodeGeneration.Utilities (structFieldsFromReference, upperCaseFirstCharacter)
 import RIO
 import qualified RIO.List as List
 import qualified RIO.Text as Text
@@ -130,18 +125,15 @@ outputPlainStruct name fields =
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
-  let fullName = unDefinitionName name <> joinTypeVariables typeVariables
-      deriveLensAndJSONOutput = mconcat ["deriveLensAndJSON ''", unDefinitionName name]
-      fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
+  let fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
+      typeVariablesOutput = mconcat ["<", joinTypeVariables typeVariables, ">"]
+      typeOutput = mconcat ["data class ", unDefinitionName name, typeVariablesOutput]
    in mconcat
-        [ mconcat ["data ", fullName, " = ", unDefinitionName name, "\n"],
-          "  { ",
+        [ typeOutput,
+          "(\n    ",
           fieldsOutput,
-          "\n  }",
           "\n",
-          "  deriving (Eq, Show, Generic)",
-          "\n\n",
-          deriveLensAndJSONOutput
+          ")"
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
@@ -271,7 +263,7 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [moduleName, ".", name]
+    mconcat [uppercaseModuleName moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -286,18 +278,18 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-     in mconcat [moduleName, ".", name, "<", appliedFieldTypes, ">"]
+     in mconcat [uppercaseModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-        maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
-     in mconcat ["(", moduleName, ".", name, maybeAppliedOutput, ")"]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
+        maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
+     in mconcat [uppercaseModuleName moduleName, ".", name, maybeAppliedOutput]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [moduleName, ".", name]
+  mconcat [uppercaseModuleName moduleName, ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "String"
