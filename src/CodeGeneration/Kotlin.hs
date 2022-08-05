@@ -269,7 +269,7 @@ outputDefinitionReference
       appliedTypes
       (TypeDefinition (DefinitionName name) _)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
      in mconcat [name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( AppliedImportedGenericReference
@@ -277,7 +277,7 @@ outputDefinitionReference
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
      in mconcat [uppercaseModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( GenericDeclarationReference

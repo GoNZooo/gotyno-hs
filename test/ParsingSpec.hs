@@ -33,7 +33,8 @@ data PythonReferenceOutput = PythonReferenceOutput
   }
 
 data KotlinReferenceOutput = KotlinReferenceOutput
-  { basic :: Text,
+  { basic :: !Text,
+    imports :: !Text,
     hasGeneric :: !Text
   }
 
@@ -59,7 +60,8 @@ kotlinReferenceOutput :: IO KotlinReferenceOutput
 kotlinReferenceOutput = do
   basic <- basicReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
-  pure KotlinReferenceOutput {basic, hasGeneric}
+  imports <- importReferenceOutput "kt"
+  pure KotlinReferenceOutput {basic, imports, hasGeneric}
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -97,7 +99,7 @@ spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
-  (KotlinReferenceOutput ktBasic ktHasGeneric) = do
+  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -414,6 +416,7 @@ spec
             importFSharpOutput = FSharp.outputModule importModule
         importTypeScriptOutput `shouldBe` tsImport
         importFSharpOutput `shouldBe` fsImport
+        Kotlin.outputModule importModule `shouldBe` ktImport
 
       it "Mirrors reference output for `hasGeneric.gotyno`" $ do
         hasGenericModule <-
