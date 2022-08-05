@@ -34,8 +34,9 @@ data PythonReferenceOutput = PythonReferenceOutput
 
 data KotlinReferenceOutput = KotlinReferenceOutput
   { basic :: !Text,
-    imports :: !Text,
-    hasGeneric :: !Text
+    import' :: !Text,
+    hasGeneric :: !Text,
+    generics :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -59,9 +60,10 @@ fSharpReferenceOutput = do
 kotlinReferenceOutput :: IO KotlinReferenceOutput
 kotlinReferenceOutput = do
   basic <- basicReferenceOutput "kt"
+  import' <- importReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
-  imports <- importReferenceOutput "kt"
-  pure KotlinReferenceOutput {basic, imports, hasGeneric}
+  generics <- genericsReferenceOutput "kt"
+  pure KotlinReferenceOutput {basic, import', hasGeneric, generics}
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -99,7 +101,7 @@ spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
-  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric) = do
+  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -440,6 +442,7 @@ spec
         genericsTypeScriptOutput `shouldBe` tsGenerics
         genericsFSharpOutput `shouldBe` fsGenerics
         genericsPythonOutput `shouldBe` pyGenerics
+        Kotlin.outputModule genericsModule `shouldBe` ktGenerics
 
       it "Mirrors reference output for `github.gotyno`" $ do
         gitHubModule <-

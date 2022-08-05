@@ -1,6 +1,6 @@
 module CodeGeneration.Kotlin (outputModule) where
 
-import CodeGeneration.Utilities (structFieldsFromReference, upperCaseFirstCharacter)
+import CodeGeneration.Utilities
 import RIO
 import qualified RIO.List as List
 import qualified RIO.Text as Text
@@ -72,25 +72,27 @@ outputEmbeddedUnion unionName typeTag constructors =
     ]
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
-outputUntaggedUnion unionName cases =
-  let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
-      deriveLensAndJSONOutput =
-        mconcat ["deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''", unDefinitionName unionName]
-      unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
-      outputCaseLine fieldType =
-        mconcat
-          [ unDefinitionName unionName,
-            fieldTypeName fieldType,
-            " ",
-            outputFieldType fieldType
-          ]
-   in mconcat
-        [ typeOutput,
-          "\n",
-          "  deriving (Eq, Show, Generic)",
-          "\n\n",
-          deriveLensAndJSONOutput
-        ]
+outputUntaggedUnion _unionName _cases =
+  "// @TODO: add support for untagged unions"
+
+-- let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
+--     deriveLensAndJSONOutput =
+--       mconcat ["deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''", unDefinitionName unionName]
+--     unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
+--     outputCaseLine fieldType =
+--       mconcat
+--         [ unDefinitionName unionName,
+--           fieldTypeName fieldType,
+--           " ",
+--           outputFieldType fieldType
+--         ]
+--  in mconcat
+--       [ typeOutput,
+--         "\n",
+--         "  deriving (Eq, Show, Generic)",
+--         "\n\n",
+--         deriveLensAndJSONOutput
+--       ]
 
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
 outputEnumeration name values =
@@ -197,8 +199,8 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
-          outputFields =
-            structFieldsFromReference >>> fmap outputField >>> Text.intercalate ", "
+          outputFields reference =
+            mconcat ["@JsonValue(true) val data: ", definitionReferenceName reference]
           constructorInfo =
             mconcat $
               ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
@@ -209,7 +211,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
        in mconcat
             [ constructorInfo,
               "    data class ",
-              unConstructorName name,
+              name & unConstructorName & upperCaseFirstCharacter,
               typeVariablesOutput,
               "(",
               dataFieldOutput,
@@ -390,3 +392,23 @@ joinTypeVariables typeVariables =
 
 uppercaseModuleName :: Text -> Text
 uppercaseModuleName = upperCaseFirstCharacter
+
+definitionReferenceName :: DefinitionReference -> Text
+definitionReferenceName (DefinitionReference (TypeDefinition name _)) = unDefinitionName name
+definitionReferenceName (ImportedDefinitionReference moduleName (TypeDefinition name _)) =
+  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
+definitionReferenceName (AppliedGenericReference fieldTypes (TypeDefinition name _)) =
+  mconcat [unDefinitionName name, "<", fieldTypes & fmap fieldTypeName & mconcat, ">"]
+definitionReferenceName (AppliedImportedGenericReference moduleName _ (TypeDefinition name _)) =
+  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
+definitionReferenceName (DeclarationReference moduleName name) =
+  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
+definitionReferenceName (GenericDeclarationReference moduleName name (AppliedTypes fieldTypes)) =
+  mconcat
+    [ moduleName & unModuleName & uppercaseModuleName,
+      ".",
+      unDefinitionName name,
+      "<",
+      fieldTypes & fmap fieldTypeName & mconcat,
+      ">"
+    ]

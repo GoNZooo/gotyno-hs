@@ -124,7 +124,7 @@ data class Person(
 )
 sealed class EmbeddedEvent {
     @JsonTypeName("EmbeddedLogIn")
-    data class EmbeddedLogIn(val username: String, val password: String) : EmbeddedEvent()
+    data class EmbeddedLogIn(@JsonValue(true) val data: LogInData) : EmbeddedEvent()
 
     @JsonTypeName("SystemImploded")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
