@@ -102,7 +102,7 @@ outputEnumeration name values =
         values
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                mconcat ["    ", i, " = ", outputLiteralValue literal]
+                mconcat ["    ", i, "(", outputLiteralValue literal, ")"]
             )
           & Text.intercalate ",\n"
       outputLiteralValue (LiteralString t) = mconcat ["\"", t, "\""]
@@ -110,7 +110,7 @@ outputEnumeration name values =
       outputLiteralValue (LiteralFloat f) = tshow f
       outputLiteralValue (LiteralBoolean b) = bool "false" "true" b
    in mconcat
-        [ mconcat ["enum class ", unDefinitionName name, " {\n"],
+        [ mconcat ["enum class ", unDefinitionName name, "(val data: Any) {\n"],
           valuesOutput,
           "\n",
           "}"
