@@ -13,7 +13,8 @@ data Languages = Languages
   { typescript :: !(Maybe OutputDestination),
     fsharp :: !(Maybe OutputDestination),
     python :: !(Maybe OutputDestination),
-    haskell :: !(Maybe OutputDestination)
+    haskell :: !(Maybe OutputDestination),
+    kotlin :: !(Maybe OutputDestination)
   }
   deriving (Eq, Show)
 
@@ -59,7 +60,7 @@ newtype TypeTag = TypeTag Text
 newtype TypeVariable = TypeVariable {unTypeVariable :: Text}
   deriving (Eq, Show)
 
-newtype ConstructorName = ConstructorName Text
+newtype ConstructorName = ConstructorName {unConstructorName :: Text}
   deriving (Eq, Show)
 
 newtype FieldName = FieldName {unFieldName :: Text}
@@ -189,12 +190,14 @@ data OutputLanguage
   | PythonOutput
   | TypeScriptOutput
   | HaskellOutput
+  | KotlinOutput
   deriving (Eq, Show, Generic)
 
 data LanguageOutputStatistics = LanguageOutputStatistics
   { fsharpTime :: !(Maybe NominalDiffTime),
     pythonTime :: !(Maybe NominalDiffTime),
     typescriptTime :: !(Maybe NominalDiffTime),
-    haskellTime :: !(Maybe NominalDiffTime)
+    haskellTime :: !(Maybe NominalDiffTime),
+    kotlinTime :: !(Maybe NominalDiffTime)
   }
   deriving (Eq, Show, Generic)

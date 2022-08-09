@@ -47,7 +47,7 @@ typeVariablesFromReference (DefinitionReference definition) = typeVariablesFromD
 typeVariablesFromReference (ImportedDefinitionReference _moduleName definition) =
   typeVariablesFromDefinition definition
 typeVariablesFromReference (AppliedGenericReference fieldTypes _definition) =
-  let typeVariables = fieldTypes & fmap typeVariablesFrom & catMaybes & join
+  let typeVariables = fieldTypes & mapMaybe typeVariablesFrom & join
    in if null typeVariables then Nothing else Just typeVariables
 typeVariablesFromReference
   ( AppliedImportedGenericReference
@@ -55,7 +55,7 @@ typeVariablesFromReference
       (AppliedTypes fieldTypes)
       _definition
     ) =
-    let typeVariables = fieldTypes & fmap typeVariablesFrom & catMaybes & join
+    let typeVariables = fieldTypes & mapMaybe typeVariablesFrom & join
      in if null typeVariables then Nothing else Just typeVariables
 typeVariablesFromReference
   ( GenericDeclarationReference
@@ -63,7 +63,12 @@ typeVariablesFromReference
       _definitionName
       (AppliedTypes appliedTypes)
     ) =
-    let typeVariables = appliedTypes & fmap typeVariablesFrom & catMaybes & join
+    let typeVariables = appliedTypes & mapMaybe typeVariablesFrom & join
      in if null typeVariables then Nothing else Just typeVariables
 typeVariablesFromReference (DeclarationReference _moduleName _definitionName) =
   Nothing
+
+structFieldsFromReference :: DefinitionReference -> [StructField]
+structFieldsFromReference
+  (DefinitionReference (TypeDefinition _name (Struct (PlainStruct fields)))) = fields
+structFieldsFromReference _other = error "struct fields from anything other than plain struct"
