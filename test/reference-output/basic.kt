@@ -108,7 +108,7 @@ sealed class Either<L, R> {
 
 data class Person(
     val name: String,
-    val age: UByte,
+    val age: Byte,
     val efficiency: Float,
     val on_vacation: Boolean,
     val hobbies: Array<String>,

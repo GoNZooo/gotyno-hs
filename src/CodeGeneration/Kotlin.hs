@@ -65,27 +65,68 @@ outputEmbeddedUnion unionName typeTag constructors =
     ]
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
-outputUntaggedUnion _unionName _cases =
-  "// @TODO: add support for untagged unions"
-
--- let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
---     deriveLensAndJSONOutput =
---       mconcat ["deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''", unDefinitionName unionName]
---     unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
---     outputCaseLine fieldType =
---       mconcat
---         [ unDefinitionName unionName,
---           fieldTypeName fieldType,
---           " ",
---           outputFieldType fieldType
---         ]
---  in mconcat
---       [ typeOutput,
---         "\n",
---         "  deriving (Eq, Show, Generic)",
---         "\n\n",
---         deriveLensAndJSONOutput
---       ]
+outputUntaggedUnion unionName@(DefinitionName n) cases =
+  let typeHeaderOutput = mconcat ["sealed class ", unDefinitionName unionName, " {"]
+      jsonSerializationAnnotation =
+        mconcat ["@JsonDeserialize(using = ", unDefinitionName unionName, ".Deserializer::class)"]
+      dataClassesOutput = cases & fmap outputDataClass & Text.intercalate "\n"
+      caseName fieldType = "_" <> fieldTypeName fieldType
+      sortStringLast = List.sortBy compareFieldTypes
+      compareFieldTypes (BasicType BasicString) _other = GT
+      compareFieldTypes _other (BasicType BasicString) = LT
+      compareFieldTypes _other _other2 = EQ
+      outputDataClass fieldType =
+        mconcat
+          [ "    data class ",
+            caseName fieldType,
+            "(@JsonValue(true) val data: ",
+            outputFieldType fieldType,
+            ") : ",
+            unDefinitionName unionName,
+            "()"
+          ]
+      deserializerClassOutput =
+        mconcat
+          [ "    class Deserializer : StdDeserializer<",
+            n,
+            ">(",
+            n,
+            "::class.java) {\n",
+            "        override fun deserialize(p: JsonParser, ctxt: DeserializationContext): ",
+            n,
+            " {\n",
+            "            val text = ctxt.readTree(p).toString()\n",
+            "            val mapper = jacksonObjectMapper()\n\n",
+            -- @NOTE: Jackson will read any scalar value as a string because it's badly designed,
+            -- so we need to read strings last.
+            cases & sortStringLast & fmap outputDeserializerCase & Text.intercalate "\n",
+            "\n",
+            mconcat
+              [ "            throw ParseException(\"Could not deserialize to class '",
+                n,
+                "'\", 0)"
+              ],
+            "\n",
+            "        }\n",
+            "    }"
+          ]
+      outputDeserializerCase fieldType =
+        mconcat
+          [ "            try { return ",
+            caseName fieldType,
+            "(mapper.readValue(text)) } catch (_: Exception)  {}"
+          ]
+   in mconcat
+        [ jsonSerializationAnnotation,
+          "\n",
+          typeHeaderOutput,
+          "\n",
+          dataClassesOutput,
+          "\n\n",
+          deserializerClassOutput,
+          "\n",
+          "}"
+        ]
 
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
 outputEnumeration name values =
@@ -288,9 +329,9 @@ outputDefinitionReference (DeclarationReference (ModuleName moduleName) (Definit
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "String"
-outputBasicType U8 = "UByte"
-outputBasicType U16 = "UShort"
-outputBasicType U32 = "UInt"
+outputBasicType U8 = "Byte"
+outputBasicType U16 = "Short"
+outputBasicType U32 = "Int"
 outputBasicType U64 = "BigInteger"
 outputBasicType U128 = "BigInteger"
 outputBasicType I8 = "Byte"
@@ -318,18 +359,18 @@ fieldTypeName (LiteralType (LiteralFloat f)) =
 fieldTypeName (LiteralType (LiteralInteger i)) = mconcat ["Integer", tshow i]
 fieldTypeName (RecursiveReferenceType (DefinitionName name)) = name
 fieldTypeName (BasicType BasicString) = "String"
-fieldTypeName (BasicType F32) = "F32"
-fieldTypeName (BasicType F64) = "F64"
-fieldTypeName (BasicType U8) = "U8"
-fieldTypeName (BasicType U16) = "U16"
-fieldTypeName (BasicType U32) = "U32"
-fieldTypeName (BasicType U64) = "U64"
-fieldTypeName (BasicType U128) = "U128"
-fieldTypeName (BasicType I8) = "I8"
-fieldTypeName (BasicType I16) = "I16"
-fieldTypeName (BasicType I32) = "I32"
-fieldTypeName (BasicType I64) = "I64"
-fieldTypeName (BasicType I128) = "I128"
+fieldTypeName (BasicType F32) = "Float"
+fieldTypeName (BasicType F64) = "Double"
+fieldTypeName (BasicType U8) = "Byte"
+fieldTypeName (BasicType U16) = "Short"
+fieldTypeName (BasicType U32) = "Int"
+fieldTypeName (BasicType U64) = "BigInteger"
+fieldTypeName (BasicType U128) = "BigInteger"
+fieldTypeName (BasicType I8) = "Byte"
+fieldTypeName (BasicType I16) = "Short"
+fieldTypeName (BasicType I32) = "Int"
+fieldTypeName (BasicType I64) = "BigInteger"
+fieldTypeName (BasicType I128) = "BigInteger"
 fieldTypeName (BasicType Boolean) = "Boolean"
 fieldTypeName (TypeVariableReferenceType (TypeVariable t)) = t
 fieldTypeName (ComplexType (ArrayType _ arrayFieldType)) =

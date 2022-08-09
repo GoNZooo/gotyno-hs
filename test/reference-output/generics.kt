@@ -10,7 +10,7 @@ import org.gotynoOutput.HasGeneric
 class Generics {
 data class UsingGenerics(
     val field1: Basic.Maybe<String>,
-    val field2: Basic.Either<String, UInt>
+    val field2: Basic.Either<String, Int>
 )
 
 data class UsingOwnGenerics<T>(
@@ -19,7 +19,7 @@ data class UsingOwnGenerics<T>(
 
 data class KnownForMovie(
     val poster_path: String?,
-    val id: UInt,
+    val id: Int,
     val title: String?,
     val vote_average: Float,
     val release_date: String?,
@@ -29,7 +29,7 @@ data class KnownForMovie(
 
 data class KnownForShow(
     val poster_path: String?,
-    val id: UInt,
+    val id: Int,
     val vote_average: Float,
     val overview: String,
     val first_air_date: String?,
@@ -37,11 +37,30 @@ data class KnownForShow(
     val media_type: String = "tv"
 )
 
-// @TODO: add support for untagged unions
+@JsonDeserialize(using = KnownFor.Deserializer::class)
+sealed class KnownFor {
+    data class _KnownForShow(@JsonValue(true) val data: KnownForShow) : KnownFor()
+    data class _KnownForMovie(@JsonValue(true) val data: KnownForMovie) : KnownFor()
+    data class _String(@JsonValue(true) val data: String) : KnownFor()
+    data class _Float(@JsonValue(true) val data: Float) : KnownFor()
+
+    class Deserializer : StdDeserializer<KnownFor>(KnownFor::class.java) {
+        override fun deserialize(p: JsonParser, ctxt: DeserializationContext): KnownFor {
+            val text = ctxt.readTree(p).toString()
+            val mapper = jacksonObjectMapper()
+
+            try { return _KnownForShow(mapper.readValue(text)) } catch (_: Exception)  {}
+            try { return _KnownForMovie(mapper.readValue(text)) } catch (_: Exception)  {}
+            try { return _Float(mapper.readValue(text)) } catch (_: Exception)  {}
+            try { return _String(mapper.readValue(text)) } catch (_: Exception)  {}
+            throw ParseException("Could not deserialize to class 'KnownFor'", 0)
+        }
+    }
+}
 
 data class KnownForMovieWithoutTypeTag(
     val poster_path: String?,
-    val id: UInt,
+    val id: Int,
     val title: String?,
     val vote_average: Float,
     val release_date: String?,
@@ -50,7 +69,7 @@ data class KnownForMovieWithoutTypeTag(
 
 data class KnownForShowWithoutTypeTag(
     val poster_path: String?,
-    val id: UInt,
+    val id: Int,
     val vote_average: Float,
     val overview: String,
     val first_air_date: String?,
