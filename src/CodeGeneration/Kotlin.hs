@@ -213,7 +213,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
        in mconcat
             [ constructorInfo,
               "    data class ",
-              unConstructorName name,
+              name & unConstructorName & upperCaseFirstCharacter,
               typeVariablesOutput,
               "(",
               dataFieldOutput,
