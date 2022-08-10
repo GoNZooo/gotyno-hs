@@ -7,7 +7,7 @@ import java.math.BigInteger
 class Basic {
 data class Recruiter(
     val Name: String,
-    val emails: Array<String?>,
+    val emails: ArrayList<String?>,
     val recruiter: Recruiter?,
     val created: BigInteger,
     val type: String = "Recruiter"
@@ -31,7 +31,7 @@ sealed class GetSearchesFilter {
 }
 
 data class SearchesParameters(
-    val filters: Array<GetSearchesFilter>
+    val filters: ArrayList<GetSearchesFilter>
 )
 
 enum class StillSize(val data: Any) {
@@ -73,10 +73,10 @@ sealed class Event {
     data class LogOut(val data: UserId) : Event()
 
     @JsonTypeName("JoinChannels")
-    data class JoinChannels(val data: Array<Channel>) : Event()
+    data class JoinChannels(val data: ArrayList<Channel>) : Event()
 
     @JsonTypeName("SetEmails")
-    data class SetEmails(val data: Array<Email>) : Event()
+    data class SetEmails(val data: ArrayList<Email>) : Event()
 }
 
 @JsonTypeInfo(
@@ -111,8 +111,8 @@ data class Person(
     val age: Byte,
     val efficiency: Float,
     val on_vacation: Boolean,
-    val hobbies: Array<String>,
-    val last_fifteen_comments: Array<String>,
+    val hobbies: ArrayList<String>,
+    val last_fifteen_comments: ArrayList<String>,
     val recruiter: Recruiter,
     val spouse: Maybe<Person>
 )

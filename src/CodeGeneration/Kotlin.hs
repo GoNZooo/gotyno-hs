@@ -283,9 +283,9 @@ outputFieldType (BasicType basicType) = outputBasicType basicType
 outputFieldType (ComplexType (OptionalType fieldType)) =
   mconcat [outputFieldType fieldType, "?"]
 outputFieldType (ComplexType (ArrayType _size fieldType)) =
-  mconcat ["Array<", outputFieldType fieldType, ">"]
+  mconcat ["ArrayList<", outputFieldType fieldType, ">"]
 outputFieldType (ComplexType (SliceType fieldType)) =
-  mconcat ["Array<", outputFieldType fieldType, ">"]
+  mconcat ["ArrayList<", outputFieldType fieldType, ">"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
 outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =

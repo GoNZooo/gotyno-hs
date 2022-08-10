@@ -101,11 +101,11 @@ data class Issue(
     val number: Int,
     val title: String,
     val user: UserData,
-    val labels: Array<Label>,
+    val labels: ArrayList<Label>,
     val state: String,
     val locked: Boolean,
     val assignee: UserData?,
-    val assignees: Array<UserData>,
+    val assignees: ArrayList<UserData>,
     val comments: Int,
     val created_at: String,
     val updated_at: String,
@@ -123,9 +123,9 @@ data class Commit(
     val url: String,
     val author: Author,
     val committer: Author,
-    val added: Array<String>,
-    val removed: Array<String>,
-    val modified: Array<String>
+    val added: ArrayList<String>,
+    val removed: ArrayList<String>,
+    val modified: ArrayList<String>
 )
 
 data class PushData(
@@ -140,7 +140,7 @@ data class PushData(
     val deleted: Boolean,
     val forced: Boolean,
     val compare: String,
-    val commits: Array<Commit>,
+    val commits: ArrayList<Commit>,
     val head_commit: Commit
 )
 
@@ -157,6 +157,6 @@ sealed class WebhookEvent {
 data class RepositorySearchData(
     val total_count: Int,
     val incomplete_results: Boolean,
-    val items: Array<Repository>
+    val items: ArrayList<Repository>
 )
 }
