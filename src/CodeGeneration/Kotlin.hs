@@ -30,6 +30,11 @@ modulePrelude =
   mconcat
     [ "import com.fasterxml.jackson.annotation.*\n",
       "import com.fasterxml.jackson.module.kotlin.*\n",
+      "import com.fasterxml.jackson.databind.annotation.*\n",
+      "import com.fasterxml.jackson.databind.*\n",
+      "import com.fasterxml.jackson.core.*\n",
+      "import com.fasterxml.jackson.databind.deser.std.*\n",
+      "import java.text.ParseException\n",
       "import java.math.BigInteger"
     ]
 
