@@ -323,9 +323,9 @@ outputDefinitionReference
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [uppercaseModuleName moduleName, ".", name, maybeAppliedOutput]
+     in mconcat [uppercaseModuleName moduleName, "_", name, maybeAppliedOutput]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [uppercaseModuleName moduleName, ".", name]
+  mconcat [uppercaseModuleName moduleName, "_", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "String"
@@ -440,7 +440,7 @@ definitionReferenceName (DeclarationReference moduleName name) =
 definitionReferenceName (GenericDeclarationReference moduleName name (AppliedTypes fieldTypes)) =
   mconcat
     [ moduleName & unModuleName & uppercaseModuleName,
-      ".",
+      "_",
       unDefinitionName name,
       "<",
       fieldTypes & fmap fieldTypeName & mconcat,

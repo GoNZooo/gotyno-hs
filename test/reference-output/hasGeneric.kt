@@ -26,8 +26,8 @@ data class Holder<T>(
 )
 
 data class MaybeHolder<T>(
-    val value: External.Option<T>,
-    val otherValue: Other.Plain
+    val value: External_Option<T>,
+    val otherValue: Other_Plain
 )
 
 @JsonTypeInfo(
@@ -37,9 +37,9 @@ data class MaybeHolder<T>(
 )
 sealed class HasGenericEvent<T> {
     @JsonTypeName("PlainEvent")
-    data class PlainEvent<T>(val data: Other.Plain) : HasGenericEvent<T>()
+    data class PlainEvent<T>(val data: Other_Plain) : HasGenericEvent<T>()
 
     @JsonTypeName("GenericEvent")
-    data class GenericEvent<T>(val data: External.Option<T>) : HasGenericEvent<T>()
+    data class GenericEvent<T>(val data: External_Option<T>) : HasGenericEvent<T>()
 }
 }
