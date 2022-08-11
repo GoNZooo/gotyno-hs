@@ -192,17 +192,18 @@ class Channel:
 @dataclass(frozen=True)
 class Email:
     value: str
+    public: bool
 
     @staticmethod
     def validate(value: validation.Unknown) -> validation.ValidationResult['Email']:
-        return validation.validate_interface(value, {'value': validation.validate_string}, Email)
+        return validation.validate_interface(value, {'value': validation.validate_string, 'public': validation.validate_bool}, Email)
 
     @staticmethod
     def decode(string: typing.Union[str, bytes]) -> validation.ValidationResult['Email']:
         return validation.validate_from_string(string, Email.validate)
 
     def to_json(self) -> typing.Dict[str, typing.Any]:
-        return {'value': self.value}
+        return {'value': self.value, 'public': self.public}
 
     def encode(self) -> str:
         return json.dumps(self.to_json())

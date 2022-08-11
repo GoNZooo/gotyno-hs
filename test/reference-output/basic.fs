@@ -167,12 +167,14 @@ type Channel =
 type Email =
     {
         Value: string
+        Public: bool
     }
 
     static member Decoder: Decoder<Email> =
         Decode.object (fun get ->
             {
                 Value = get.Required.Field "value" Decode.string
+                Public = get.Required.Field "public" Decode.bool
             }
         )
 
@@ -180,6 +182,7 @@ type Email =
         Encode.object
             [
                 "value", Encode.string value.Value
+                "public", Encode.bool value.Public
             ]
 
 type Event =

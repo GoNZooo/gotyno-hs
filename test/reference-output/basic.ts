@@ -150,14 +150,15 @@ export function validateChannel(value: unknown): svt.ValidationResult<Channel> {
 
 export type Email = {
     value: string;
+    public: boolean;
 };
 
 export function isEmail(value: unknown): value is Email {
-    return svt.isInterface<Email>(value, {value: svt.isString});
+    return svt.isInterface<Email>(value, {value: svt.isString, public: svt.isBoolean});
 }
 
 export function validateEmail(value: unknown): svt.ValidationResult<Email> {
-    return svt.validate<Email>(value, {value: svt.validateString});
+    return svt.validate<Email>(value, {value: svt.validateString, public: svt.validateBoolean});
 }
 
 export type Event = LogIn | LogOut | JoinChannels | SetEmails;

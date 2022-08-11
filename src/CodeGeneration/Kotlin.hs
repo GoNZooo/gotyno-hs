@@ -136,7 +136,7 @@ outputEnumeration name values =
         values
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                mconcat ["    ", i, "(", outputLiteralValue literal, ")"]
+                mconcat ["    ", Text.toUpper i, "(", outputLiteralValue literal, ")"]
             )
           & Text.intercalate ",\n"
       outputLiteralValue (LiteralString t) = mconcat ["\"", t, "\""]

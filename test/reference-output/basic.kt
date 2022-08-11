@@ -2,6 +2,11 @@ package org.gotynoOutput
 
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
+import com.fasterxml.jackson.databind.annotation.*
+import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.core.*
+import com.fasterxml.jackson.databind.deser.std.*
+import java.text.ParseException
 import java.math.BigInteger
 
 class Basic {
@@ -35,11 +40,11 @@ data class SearchesParameters(
 )
 
 enum class StillSize(val data: Any) {
-    w92("w92"),
-    w185("w185"),
-    w300("w300"),
-    h632("h632"),
-    original("original")
+    W92("w92"),
+    W185("w185"),
+    W300("w300"),
+    H632("h632"),
+    ORIGINAL("original")
 }
 
 data class LogInData(
@@ -57,7 +62,8 @@ data class Channel(
 )
 
 data class Email(
-    val value: String
+    val value: String,
+    val public: Boolean
 )
 
 @JsonTypeInfo(
