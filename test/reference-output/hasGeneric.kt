@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import java.math.BigInteger
 
-import org.gotynoDeclarations.External
-import org.gotynoDeclarations.Other
+import org.gotynoDeclarations.*
 
 class HasGeneric {
 @JsonTypeInfo(

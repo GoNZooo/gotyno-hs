@@ -12,16 +12,13 @@ outputModule Module {name = ModuleName name, definitions, imports, declarationNa
       importsOutput = imports & fmap outputImport & Text.intercalate "\n"
       outputImport (Import Module {name = ModuleName importName}) =
         mconcat ["import org.gotynoOutput.", uppercaseModuleName importName]
-      declarationImportsOutput = declarationNames & fmap outputDeclaration & Text.intercalate "\n"
-      outputDeclaration (ModuleName moduleName) =
-        mconcat ["import org.gotynoDeclarations.", uppercaseModuleName moduleName]
       moduleClassOutput = mconcat ["class ", uppercaseModuleName name, " {\n"]
    in mconcat
         [ "package org.gotynoOutput\n\n",
           modulePrelude,
           "\n\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
-          if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
+          if null declarationNames then "" else "import org.gotynoDeclarations.*" <> "\n\n",
           moduleClassOutput,
           definitionOutput,
           "\n",
