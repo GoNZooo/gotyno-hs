@@ -10,10 +10,10 @@ ghc-options:
 
 extra-deps:
 - github: quanterall/qtility
-  commit: a077ce1a8275e0803acf71edc5817662f0f8a2ba
+  commit: dd5ea49082c6f8eff4d5d2d688afb2b9553fc4cf
   subdirs:
   - qtility
-  # nix-sha256: sha256-/g9d9gNRIxAGJAJjRKzAoNpf1hSE5XuCb2kPkGuH+iQ=
+  # nix-sha256: sha256-1YJDc8R46hUeFFpoL8KmuAJTdo1jUzJap673ZLpSoYo=
 
 nix:
   enable: false

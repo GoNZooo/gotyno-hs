@@ -2,7 +2,7 @@ module HaskellOutputSpec where
 
 import qualified CodeGeneration.Haskell as Haskell
 import Parsing
-import RIO
+import Qtility
 import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Test.Hspec

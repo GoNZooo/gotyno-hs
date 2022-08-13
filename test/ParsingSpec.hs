@@ -5,7 +5,7 @@ import qualified CodeGeneration.Kotlin as Kotlin
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import Parsing
-import RIO
+import Qtility
 import qualified RIO.List.Partial as PartialList
 import Test.Hspec
 import Types

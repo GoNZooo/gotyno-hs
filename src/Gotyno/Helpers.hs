@@ -37,10 +37,10 @@ gotynoOptions typeTag =
     & sumEncoding .~ TaggedObject {tagFieldName = typeTag, contentsFieldName = "data"}
 
 enumFromJSON :: [(Value, a)] -> Value -> Parser a
-enumFromJSON values v =
-  let expectedValues = values & map (fst >>> tshow) & Text.intercalate ", " & Text.unpack
+enumFromJSON values' v =
+  let expectedValues = values' & map (fst >>> tshow) & Text.intercalate ", " & Text.unpack
       actualValue = show v
-   in values
+   in values'
         & List.lookup v
         & maybe
           (fail $ mconcat ["Expected one of: ", expectedValues, " but got: ", actualValue])

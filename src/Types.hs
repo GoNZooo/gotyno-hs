@@ -1,6 +1,6 @@
 module Types where
 
-import RIO
+import Qtility
 import RIO.Time (NominalDiffTime)
 
 data OutputDestination

@@ -10,7 +10,7 @@ import qualified CodeGeneration.TypeScript as TypeScript
 import Compilation
 import qualified Graphics.Vty as Vty
 import qualified Parsing
-import RIO
+import Qtility
 import qualified RIO.Directory as Directory
 import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
