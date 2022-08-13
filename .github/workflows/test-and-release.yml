@@ -43,7 +43,7 @@ jobs:
           TARBALL_NAME="gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz"
           mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
           tar czf gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs
-          echo "Created tarball '$TARBALL_NAME'"
+          echo "Created tarball '$TARBALL_NAME' for ref '${{ github.ref }}'"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
