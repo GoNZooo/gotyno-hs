@@ -1,5 +1,5 @@
 name:    gotyno-hs
-version: 1.2.3
+version: 1.2.4
 synopsis: A type definition compiler supporting multiple output languages.
 description: Compiles type definitions into F#, TypeScript and Python, with validators, decoders and encoders.
 license: BSD2
