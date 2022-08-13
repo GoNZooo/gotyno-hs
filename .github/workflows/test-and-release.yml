@@ -40,7 +40,6 @@ jobs:
       - name: Copy binary
         run: |
           ABSOLUTE_BINARY_PATH=`stack path --local-install-root`
-          VERSION=`stack local 
           TARBALL_NAME="gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz"
           mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
           tar czf gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs
