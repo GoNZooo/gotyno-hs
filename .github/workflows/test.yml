@@ -3,35 +3,34 @@ name: Run tests
 on:
   pull_request:
     branches:
-    - main
+      - main
     paths:
-    - src/**
-    - app/**
-    - test/**
-    - examples/**
-    - package.yaml
-    - stack.yaml
-    - weeder.dhall
-  
+      - src/**
+      - app/**
+      - test/**
+      - examples/**
+      - package.yaml
+      - stack.yaml
+      - weeder.dhall
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v3
-      name: Cache ~/.stack
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-stack-global-
-    - uses: actions/cache@v3
-      name: Cache .stack-work
-      with:
-        path: .stack-work
-        key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('services/*/**/*.hs') }}
-        restore-keys: |
-          ${{ runner.os }}-stack-work-
-    - name: Test
-      run: stack build --test
-  
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        name: Cache ~/.stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-
+      - uses: actions/cache@v3
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('services/*/**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-
+      - name: Test
+        run: stack build --test

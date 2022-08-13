@@ -3,49 +3,48 @@ name: Run tests and maybe build release
 on:
   push:
     branches:
-    - main
+      - main
     paths:
-    - src/**
-    - app/**
-    - test/**
-    - examples/**
-    - package.yaml
-    - stack.yaml
-    - weeder.dhall
-  
+      - src/**
+      - app/**
+      - test/**
+      - examples/**
+      - package.yaml
+      - stack.yaml
+      - weeder.dhall
+
 jobs:
   test-and-release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v3
-      name: Cache ~/.stack
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-stack-global-
-    - uses: actions/cache@v3
-      name: Cache .stack-work
-      with:
-        path: .stack-work
-        key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('services/*/**/*.hs') }}
-        restore-keys: |
-          ${{ runner.os }}-stack-work-
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        name: Cache ~/.stack
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-
+      - uses: actions/cache@v3
+        name: Cache .stack-work
+        with:
+          path: .stack-work
+          key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('services/*/**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-
 
-    - name: Test
-      run: stack build --test
+      - name: Test
+        run: stack build --test
 
-    - name: Build release
-      if: startsWith(github.ref, 'refs/tags')
-      run: |
-        ABSOLUTE_BINARY_PATH=`stack path --local-install-root`
-        VERSION=`stack query locals gotyno-hs | awk '/version:/ {print $2}'`
-        mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
-        tar czf gotyno-hs-$VERSION.tar.gz gotyno-hs
-    
-    - name: Create release
-      uses: softprops/action-gh-release@v0.1.14
-      with:
-        files: gotyno-hs-*.tar.gz
-  
+      - name: Build release
+        if: startsWith(github.ref, 'refs/tags')
+        run: |
+          ABSOLUTE_BINARY_PATH=`stack path --local-install-root`
+          VERSION=`stack query locals gotyno-hs | awk '/version:/ {print $2}'`
+          mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
+          tar czf gotyno-hs-$VERSION.tar.gz gotyno-hs
+
+      - name: Create release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: gotyno-hs-*.tar.gz
