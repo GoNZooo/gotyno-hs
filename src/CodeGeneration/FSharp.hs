@@ -1,7 +1,7 @@
 module CodeGeneration.FSharp (outputModule) where
 
-import CodeGeneration.Utilities (typeVariablesFrom, upperCaseFirstCharacter)
-import RIO
+import CodeGeneration.Utilities (typeVariablesFrom)
+import Qtility
 import qualified RIO.List.Partial as PartialList
 import qualified RIO.Text as Text
 import Types
@@ -12,10 +12,7 @@ outputModule Module {name = ModuleName name, definitions, imports} =
       _importsOutput = imports & fmap outputImport & mconcat
       outputImport (Import Module {name = ModuleName _name}) =
         mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
-   in mconcat [modulePrelude (fsharpifyModuleName name), definitionOutput]
-
-fsharpifyModuleName :: Text -> Text
-fsharpifyModuleName = upperCaseFirstCharacter
+   in mconcat [modulePrelude (upperCaseFirst name), definitionOutput]
 
 modulePrelude :: Text -> Text
 modulePrelude name =
@@ -58,7 +55,7 @@ outputEmbeddedUnion unionName fieldName@(FieldName tag) constructors =
                     "\", ",
                     unionName,
                     ".",
-                    upperCaseFirstCharacter name,
+                    upperCaseFirst name,
                     "Decoder\n"
                   ]
             )
@@ -93,7 +90,7 @@ outputEmbeddedUnion unionName fieldName@(FieldName tag) constructors =
 outputEmbeddedCase :: FieldName -> EmbeddedConstructor -> Text
 outputEmbeddedCase (FieldName tag) (EmbeddedConstructor (ConstructorName name) Nothing) =
   mconcat
-    [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
+    [ mconcat ["        | ", upperCaseFirst name, " payload ->\n"],
       "            Encode.object\n",
       "                [\n",
       mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
@@ -110,7 +107,7 @@ outputEmbeddedCase (FieldName tag) (EmbeddedConstructor (ConstructorName name) (
             )
           & mconcat
    in mconcat
-        [ mconcat ["        | ", upperCaseFirstCharacter name, " payload ->\n"],
+        [ mconcat ["        | ", upperCaseFirst name, " payload ->\n"],
           "            Encode.object\n",
           "                [\n",
           mconcat ["                    \"", tag, "\", Encode.string \"", name, "\"\n"],
@@ -124,7 +121,7 @@ outputEmbeddedConstructorDecoders unionName =
 
 outputEmbeddedConstructorDecoder :: Text -> EmbeddedConstructor -> Text
 outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName name) Nothing) =
-  let constructorName = upperCaseFirstCharacter name
+  let constructorName = upperCaseFirst name
    in mconcat
         [ mconcat
             ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
@@ -141,7 +138,7 @@ outputEmbeddedConstructorDecoder
           structFields
             & fmap (outputDecoderForField >>> ("                " <>) >>> (<> "\n"))
             & mconcat
-        constructorName = upperCaseFirstCharacter name
+        constructorName = upperCaseFirst name
      in mconcat
           [ mconcat
               ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
@@ -220,33 +217,30 @@ outputUntaggedUnionEncoder name cases =
         ]
 
 outputEnumeration :: Text -> [EnumerationValue] -> Text
-outputEnumeration name values =
-  let typeOutput = outputEnumerationType name values
-      decoderOutput = outputEnumerationDecoder name values
-      encoderOutput = outputEnumerationEncoder values
+outputEnumeration name values' =
+  let typeOutput = outputEnumerationType name values'
+      decoderOutput = outputEnumerationDecoder name values'
+      encoderOutput = outputEnumerationEncoder values'
    in mconcat [typeOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
 
 outputEnumerationType :: Text -> [EnumerationValue] -> Text
-outputEnumerationType name values =
+outputEnumerationType name values' =
   let valuesOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
-                mconcat ["    | ", fsharpifyConstructorName i]
+                mconcat ["    | ", upperCaseFirst i]
             )
           & Text.intercalate "\n"
    in mconcat [mconcat ["type ", name, " =\n"], valuesOutput]
 
-fsharpifyConstructorName :: Text -> Text
-fsharpifyConstructorName = upperCaseFirstCharacter
-
 outputEnumerationDecoder :: Text -> [EnumerationValue] -> Text
-outputEnumerationDecoder unionName values =
+outputEnumerationDecoder unionName values' =
   let valuesOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) value) ->
-                mconcat [outputLiteral value, ", ", fsharpifyConstructorName i]
+                mconcat [outputLiteral value, ", ", upperCaseFirst i]
             )
           & Text.intercalate "; "
       outputLiteral (LiteralString s) = "\"" <> s <> "\""
@@ -254,7 +248,7 @@ outputEnumerationDecoder unionName values =
       outputLiteral (LiteralInteger i) = tshow i
       outputLiteral (LiteralFloat f) = tshow f
       valuesDecoder =
-        values
+        values'
           & PartialList.head
           & ( \case
                 (EnumerationValue _identifier (LiteralString _s)) ->
@@ -272,20 +266,20 @@ outputEnumerationDecoder unionName values =
         ]
 
 outputEnumerationEncoder :: [EnumerationValue] -> Text
-outputEnumerationEncoder values =
+outputEnumerationEncoder values' =
   let caseOutput =
-        values
+        values'
           & fmap caseEncoder
           & Text.intercalate "\n"
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralString s)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.string \"", s, "\""]
+        mconcat ["        | ", upperCaseFirst i, " -> Encode.string \"", s, "\""]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralBoolean b)) =
         let value = bool "false" "true" b
-         in mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.boolean ", value]
+         in mconcat ["        | ", upperCaseFirst i, " -> Encode.boolean ", value]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralInteger integer)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.int32 ", tshow integer]
+        mconcat ["        | ", upperCaseFirst i, " -> Encode.int32 ", tshow integer]
       caseEncoder (EnumerationValue (EnumerationIdentifier i) (LiteralFloat f)) =
-        mconcat ["        | ", fsharpifyConstructorName i, " -> Encode.float32 ", tshow f]
+        mconcat ["        | ", upperCaseFirst i, " -> Encode.float32 ", tshow f]
    in mconcat
         [ mconcat ["    static member Encoder =\n"],
           mconcat ["        function\n"],
@@ -364,7 +358,7 @@ outputStructEncoder fields typeVariables =
 outputDecoderForField :: StructField -> Text
 outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalType fieldType))) =
   mconcat
-    [ upperCaseFirstCharacter fieldName,
+    [ upperCaseFirst fieldName,
       " = ",
       "get.Optional.Field",
       " \"",
@@ -374,7 +368,7 @@ outputDecoderForField (StructField (FieldName fieldName) (ComplexType (OptionalT
     ]
 outputDecoderForField (StructField (FieldName fieldName) fieldType) =
   mconcat
-    [ upperCaseFirstCharacter fieldName,
+    [ upperCaseFirst fieldName,
       " = ",
       "get.Required.Field",
       " \"",
@@ -400,7 +394,7 @@ outputEncoderForFieldWithValueName valueName (StructField (FieldName fieldName) 
       " ",
       valueName,
       ".",
-      upperCaseFirstCharacter fieldName
+      upperCaseFirst fieldName
     ]
 
 decoderForFieldType :: FieldType -> Text
@@ -455,7 +449,7 @@ decoderForDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
+    mconcat [upperCaseFirst moduleName, ".", name, ".Decoder"]
 decoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -470,7 +464,7 @@ decoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -478,10 +472,10 @@ decoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
 decoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Decoder"]
+    mconcat [upperCaseFirst moduleName, ".", name, ".Decoder"]
 
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
@@ -537,7 +531,7 @@ encoderForDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
+    mconcat [upperCaseFirst moduleName, ".", name, ".Encoder"]
 encoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -552,7 +546,7 @@ encoderForDefinitionReference
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
 encoderForDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -560,10 +554,10 @@ encoderForDefinitionReference
       (AppliedTypes appliedTypes)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", fsharpifyModuleName moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
 encoderForDefinitionReference
   (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [fsharpifyModuleName moduleName, ".", name, ".Encoder"]
+    mconcat [upperCaseFirst moduleName, ".", name, ".Encoder"]
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
@@ -600,7 +594,7 @@ outputUnionDecoder (FieldName tag) unionName constructors typeVariables =
                         "\", ",
                         unionName,
                         ".",
-                        upperCaseFirstCharacter name,
+                        upperCaseFirst name,
                         "Decoder",
                         maybeDecoderArguments,
                         "\n"
@@ -641,7 +635,7 @@ encodersForTypeVariables = fmap (TypeVariableReferenceType >>> encoderForFieldTy
 outputConstructorDecoder :: Text -> [TypeVariable] -> Constructor -> Text
 outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName name) maybePayload) =
   let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
-      constructorName = upperCaseFirstCharacter name
+      constructorName = upperCaseFirst name
       alwaysSucceedingDecoder = mconcat ["Decode.succeed ", constructorName]
       payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
       maybeArguments = typeVariableDecodersAsArguments payloadTypeVariables
@@ -691,7 +685,7 @@ outputConstructorEncoder (FieldName tag) (Constructor (ConstructorName name) may
       interface = mconcat ["[ ", typeTagPart, dataPart, " ]"]
       maybePayloadPart = maybe "" (const " payload") maybePayload
    in mconcat
-        [ mconcat ["        | ", upperCaseFirstCharacter name, maybePayloadPart, " ->\n"],
+        [ mconcat ["        | ", upperCaseFirst name, maybePayloadPart, " ->\n"],
           mconcat ["            Encode.object ", interface]
         ]
 
@@ -702,7 +696,7 @@ outputCaseUnion name constructors typeVariables =
           & fmap
             ( \(Constructor (ConstructorName constructorName) maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", upperCaseFirstCharacter constructorName, payload]
+                 in mconcat ["    | ", upperCaseFirst constructorName, payload]
             )
           & Text.intercalate "\n"
       maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
@@ -714,7 +708,7 @@ outputCaseUnion name constructors typeVariables =
 outputField :: Int -> StructField -> Text
 outputField indentation (StructField (FieldName name) fieldType) =
   let indent = Text.pack $ replicate indentation ' '
-   in indent <> mconcat [upperCaseFirstCharacter name, ": ", outputFieldType fieldType, "\n"]
+   in indent <> mconcat [upperCaseFirst name, ": ", outputFieldType fieldType, "\n"]
 
 outputFieldType :: FieldType -> Text
 outputFieldType (LiteralType (LiteralString _text)) = outputBasicType BasicString
@@ -744,7 +738,7 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [fsharpifyModuleName moduleName, ".", name]
+    mconcat [upperCaseFirst moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -759,7 +753,7 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [fsharpifyModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
+     in mconcat [upperCaseFirst moduleName, ".", name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -768,9 +762,9 @@ outputDefinitionReference
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [fsharpifyModuleName moduleName, ".", name, maybeAppliedOutput]
+     in mconcat [upperCaseFirst moduleName, ".", name, maybeAppliedOutput]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [fsharpifyModuleName moduleName, ".", name]
+  mconcat [upperCaseFirst moduleName, ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"

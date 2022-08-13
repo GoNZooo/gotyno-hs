@@ -1,7 +1,6 @@
 module CodeGeneration.Kotlin (outputModule) where
 
-import CodeGeneration.Utilities
-import RIO
+import Qtility
 import qualified RIO.List as List
 import qualified RIO.Text as Text
 import Types
@@ -131,9 +130,9 @@ outputUntaggedUnion unionName@(DefinitionName n) cases =
         ]
 
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumeration name values =
+outputEnumeration name values' =
   let valuesOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
                 mconcat ["    ", Text.toUpper i, "(", outputLiteralValue literal, ")"]
@@ -215,7 +214,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
        in mconcat
             [ constructorInfo,
               "    data class ",
-              name & unConstructorName & upperCaseFirstCharacter,
+              name & unConstructorName & upperCaseFirst,
               typeVariablesOutput,
               "(",
               dataFieldOutput,
@@ -247,7 +246,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
        in mconcat
             [ constructorInfo,
               "    data class ",
-              name & unConstructorName & upperCaseFirstCharacter,
+              name & unConstructorName & upperCaseFirst,
               typeVariablesOutput,
               "(",
               dataFieldOutput,
@@ -427,7 +426,7 @@ joinTypeVariables typeVariables =
   typeVariables & fmap unTypeVariable & Text.intercalate ", "
 
 uppercaseModuleName :: Text -> Text
-uppercaseModuleName = upperCaseFirstCharacter
+uppercaseModuleName = upperCaseFirst
 
 definitionReferenceName :: DefinitionReference -> Text
 definitionReferenceName (DefinitionReference (TypeDefinition name _)) = unDefinitionName name

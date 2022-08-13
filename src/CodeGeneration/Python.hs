@@ -1,7 +1,7 @@
 module CodeGeneration.Python (outputModule) where
 
-import CodeGeneration.Utilities (typeVariablesFrom, upperCaseFirstCharacter)
-import RIO
+import CodeGeneration.Utilities (typeVariablesFrom)
+import Qtility
 import qualified RIO.Text as Text
 import Types
 
@@ -81,7 +81,7 @@ outputEmbeddedUnionCase
         encoderOutput = outputEmbeddedConstructorEncoder tag constructor
      in mconcat
           [ "@dataclass\n",
-            mconcat ["class ", upperCaseFirstCharacter name, "(", unionName, "):\n"],
+            mconcat ["class ", upperCaseFirst name, "(", unionName, "):\n"],
             validatorOutput,
             "\n\n",
             encoderOutput
@@ -102,7 +102,7 @@ outputEmbeddedUnionCase
         encoderOutput = outputEmbeddedConstructorEncoder tag constructor
      in mconcat
           [ "@dataclass\n",
-            mconcat ["class ", upperCaseFirstCharacter name, "(", unionName, "):\n"],
+            mconcat ["class ", upperCaseFirst name, "(", unionName, "):\n"],
             typesOutput,
             "\n\n",
             validatorOutput,
@@ -114,7 +114,7 @@ outputEmbeddedConstructorDecoder :: FieldName -> EmbeddedConstructor -> Text
 outputEmbeddedConstructorDecoder
   (FieldName tag)
   (EmbeddedConstructor (ConstructorName name) Nothing) =
-    let typeName = upperCaseFirstCharacter name
+    let typeName = upperCaseFirst name
      in mconcat
           [ "    @staticmethod\n",
             mconcat ["    def validate(value: validation.Unknown) -> validation.ValidationResult['", typeName, "']:\n"],
@@ -138,7 +138,7 @@ outputEmbeddedConstructorDecoder
 outputEmbeddedConstructorDecoder
   (FieldName tag)
   (EmbeddedConstructor (ConstructorName name) (Just reference)) =
-    let typeName = upperCaseFirstCharacter name
+    let typeName = upperCaseFirst name
         DefinitionName referenceName = nameOfReference reference
      in mconcat
           [ "    @staticmethod\n",
@@ -256,17 +256,17 @@ outputUntaggedUnion unionName cases =
         ]
 
 outputEnumeration :: Text -> [EnumerationValue] -> Text
-outputEnumeration name values =
-  let typeOutput = outputEnumerationType name values
+outputEnumeration name values' =
+  let typeOutput = outputEnumerationType name values'
       validatorOutput = outputEnumerationValidator name
       decoderOutput = outputEnumerationDecoder name
       encoderOutput = outputEnumerationEncoder
    in mconcat [typeOutput, "\n\n", validatorOutput, "\n\n", decoderOutput, "\n\n", encoderOutput]
 
 outputEnumerationType :: Text -> [EnumerationValue] -> Text
-outputEnumerationType name values =
+outputEnumerationType name values' =
   let valuesOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
                 mconcat ["    ", i, " = ", literalValue literal]
@@ -731,7 +731,7 @@ outputUnionValidator name (FieldName tag) constructors typeVariables =
                       [ "'",
                         constructorName,
                         "': ",
-                        constructorName & upperCaseFirstCharacter & sanitizeName,
+                        constructorName & upperCaseFirst & sanitizeName,
                         ".validate",
                         maybeTypeVariableValidatorArguments
                       ]

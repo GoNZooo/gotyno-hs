@@ -9,7 +9,7 @@ import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
 import qualified Data.Text.IO as TextIO
 import qualified Parsing
-import RIO
+import Qtility
 import qualified RIO.Directory as Directory
 import qualified RIO.FilePath as FilePath
 import qualified RIO.Text as Text

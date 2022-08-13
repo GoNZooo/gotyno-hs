@@ -5,18 +5,18 @@
 
 packages:
 - completed:
-    size: 59907
+    size: 61410
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
+    url: https://github.com/quanterall/qtility/archive/dd5ea49082c6f8eff4d5d2d688afb2b9553fc4cf.tar.gz
     name: qtility
     version: 1.3.0
-    sha256: 62dc0e6268b21ee6acad450b0d89e747fed123a97bede7d809370e4c7e0f74ea
+    sha256: 2d687fabf0df04f506d4caa96ee2635238c71b3d1252542ec4594b383f908abf
     pantry-tree:
       size: 1657
-      sha256: 3b82085b41c38d5895b0ed6561eb2e35e1aa308483def52d04825ec25377f6be
+      sha256: 6f4bbf271fc6eb44a19b9a50ccf9ac14e5b17cda5013d5ad6452367fa56585c2
   original:
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
+    url: https://github.com/quanterall/qtility/archive/dd5ea49082c6f8eff4d5d2d688afb2b9553fc4cf.tar.gz
 snapshots:
 - completed:
     size: 590100

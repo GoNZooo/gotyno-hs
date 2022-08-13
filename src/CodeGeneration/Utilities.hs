@@ -1,21 +1,7 @@
 module CodeGeneration.Utilities where
 
-import RIO
-import qualified RIO.Char as Char
-import qualified RIO.Text as Text
+import Qtility
 import Types
-
-upperCaseFirstCharacter :: Text -> Text
-upperCaseFirstCharacter t =
-  case Text.uncons t of
-    Just (c, rest) -> Text.cons (Char.toUpper c) rest
-    Nothing -> t
-
-lowerCaseFirstCharacter :: Text -> Text
-lowerCaseFirstCharacter t =
-  case Text.uncons t of
-    Just (c, rest) -> Text.cons (Char.toLower c) rest
-    Nothing -> t
 
 typeVariablesFrom :: FieldType -> Maybe [TypeVariable]
 typeVariablesFrom (TypeVariableReferenceType typeVariable) = pure [typeVariable]

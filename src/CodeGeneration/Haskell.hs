@@ -1,7 +1,6 @@
 module CodeGeneration.Haskell (outputModule) where
 
-import CodeGeneration.Utilities (lowerCaseFirstCharacter, upperCaseFirstCharacter)
-import RIO
+import Qtility
 import qualified RIO.Text as Text
 import Types
 
@@ -12,27 +11,24 @@ outputModule Module {name = ModuleName name, definitions, imports, declarationNa
       outputImport (Import Module {name = ModuleName importName}) =
         mconcat
           [ "import qualified GotynoOutput.",
-            haskellifyModuleName importName,
+            upperCaseFirst importName,
             " as ",
-            haskellifyModuleName importName
+            upperCaseFirst importName
           ]
       declarationImportsOutput =
         declarationNames
           & fmap
             ( \(ModuleName declarationModuleName) ->
-                mconcat ["import qualified ", haskellifyModuleName declarationModuleName]
+                mconcat ["import qualified ", upperCaseFirst declarationModuleName]
             )
           & Text.intercalate "\n"
    in mconcat
-        [ modulePrelude (haskellifyModuleName name),
+        [ modulePrelude (upperCaseFirst name),
           "\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
           if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
           definitionOutput
         ]
-
-haskellifyModuleName :: Text -> Text
-haskellifyModuleName = upperCaseFirstCharacter
 
 modulePrelude :: Text -> Text
 modulePrelude name =
@@ -166,8 +162,8 @@ outputUntaggedUnion unionName cases =
         ]
 
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumeration name values =
-  let typeOutput = outputEnumerationType name values
+outputEnumeration name values' =
+  let typeOutput = outputEnumerationType name values'
       toJsonOutput =
         mconcat
           [ "instance ToJSON ",
@@ -176,7 +172,7 @@ outputEnumeration name values =
             constructorToJsonOutput
           ]
       constructorToJsonOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
                 let n =
@@ -205,7 +201,7 @@ outputEnumeration name values =
             "]"
           ]
       constructorFromJsonOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
                 let n =
@@ -219,9 +215,9 @@ outputEnumeration name values =
    in mconcat [typeOutput, "\n\n", toJsonOutput, "\n\n", fromJsonOutput]
 
 outputEnumerationType :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumerationType name values =
+outputEnumerationType name values' =
   let valuesOutput =
-        values
+        values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
                 mconcat
@@ -237,7 +233,7 @@ outputEnumerationType name values =
         ]
 
 haskellifyConstructorName :: Text -> Text
-haskellifyConstructorName = upperCaseFirstCharacter
+haskellifyConstructorName = upperCaseFirst
 
 outputPlainStruct :: DefinitionName -> [StructField] -> Text
 outputPlainStruct name fields =
@@ -278,7 +274,7 @@ outputUnion name typeTag unionType =
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
-      lowerCasedTypeVariables = fmap (unTypeVariable >>> lowerCaseFirstCharacter) typeVariables
+      lowerCasedTypeVariables = fmap (unTypeVariable >>> lowerCaseFirst) typeVariables
       toJsonHeader =
         if null typeVariables
           then mconcat ["instance ToJSON ", unDefinitionName name, " where"]
@@ -348,9 +344,9 @@ outputCaseUnion name constructors typeVariables =
         ]
   where
     outputCaseConstructor (Constructor (ConstructorName constructorName) Nothing) =
-      upperCaseFirstCharacter constructorName
+      upperCaseFirst constructorName
     outputCaseConstructor (Constructor (ConstructorName constructorName) (Just payload)) =
-      mconcat [upperCaseFirstCharacter constructorName, " ", outputFieldType payload]
+      mconcat [upperCaseFirst constructorName, " ", outputFieldType payload]
 
 outputField :: DefinitionName -> StructField -> Text
 outputField definitionName (StructField fieldName fieldType) =
@@ -362,7 +358,7 @@ outputField definitionName (StructField fieldName fieldType) =
 
 recordFieldName :: DefinitionName -> FieldName -> Text
 recordFieldName (DefinitionName name) (FieldName fieldName) =
-  mconcat ["_", lowerCaseFirstCharacter name, upperCaseFirstCharacter fieldName]
+  mconcat ["_", lowerCaseFirst name, upperCaseFirst fieldName]
 
 outputFieldType :: FieldType -> Text
 outputFieldType (LiteralType (LiteralString _text)) = outputBasicType BasicString
@@ -392,7 +388,7 @@ outputDefinitionReference
       (ModuleName moduleName)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [haskellifyModuleName moduleName, ".", name]
+    mconcat [upperCaseFirst moduleName, ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -407,7 +403,7 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-     in mconcat ["(", haskellifyModuleName moduleName, ".", name, " ", appliedFieldTypes, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, " ", appliedFieldTypes, ")"]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName)
@@ -416,9 +412,9 @@ outputDefinitionReference
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
-     in mconcat ["(", haskellifyModuleName moduleName, ".", name, maybeAppliedOutput, ")"]
+     in mconcat ["(", upperCaseFirst moduleName, ".", name, maybeAppliedOutput, ")"]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [haskellifyModuleName moduleName, ".", name]
+  mconcat [upperCaseFirst moduleName, ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "Text"

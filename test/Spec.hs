@@ -2,7 +2,7 @@ module Main where
 
 import qualified HaskellOutputSpec
 import qualified ParsingSpec
-import RIO
+import Qtility
 import Test.Hspec
 
 main :: IO ()

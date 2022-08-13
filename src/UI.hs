@@ -10,7 +10,7 @@ import Brick
 import Compilation (compile)
 import qualified Graphics.Vty as Vty
 import Numeric (showFFloat)
-import RIO
+import Qtility
 import qualified RIO.Text as Text
 import qualified RIO.Time as Time
 import Types
