@@ -12,6 +12,7 @@ on:
       - package.yaml
       - stack.yaml
       - weeder.dhall
+      - .github/workflows/*
 
 jobs:
   test-and-release:
