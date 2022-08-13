@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
     paths:
       - src/**
       - app/**
@@ -12,7 +14,7 @@ on:
       - package.yaml
       - stack.yaml
       - weeder.dhall
-      - .github/workflows/*
+      - .github/workflows/test-and-release.yml
 
 jobs:
   test:
