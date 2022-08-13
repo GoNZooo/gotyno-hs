@@ -15,7 +15,7 @@ on:
       - .github/workflows/*
 
 jobs:
-  test-and-release:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -37,16 +37,40 @@ jobs:
       - name: Test
         run: stack build --test
 
-      - name: Build release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Copy binary
         run: |
           ABSOLUTE_BINARY_PATH=`stack path --local-install-root`
-          VERSION=`echo $GITHUB_REF | sed 's/refs\/tags\///'`
+          VERSION=`stack local 
+          TARBALL_NAME="gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz"
           mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
-          tar czf gotyno-hs-$VERSION.tar.gz gotyno-hs
+          tar czf gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs
+          echo "Created tarball '$TARBALL_NAME'"
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gotyno-hs-${{ runner.os }}-${{ github.sha }}
+          path: gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz
+
+  upload-release:
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: gotyno-hs-${{ runner.os }}-${{ github.sha }}
+          path: ./
+      
+      - name: Rename tarball
+        run: |
+          mv gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs-${{ runner.os }}-$GITHUB_REF_NAME.tar.gz
+      
       - name: Create release
         if: startsWith(github.ref, 'refs/tags')
         uses: softprops/action-gh-release@v0.1.14
         with:
           files: gotyno-hs-*.tar.gz
+  
