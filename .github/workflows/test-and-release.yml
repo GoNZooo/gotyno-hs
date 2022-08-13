@@ -40,11 +40,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags')
         run: |
           ABSOLUTE_BINARY_PATH=`stack path --local-install-root`
-          VERSION=`stack query locals gotyno-hs | awk '/version:/ {print $2}'`
+          VERSION=`echo $GITHUB_REF | sed 's/refs\/tags\///'`
           mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
           tar czf gotyno-hs-$VERSION.tar.gz gotyno-hs
 
       - name: Create release
+        if: startsWith(github.ref, 'refs/tags')
         uses: softprops/action-gh-release@v0.1.14
         with:
           files: gotyno-hs-*.tar.gz
