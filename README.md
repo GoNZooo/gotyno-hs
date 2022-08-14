@@ -1,5 +1,7 @@
 # gotyno-hs
 
+[![Tests](https://github.com/GoNZooo/gotyno-hs/actions/workflows/test.yml/badge.svg)](https://github.com/GoNZooo/gotyno-hs/actions/workflows/test.yml)
+
 A tool for generating validation/encoding/decoding code for types via a type definition language.
 See details of the language [here](#the-language).
 
