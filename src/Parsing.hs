@@ -2,59 +2,13 @@ module Parsing (parseModules, test) where
 
 import qualified CodeGeneration.Utilities as Utilities
 import Qtility
-  ( Bool (..),
-    Either (..),
-    FilePath,
-    IO,
-    IORef,
-    Int,
-    Maybe (..),
-    RIO,
-    Set,
-    Show,
-    String,
-    Text,
-    Void,
-    any,
-    ask,
-    compare,
-    const,
-    error,
-    for,
-    fromMaybe,
-    isLeft,
-    length,
-    maybe,
-    mconcat,
-    mempty,
-    modifyIORef,
-    newIORef,
-    not,
-    pure,
-    readFileUtf8,
-    readIORef,
-    runRIO,
-    show,
-    writeIORef,
-    ($),
-    ($>),
-    (&),
-    (*>),
-    (/=),
-    (<$),
-    (<$>),
-    (<*),
-    (<>),
-    (==),
-    (>>>),
-  )
 import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
 import qualified RIO.Set as Set
 import RIO.Text (pack, unpack)
 import qualified RIO.Text as Text
 import System.IO (putStrLn)
-import Text.Megaparsec
+import Text.Megaparsec hiding (many, some)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer hiding (lexeme, symbol)
 import qualified Text.Megaparsec.Char.Lexer as Lexer
@@ -84,9 +38,9 @@ parseModules files = do
             modulesReference
           }
   results <- for files $ \f -> do
-    let moduleName = f & FilePath.takeBaseName & pack & ModuleName
+    let moduleName' = f & FilePath.takeBaseName & pack & ModuleName
     fileContents <- readFileUtf8 f
-    maybeModule <- run state (moduleP moduleName f) fileContents
+    maybeModule <- run state (moduleP moduleName' f) fileContents
     writeIORef currentDefinitionsReference mempty
     writeIORef currentDeclarationNamesReference mempty
     case maybeModule of
@@ -116,7 +70,14 @@ moduleP name sourceFile = do
   imports <- fromMaybe [] <$> optional (sepEndBy1 importP eol <* eol)
   definitions <- sepEndBy1 (typeDefinitionP imports) (some eol) <* eof
   declarationNames <- Set.toList <$> getDeclarationNames
-  pure Module {name, imports, definitions, sourceFile, declarationNames}
+  pure
+    Module
+      { _moduleName = name,
+        _moduleImports = imports,
+        _moduleDefinitions = definitions,
+        _moduleSourceFile = sourceFile,
+        _moduleDeclarationNames = declarationNames
+      }
 
 importP :: Parser Import
 importP = do
@@ -161,8 +122,7 @@ declarationP = do
   externalModule <- (pack >>> ModuleName) <$> some (alphaNumChar <|> char '_') <* char '.'
   name <- readCurrentDefinitionName
   typeVariables <-
-    (fromMaybe [] >>> List.map TypeVariable)
-      <$> optional (angleBracketed typeVariablesP)
+    (fromMaybe [] >>> List.map TypeVariable) <$> optional (angleBracketed typeVariablesP)
   addDeclarationName externalModule
   pure $ TypeDefinition name $ DeclaredType externalModule typeVariables
 
@@ -257,13 +217,13 @@ embeddedUnionStructConstructorsP imports =
 
 embeddedUnionStructConstructorP :: [Import] -> [TypeVariable] -> Parser EmbeddedConstructor
 embeddedUnionStructConstructorP imports typeVariables = do
-  constructorName <- some (char ' ') *> embeddedConstructorNameP
+  constructorName' <- some (char ' ') *> embeddedConstructorNameP
   maybeDefinition <-
     choice
       [ Nothing <$ many (char ' ') <* eol,
         Just <$> (symbol ": " *> structReferenceP imports typeVariables <* many (char ' ') <* eol)
       ]
-  pure $ EmbeddedConstructor (ConstructorName constructorName) maybeDefinition
+  pure $ EmbeddedConstructor (ConstructorName constructorName') maybeDefinition
 
 structReferenceP :: [Import] -> [TypeVariable] -> Parser DefinitionReference
 structReferenceP imports typeVariables = do
@@ -288,9 +248,9 @@ embeddedConstructorNameP = pack <$> some alphaNumChar
 enumerationP :: Parser TypeDefinition
 enumerationP = do
   name <- lexeme readCurrentDefinitionName <* "{" <* eol
-  values <- enumerationValuesP
+  values' <- enumerationValuesP
   char '}'
-  pure $ TypeDefinition name $ Enumeration values
+  pure $ TypeDefinition name $ Enumeration values'
 
 enumerationValuesP :: Parser [EnumerationValue]
 enumerationValuesP = some enumerationValueP
@@ -357,13 +317,13 @@ definitionReferenceP imports typeVariables = do
     optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
   ensureMatchingGenericity Nothing maybeDefinition maybeTypeVariables
   case maybeDefinition of
-    Just definition@(TypeDefinition name' (DeclaredType moduleName _typeVariables)) ->
+    Just definition@(TypeDefinition name' (DeclaredType moduleName' _typeVariables)) ->
       case maybeTypeVariables of
         Nothing ->
-          pure $ DeclarationReference moduleName name'
+          pure $ DeclarationReference moduleName' name'
         Just appliedTypes ->
           if isGenericType definition
-            then pure $ GenericDeclarationReference moduleName name' (AppliedTypes appliedTypes)
+            then pure $ GenericDeclarationReference moduleName' name' (AppliedTypes appliedTypes)
             else
               reportError $
                 mconcat ["Trying to apply type as generic, but ", unpack n, " is not generic"]
@@ -384,13 +344,13 @@ ensureMatchingGenericity _maybeModuleName Nothing _maybeTypeParameters = pure ()
 ensureMatchingGenericity maybeModuleName (Just definition) maybeTypeParameters = do
   let expectedTypeParameters =
         definition
-          & Utilities.typeVariablesFromDefinition
+          & Utilities.typeVariablesFrom
           & fromMaybe []
           & length
       name =
         mconcat
           [ maybe "" (unModuleName >>> (<> ".") >>> unpack) maybeModuleName,
-            definition & typeDefinitionName & unDefinitionName & unpack
+            definition ^. typeDefinitionName . unwrap & unpack
           ]
       appliedTypeParameters = maybeTypeParameters & fromMaybe [] & length
   if expectedTypeParameters /= appliedTypeParameters
@@ -436,37 +396,43 @@ typeVariableReferenceP typeVariables =
 
 importedReferenceP :: [Import] -> [TypeVariable] -> Parser DefinitionReference
 importedReferenceP imports typeVariables = do
-  moduleName <-
-    choice (List.map (\(Import Module {name = ModuleName name}) -> string name) imports) <* char '.'
-  definitionName@(DefinitionName n) <- definitionNameP
-  case findImport moduleName imports of
-    Just (Import Module {name = sourceModule, definitions}) -> do
-      case List.find (\(TypeDefinition name _typeData) -> name == definitionName) definitions of
+  moduleName' <-
+    choice
+      (((^. unwrap . moduleName . unwrap) >>> string) <$> imports)
+      <* char '.'
+
+  definitionName <- definitionNameP
+  case findImport moduleName' imports of
+    Just import' -> do
+      case List.find
+        (\d -> d ^. typeDefinitionName . unwrap == definitionName ^. unwrap)
+        (import' ^. unwrap . moduleDefinitions) of
         Just definition@(TypeDefinition foundDefinitionName typeData) -> do
           maybeTypeVariables <-
             optional $ angleBracketed $ appliedTypeVariablesP imports typeVariables
           ensureMatchingGenericity
-            (Just $ ModuleName moduleName)
+            (Just $ ModuleName moduleName')
             (Just definition)
             maybeTypeVariables
           pure $ case maybeTypeVariables of
             Just appliedTypeVariables ->
               AppliedImportedGenericReference
-                (ModuleName moduleName)
+                (ModuleName moduleName')
                 (AppliedTypes appliedTypeVariables)
                 definition
             Nothing ->
-              ImportedDefinitionReference sourceModule $ TypeDefinition foundDefinitionName typeData
+              ImportedDefinitionReference (import' ^. unwrap . moduleName) $
+                TypeDefinition foundDefinitionName typeData
         Nothing ->
           reportError $
             mconcat
               [ "Unknown definition in module '",
-                unpack moduleName,
+                unpack moduleName',
                 "': ",
-                unpack n
+                definitionName ^. unwrap & unpack
               ]
     Nothing ->
-      reportError $ "Unknown module referenced, not in imports: " <> unpack moduleName
+      reportError $ "Unknown module referenced, not in imports: " <> unpack moduleName'
 
 basicTypeValueP :: Parser BasicTypeValue
 basicTypeValueP = choice [uintP, intP, floatP, booleanP, basicStringP]
@@ -569,9 +535,9 @@ definitionNameP = do
   ((initialTitleCaseCharacter :) >>> pack >>> DefinitionName) <$> many alphaNumChar
 
 addDeclarationName :: ModuleName -> Parser ()
-addDeclarationName moduleName = do
+addDeclarationName moduleName' = do
   AppState {currentDeclarationNamesReference} <- ask
-  modifyIORef currentDeclarationNamesReference (Set.insert moduleName)
+  modifyIORef currentDeclarationNamesReference (Set.insert moduleName')
 
 getDeclarationNames :: Parser (Set ModuleName)
 getDeclarationNames = do
@@ -582,7 +548,7 @@ getModule :: String -> Parser (Maybe Module)
 getModule importName = do
   AppState {modulesReference} <- ask
   modules <- readIORef modulesReference
-  pure $ List.find (\Module {name = ModuleName name} -> name == pack importName) modules
+  pure $ List.find (\module' -> module' ^. moduleName . unwrap == pack importName) modules
 
 addModule :: Module -> IORef [Module] -> IO ()
 addModule module' modulesReference = do
@@ -625,7 +591,7 @@ hasDefinition (TypeDefinition name _typeData) =
 
 findImport :: Text -> [Import] -> Maybe Import
 findImport soughtName =
-  List.find (\(Import Module {name = ModuleName name}) -> soughtName == name)
+  List.find (\import' -> soughtName == import' ^. unwrap . moduleName . unwrap)
 
 reportError :: String -> Parser a
 reportError = ErrorFail >>> Set.singleton >>> fancyFailure
@@ -643,9 +609,6 @@ partialFromRight (Left _l) = error "Unable to get `Right` from `Left`"
 partialFromLeft :: Either l r -> l
 partialFromLeft (Left l) = l
 partialFromLeft (Right _r) = error "Unable to get `Left` from `Right`"
-
-typeDefinitionName :: TypeDefinition -> DefinitionName
-typeDefinitionName (TypeDefinition name _) = name
 
 lexeme :: Parser a -> Parser a
 lexeme = Lexer.lexeme spaceConsumer

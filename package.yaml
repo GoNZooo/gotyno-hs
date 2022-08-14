@@ -19,6 +19,7 @@ dependencies:
 - brick
 - vty
 - qtility
+- lens
 
 extra-source-files:
 - README.md

@@ -221,11 +221,11 @@ spec
         result <- parseModules ["test/examples/relaxedWhiteSpace.gotyno"]
         let expectedModule =
               Module
-                { name = ModuleName "relaxedWhiteSpace",
-                  imports = [],
-                  declarationNames = [],
-                  sourceFile = "test/examples/relaxedWhiteSpace.gotyno",
-                  definitions = expectedDefinitions
+                { _moduleName = ModuleName "relaxedWhiteSpace",
+                  _moduleImports = [],
+                  _moduleDeclarationNames = [],
+                  _moduleSourceFile = "test/examples/relaxedWhiteSpace.gotyno",
+                  _moduleDefinitions = expectedDefinitions
                 }
             expectedDefinitions =
               [ TypeDefinition
@@ -288,11 +288,11 @@ spec
         result <- parseModules ["test/examples/crlf.gotyno"]
         let expectedModule =
               Module
-                { name = ModuleName "crlf",
-                  imports = [],
-                  declarationNames = [],
-                  sourceFile = "test/examples/crlf.gotyno",
-                  definitions = expectedDefinitions
+                { _moduleName = ModuleName "crlf",
+                  _moduleImports = [],
+                  _moduleDeclarationNames = [],
+                  _moduleSourceFile = "test/examples/crlf.gotyno",
+                  _moduleDefinitions = expectedDefinitions
                 }
             expectedDefinitions =
               [ TypeDefinition
@@ -359,11 +359,11 @@ spec
       it "Supports one character long fieldnames" $ do
         let expectedModule =
               Module
-                { name = ModuleName "oneCharacterFieldNames",
-                  imports = [],
-                  declarationNames = [],
-                  sourceFile = "test/examples/oneCharacterFieldNames.gotyno",
-                  definitions = expectedDefinitions
+                { _moduleName = ModuleName "oneCharacterFieldNames",
+                  _moduleImports = [],
+                  _moduleDeclarationNames = [],
+                  _moduleSourceFile = "test/examples/oneCharacterFieldNames.gotyno",
+                  _moduleDefinitions = expectedDefinitions
                 }
             expectedDefinitions =
               [ TypeDefinition
@@ -392,7 +392,7 @@ spec
 
     describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do
-        Module {name, imports, definitions} <-
+        Module {_moduleName = name, _moduleImports = imports, _moduleDefinitions = definitions} <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
         name `shouldBe` ModuleName "basic"
         imports `shouldBe` []

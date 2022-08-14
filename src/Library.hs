@@ -21,14 +21,21 @@ import qualified UI
 import Prelude (print, putStrLn)
 
 runMain :: Options -> IO ()
-runMain options@Options {watchMode = True} = do
+runMain options@Options {_optionsWatchMode = True} = do
   putStrLn "Starting watch mode"
   watchInputsWithTUI options
 runMain
   Options
-    { languages = Languages {typescript, fsharp, python, haskell, kotlin},
-      inputs,
-      verbose
+    { _optionsLanguages =
+        Languages
+          { _languagesTypescript = typescript,
+            _languagesFsharp = fsharp,
+            _languagesPython = python,
+            _languagesHaskell = haskell,
+            _languagesKotlin = kotlin
+          },
+      _optionsInputs = inputs,
+      _optionsVerbose = verbose
     } = do
     start <- Time.getCurrentTime
     maybeModules <- Parsing.parseModules inputs
@@ -73,7 +80,7 @@ runMain
       Left errors -> forM_ errors putStrLn
 
 watchInputsWithTUI :: Options -> IO ()
-watchInputsWithTUI options@Options {inputs = relativeInputs, verbose} = do
+watchInputsWithTUI options@Options {_optionsInputs = relativeInputs, _optionsVerbose = verbose} = do
   compilationState <- compile options
   inputs <- traverse Directory.makeAbsolute relativeInputs
   let debounceInterval = 0.01 :: Time.NominalDiffTime
@@ -97,7 +104,7 @@ watchInputsWithTUI options@Options {inputs = relativeInputs, verbose} = do
               result <- compile options
               let compilationEvent =
                     result
-                      & state
+                      ^. compilationStateState
                       & either UI.CompilationFailed UI.CompilationSucceeded
               writeBChan compilationStateChannel compilationEvent
           )

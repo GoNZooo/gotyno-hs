@@ -1,23 +1,30 @@
 module CodeGeneration.Kotlin (outputModule) where
 
+import CodeGeneration.Utilities
 import Qtility
 import qualified RIO.List as List
 import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {name = ModuleName name, definitions, imports, declarationNames} =
-  let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
-      importsOutput = imports & fmap outputImport & Text.intercalate "\n"
-      outputImport (Import Module {name = ModuleName importName}) =
-        mconcat ["import org.gotynoOutput.", uppercaseModuleName importName]
-      moduleClassOutput = mconcat ["class ", uppercaseModuleName name, " {\n"]
+outputModule module' =
+  let definitionOutput =
+        module' ^. moduleDefinitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
+      importsOutput = module' ^. moduleImports & fmap outputImport & Text.intercalate "\n"
+      outputImport import' =
+        mconcat
+          [ "import org.gotynoOutput.",
+            import' & nameOf & uppercaseModuleName
+          ]
+      moduleClassOutput = mconcat ["class ", module' & nameOf & uppercaseModuleName, " {\n"]
    in mconcat
         [ "package org.gotynoOutput\n\n",
           modulePrelude,
           "\n\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
-          if null declarationNames then "" else "import org.gotynoDeclarations.*" <> "\n\n",
+          if null (module' ^. moduleDeclarationNames)
+            then ""
+            else "import org.gotynoDeclarations.*" <> "\n\n",
           moduleClassOutput,
           definitionOutput,
           "\n",
@@ -50,7 +57,7 @@ outputDefinition (TypeDefinition name (UntaggedUnion unionCases)) =
   pure $ outputUntaggedUnion name unionCases
 outputDefinition (TypeDefinition name (EmbeddedUnion typeTag constructors)) =
   pure $ outputEmbeddedUnion name typeTag constructors
-outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
+outputDefinition (TypeDefinition _name (DeclaredType _moduleName' _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName typeTag constructors =
@@ -58,7 +65,7 @@ outputEmbeddedUnion unionName typeTag constructors =
     [ outputUnionTypeInfo typeTag,
       "\n",
       "sealed class ",
-      unDefinitionName unionName,
+      nameOf unionName,
       " {\n",
       outputEmbeddedCaseUnion unionName typeTag constructors [],
       "\n",
@@ -66,10 +73,10 @@ outputEmbeddedUnion unionName typeTag constructors =
     ]
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
-outputUntaggedUnion unionName@(DefinitionName n) cases =
-  let typeHeaderOutput = mconcat ["sealed class ", unDefinitionName unionName, " {"]
+outputUntaggedUnion unionName cases =
+  let typeHeaderOutput = mconcat ["sealed class ", nameOf unionName, " {"]
       jsonSerializationAnnotation =
-        mconcat ["@JsonDeserialize(using = ", unDefinitionName unionName, ".Deserializer::class)"]
+        mconcat ["@JsonDeserialize(using = ", nameOf unionName, ".Deserializer::class)"]
       dataClassesOutput = cases & fmap outputDataClass & Text.intercalate "\n"
       caseName fieldType = "_" <> fieldTypeName fieldType
       sortStringLast = List.sortBy compareFieldTypes
@@ -83,18 +90,18 @@ outputUntaggedUnion unionName@(DefinitionName n) cases =
             "(@JsonValue(true) val data: ",
             outputFieldType fieldType,
             ") : ",
-            unDefinitionName unionName,
+            nameOf unionName,
             "()"
           ]
       deserializerClassOutput =
         mconcat
           [ "    class Deserializer : StdDeserializer<",
-            n,
+            nameOf unionName,
             ">(",
-            n,
+            nameOf unionName,
             "::class.java) {\n",
             "        override fun deserialize(p: JsonParser, ctxt: DeserializationContext): ",
-            n,
+            nameOf unionName,
             " {\n",
             "            val text = ctxt.readTree(p).toString()\n",
             "            val mapper = jacksonObjectMapper()\n\n",
@@ -104,7 +111,7 @@ outputUntaggedUnion unionName@(DefinitionName n) cases =
             "\n",
             mconcat
               [ "            throw ParseException(\"Could not deserialize to class '",
-                n,
+                nameOf unionName,
                 "'\", 0)"
               ],
             "\n",
@@ -143,7 +150,7 @@ outputEnumeration name values' =
       outputLiteralValue (LiteralFloat f) = tshow f
       outputLiteralValue (LiteralBoolean b) = bool "false" "true" b
    in mconcat
-        [ mconcat ["enum class ", unDefinitionName name, "(val data: Any) {\n"],
+        [ mconcat ["enum class ", nameOf name, "(val data: Any) {\n"],
           valuesOutput,
           "\n",
           "}"
@@ -157,14 +164,14 @@ outputPlainStruct name fields =
       literalCompare (StructField _aName (LiteralType _al)) _other = GT
       literalCompare _other (StructField _aName (LiteralType _bl)) = LT
       literalCompare _a _b = EQ
-      typeOutput = mconcat ["data class ", unDefinitionName name]
+      typeOutput = mconcat ["data class ", nameOf name]
    in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n)"]
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
   let fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
       typeVariablesOutput = mconcat ["<", joinTypeVariables typeVariables, ">"]
-      typeOutput = mconcat ["data class ", unDefinitionName name, typeVariablesOutput]
+      typeOutput = mconcat ["data class ", nameOf name, typeVariablesOutput]
    in mconcat
         [ typeOutput,
           "(\n    ",
@@ -182,10 +189,8 @@ outputUnion name typeTag unionType =
         if null typeVariables
           then ""
           else mconcat ["<", Text.intercalate ", " (unTypeVariable <$> typeVariables), ">"]
-      typeOutput = mconcat ["sealed class ", unDefinitionName name, maybeTypeVariables]
-      typeVariables = case unionType of
-        PlainUnion _constructors -> []
-        GenericUnion ts _constructors -> ts
+      typeOutput = mconcat ["sealed class ", nameOf name, maybeTypeVariables]
+      typeVariables = unionType & typeVariablesFrom & fromMaybe []
    in mconcat
         [ outputUnionTypeInfo typeTag,
           "\n",
@@ -219,7 +224,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
               "(",
               dataFieldOutput,
               ") : ",
-              unDefinitionName unionName,
+              nameOf unionName,
               maybeUnionTypeVariableOutput,
               "()"
             ]
@@ -235,10 +240,10 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
           outputFields reference =
-            mconcat ["@JsonValue(true) val data: ", definitionReferenceName reference]
+            mconcat ["@JsonValue(true) val data: ", nameOf reference]
           constructorInfo =
             mconcat $
-              ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
+              ["    @JsonTypeName(\"", nameOf name, "\")\n"]
                 <> maybe
                   ["    @JsonInclude(JsonInclude.Include.NON_DEFAULT)\n"]
                   (const [])
@@ -246,12 +251,12 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
        in mconcat
             [ constructorInfo,
               "    data class ",
-              name & unConstructorName & upperCaseFirst,
+              name & nameOf & upperCaseFirst,
               typeVariablesOutput,
               "(",
               dataFieldOutput,
               ") : ",
-              unDefinitionName unionName,
+              nameOf unionName,
               maybeUnionTypeVariableOutput,
               "()"
             ]
@@ -294,39 +299,30 @@ outputFieldType (DefinitionReferenceType definitionReference) =
 outputFieldType (TypeVariableReferenceType t) = unTypeVariable t
 
 outputDefinitionReference :: DefinitionReference -> Text
-outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
+outputDefinitionReference r@(DefinitionReference _typeDefinition) = nameOf r
+outputDefinitionReference (ImportedDefinitionReference moduleName' typeDefinition) =
+  mconcat [moduleName' & nameOf & uppercaseModuleName, ".", nameOf typeDefinition]
+outputDefinitionReference (AppliedGenericReference appliedTypes typeDefinition) =
+  let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
+   in mconcat [nameOf typeDefinition, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
-  ( ImportedDefinitionReference
-      (ModuleName moduleName)
-      (TypeDefinition (DefinitionName name) _typeData)
-    ) =
-    mconcat [uppercaseModuleName moduleName, ".", name]
-outputDefinitionReference
-  ( AppliedGenericReference
-      appliedTypes
-      (TypeDefinition (DefinitionName name) _)
-    ) =
+  (AppliedImportedGenericReference moduleName' (AppliedTypes appliedTypes) typeDefinition) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [name, "<", appliedFieldTypes, ">"]
+     in mconcat
+          [ moduleName' & nameOf & uppercaseModuleName,
+            ".",
+            nameOf typeDefinition,
+            "<",
+            appliedFieldTypes,
+            ">"
+          ]
 outputDefinitionReference
-  ( AppliedImportedGenericReference
-      (ModuleName moduleName)
-      (AppliedTypes appliedTypes)
-      (TypeDefinition (DefinitionName name) _)
-    ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [uppercaseModuleName moduleName, ".", name, "<", appliedFieldTypes, ">"]
-outputDefinitionReference
-  ( GenericDeclarationReference
-      (ModuleName moduleName)
-      (DefinitionName name)
-      (AppliedTypes appliedTypes)
-    ) =
+  (GenericDeclarationReference moduleName' definitionName (AppliedTypes appliedTypes)) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [uppercaseModuleName moduleName, "_", name, maybeAppliedOutput]
-outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [uppercaseModuleName moduleName, "_", name]
+     in mconcat [moduleName' & nameOf & uppercaseModuleName, "_", nameOf definitionName, maybeAppliedOutput]
+outputDefinitionReference (DeclarationReference moduleName' definitionName') =
+  mconcat [moduleName' & nameOf & uppercaseModuleName, "_", nameOf definitionName']
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "String"
@@ -402,7 +398,7 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedImportedGenericReference
-          _moduleName
+          _moduleName'
           (AppliedTypes fieldTypes)
           (TypeDefinition (DefinitionName definitionName) _)
         )
@@ -411,14 +407,14 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( GenericDeclarationReference
-          (ModuleName _moduleName)
+          (ModuleName _moduleName')
           (DefinitionName definitionName)
           (AppliedTypes fieldTypes)
         )
     ) =
     mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
 fieldTypeName
-  (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
+  (DefinitionReferenceType (DeclarationReference _moduleName' (DefinitionName definitionName))) =
     definitionName
 
 joinTypeVariables :: [TypeVariable] -> Text
@@ -427,23 +423,3 @@ joinTypeVariables typeVariables =
 
 uppercaseModuleName :: Text -> Text
 uppercaseModuleName = upperCaseFirst
-
-definitionReferenceName :: DefinitionReference -> Text
-definitionReferenceName (DefinitionReference (TypeDefinition name _)) = unDefinitionName name
-definitionReferenceName (ImportedDefinitionReference moduleName (TypeDefinition name _)) =
-  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
-definitionReferenceName (AppliedGenericReference fieldTypes (TypeDefinition name _)) =
-  mconcat [unDefinitionName name, "<", fieldTypes & fmap fieldTypeName & mconcat, ">"]
-definitionReferenceName (AppliedImportedGenericReference moduleName _ (TypeDefinition name _)) =
-  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
-definitionReferenceName (DeclarationReference moduleName name) =
-  mconcat [moduleName & unModuleName & uppercaseModuleName, ".", unDefinitionName name]
-definitionReferenceName (GenericDeclarationReference moduleName name (AppliedTypes fieldTypes)) =
-  mconcat
-    [ moduleName & unModuleName & uppercaseModuleName,
-      "_",
-      unDefinitionName name,
-      "<",
-      fieldTypes & fmap fieldTypeName & mconcat,
-      ">"
-    ]
