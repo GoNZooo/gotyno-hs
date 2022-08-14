@@ -40,13 +40,13 @@ These are languages that likely could be brought up to full support status with 
 active user and a small-ish amount of bug reports. These have been tested to *some* extent but I
 can't personally vouch for them in a production context right now.
 
+- Kotlin
 - Haskell
 - F#
 - Python
 
 ## Planned support
 
-- Kotlin
 - PureScript
 - Elixir
 
