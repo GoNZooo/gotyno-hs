@@ -12,6 +12,19 @@ on:
       - package.yaml
       - stack.yaml
       - weeder.dhall
+      - .github/workflows/test.yml
+  push:
+    branches:
+      - main
+    paths:
+      - src/**
+      - app/**
+      - test/**
+      - examples/**
+      - package.yaml
+      - stack.yaml
+      - weeder.dhall
+      - .github/workflows/test.yml
 
 jobs:
   build-and-test:
