@@ -44,32 +44,3 @@ jobs:
           mv $ABSOLUTE_BINARY_PATH/bin/gotyno-hs ./gotyno-hs
           tar czf gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs
           echo "Created tarball '$TARBALL_NAME' for ref '${{ github.ref }}'"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: gotyno-hs-${{ runner.os }}-${{ github.sha }}
-          path: gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz
-
-  upload-release:
-    runs-on: ubuntu-latest
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: gotyno-hs-${{ runner.os }}-${{ github.sha }}
-          path: ./
-      
-      - name: Rename tarball
-        run: |
-          mv gotyno-hs-${{ runner.os }}-${{ github.sha }}.tar.gz gotyno-hs-${{ runner.os }}-$GITHUB_REF_NAME.tar.gz
-      
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags')
-        uses: softprops/action-gh-release@v0.1.14
-        with:
-          files: gotyno-hs-*.tar.gz
-  
