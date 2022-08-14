@@ -44,18 +44,18 @@ attrMap' =
   attrMap Vty.defAttr [(successAttr, fg Vty.green), (failureAttr, fg Vty.red)]
 
 drawApplication :: CompilationState -> [Widget Name]
-drawApplication CompilationState {state = Right compilation} =
+drawApplication CompilationState {_compilationStateState = Right compilation} =
   [drawSuccessfulCompilation compilation]
-drawApplication CompilationState {state = Left compilation} =
+drawApplication CompilationState {_compilationStateState = Left compilation} =
   [drawFailedCompilation compilation]
 
 drawSuccessfulCompilation :: SuccessfulCompilation -> Widget Name
 drawSuccessfulCompilation
   SuccessfulCompilation
-    { totalTime,
-      parsingTime,
-      languageTimes,
-      moduleStatistics
+    { _successfulCompilationTotalTime = totalTime,
+      _successfulCompilationParsingTime = parsingTime,
+      _successfulCompilationLanguageTimes = languageTimes,
+      _successfulCompilationModuleStatistics = moduleStatistics
     } =
     [ drawLanguageTimes languageTimes,
       drawAllModuleStatistics moduleStatistics,
@@ -66,25 +66,41 @@ drawSuccessfulCompilation
       & vBox
 
 drawLanguageTimes :: LanguageOutputStatistics -> Widget Name
-drawLanguageTimes LanguageOutputStatistics {typescriptTime, fsharpTime, pythonTime, haskellTime} =
-  let tsWidget = maybe emptyWidget (drawTimeOutput "TypeScript output") typescriptTime
-      fsWidget = maybe emptyWidget (drawTimeOutput "F# output") fsharpTime
-      pyWidget = maybe emptyWidget (drawTimeOutput "Python output") pythonTime
-      hsWidget = maybe emptyWidget (drawTimeOutput "Haskell output") haskellTime
-   in vBox [tsWidget, fsWidget, pyWidget, hsWidget]
+drawLanguageTimes stats =
+  let tsWidget =
+        maybe emptyWidget (drawTimeOutput "TypeScript output") $
+          stats ^. languageOutputStatisticsTypescriptTime
+      fsWidget =
+        maybe emptyWidget (drawTimeOutput "F# output") $
+          stats ^. languageOutputStatisticsFsharpTime
+      pyWidget =
+        maybe emptyWidget (drawTimeOutput "Python output") $
+          stats ^. languageOutputStatisticsPythonTime
+      hsWidget =
+        maybe emptyWidget (drawTimeOutput "Haskell output") $
+          stats ^. languageOutputStatisticsHaskellTime
+      ktWidget =
+        maybe emptyWidget (drawTimeOutput "Kotlin output") $
+          stats ^. languageOutputStatisticsKotlinTime
+   in vBox [tsWidget, fsWidget, pyWidget, hsWidget, ktWidget]
 
 drawAllModuleStatistics :: [ModuleStatistics] -> Widget Name
 drawAllModuleStatistics = fmap drawModuleStatistics >>> vBox
 
 drawModuleStatistics :: ModuleStatistics -> Widget Name
-drawModuleStatistics ModuleStatistics {name, time, language} = do
-  let moduleOutput = Text.unpack name <> " (" <> showOutputLanguage language <> "): "
-      timeOutput = showFFloat @Double (Just 4) (realToFrac time) "s"
-  [ padLeft (Pad 4) $
-      str moduleOutput <+> str timeOutput
-    ]
-    & map (withAttr successAttr)
-    & vBox
+drawModuleStatistics
+  ModuleStatistics
+    { _moduleStatisticsName = name,
+      _moduleStatisticsTime = time,
+      _moduleStatisticsLanguage = language
+    } = do
+    let moduleOutput = Text.unpack name <> " (" <> showOutputLanguage language <> "): "
+        timeOutput = showFFloat @Double (Just 4) (realToFrac time) "s"
+    [ padLeft (Pad 4) $
+        str moduleOutput <+> str timeOutput
+      ]
+      & map (withAttr successAttr)
+      & vBox
 
 drawTimeOutput :: String -> Time.NominalDiffTime -> Widget Name
 drawTimeOutput label time =
@@ -103,13 +119,13 @@ handleEvent ::
   BrickEvent Name CompilationEvent ->
   EventM Name (Next CompilationState)
 handleEvent s (AppEvent (CompilationSucceeded succeeded)) =
-  continue $ s {state = Right succeeded}
+  continue $ s & compilationStateState .~ Right succeeded
 handleEvent s (AppEvent (CompilationFailed failed)) =
-  continue $ s {state = Left failed}
+  continue $ s & compilationStateState .~ Left failed
 handleEvent state (VtyEvent (Vty.EvKey Vty.KEsc [])) = halt state
 handleEvent state (VtyEvent (Vty.EvKey (Vty.KChar 'q') [])) = halt state
-handleEvent CompilationState {options} (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
-  newCompilationState <- liftIO $ compile options
+handleEvent s (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
+  newCompilationState <- liftIO $ compile $ s ^. compilationStateOptions
   continue newCompilationState
 handleEvent state (VtyEvent _) = continue state
 handleEvent state MouseDown {} = continue state

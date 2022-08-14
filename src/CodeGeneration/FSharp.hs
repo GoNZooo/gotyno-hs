@@ -7,12 +7,18 @@ import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule Module {name = ModuleName name, definitions, imports} =
-  let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
-      _importsOutput = imports & fmap outputImport & mconcat
-      outputImport (Import Module {name = ModuleName _name}) =
-        mconcat ["import * as ", name, " from \"./", name, "\";\n\n"]
-   in mconcat [modulePrelude (upperCaseFirst name), definitionOutput]
+outputModule
+  Module
+    { _moduleName = ModuleName name,
+      _moduleDefinitions = definitions,
+      _moduleImports = imports
+    } =
+    let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
+        _importsOutput = imports & fmap outputImport & mconcat
+        outputImport import' =
+          let importName = import' ^. unwrap . moduleName . unwrap
+           in mconcat ["import * as ", importName, " from \"./", importName, "\";\n\n"]
+     in mconcat [modulePrelude (upperCaseFirst name), definitionOutput]
 
 modulePrelude :: Text -> Text
 modulePrelude name =
@@ -34,7 +40,7 @@ outputDefinition (TypeDefinition (DefinitionName name) (UntaggedUnion unionCases
   pure $ outputUntaggedUnion name unionCases
 outputDefinition (TypeDefinition (DefinitionName name) (EmbeddedUnion typeTag constructors)) =
   pure $ outputEmbeddedUnion name typeTag constructors
-outputDefinition (TypeDefinition _name (DeclaredType _moduleName _typeVariables)) = Nothing
+outputDefinition (TypeDefinition _name (DeclaredType _moduleName' _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: Text -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName fieldName@(FieldName tag) constructors =
@@ -121,11 +127,11 @@ outputEmbeddedConstructorDecoders unionName =
 
 outputEmbeddedConstructorDecoder :: Text -> EmbeddedConstructor -> Text
 outputEmbeddedConstructorDecoder unionName (EmbeddedConstructor (ConstructorName name) Nothing) =
-  let constructorName = upperCaseFirst name
+  let constructorName' = upperCaseFirst name
    in mconcat
         [ mconcat
-            ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
-          mconcat ["        Decode.object (fun get -> ", constructorName, ")"]
+            ["    static member ", constructorName', "Decoder: Decoder<", unionName, "> =\n"],
+          mconcat ["        Decode.object (fun get -> ", constructorName', ")"]
         ]
 outputEmbeddedConstructorDecoder
   unionName
@@ -138,12 +144,12 @@ outputEmbeddedConstructorDecoder
           structFields
             & fmap (outputDecoderForField >>> ("                " <>) >>> (<> "\n"))
             & mconcat
-        constructorName = upperCaseFirst name
+        constructorName' = upperCaseFirst name
      in mconcat
           [ mconcat
-              ["    static member ", constructorName, "Decoder: Decoder<", unionName, "> =\n"],
+              ["    static member ", constructorName', "Decoder: Decoder<", unionName, "> =\n"],
             "        Decode.object (fun get ->\n",
-            mconcat ["            ", constructorName, " {\n"],
+            mconcat ["            ", constructorName', " {\n"],
             structFieldDecoders,
             "            }\n",
             "        )"
@@ -446,10 +452,10 @@ decoderForDefinitionReference
     name <> ".Decoder"
 decoderForDefinitionReference
   ( ImportedDefinitionReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [upperCaseFirst moduleName, ".", name, ".Decoder"]
+    mconcat [upperCaseFirst moduleName', ".", name, ".Decoder"]
 decoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -459,23 +465,23 @@ decoderForDefinitionReference
      in mconcat ["(", name, ".Decoder ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( AppliedImportedGenericReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
-     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName', ".", name, ".Decoder ", appliedDecoders, ")"]
 decoderForDefinitionReference
   ( GenericDeclarationReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
     let appliedDecoders = appliedTypes & fmap decoderForFieldType & Text.intercalate " "
-     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Decoder ", appliedDecoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName', ".", name, ".Decoder ", appliedDecoders, ")"]
 decoderForDefinitionReference
-  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [upperCaseFirst moduleName, ".", name, ".Decoder"]
+  (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
+    mconcat [upperCaseFirst moduleName', ".", name, ".Decoder"]
 
 encoderForFieldType :: (Text, Text) -> FieldType -> Text
 encoderForFieldType (_l, _r) (LiteralType literalType) = encoderForLiteralType literalType
@@ -528,10 +534,10 @@ encoderForDefinitionReference
     name <> ".Encoder"
 encoderForDefinitionReference
   ( ImportedDefinitionReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [upperCaseFirst moduleName, ".", name, ".Encoder"]
+    mconcat [upperCaseFirst moduleName', ".", name, ".Encoder"]
 encoderForDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -541,23 +547,23 @@ encoderForDefinitionReference
      in mconcat ["(", name, ".Encoder ", appliedEncoders, ")"]
 encoderForDefinitionReference
   ( AppliedImportedGenericReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName', ".", name, ".Encoder ", appliedEncoders, ")"]
 encoderForDefinitionReference
   ( GenericDeclarationReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
     let appliedEncoders = appliedTypes & fmap (encoderForFieldType ("", "")) & Text.intercalate " "
-     in mconcat ["(", upperCaseFirst moduleName, ".", name, ".Encoder ", appliedEncoders, ")"]
+     in mconcat ["(", upperCaseFirst moduleName', ".", name, ".Encoder ", appliedEncoders, ")"]
 encoderForDefinitionReference
-  (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-    mconcat [upperCaseFirst moduleName, ".", name, ".Encoder"]
+  (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
+    mconcat [upperCaseFirst moduleName', ".", name, ".Encoder"]
 
 outputUnion :: Text -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
@@ -635,8 +641,8 @@ encodersForTypeVariables = fmap (TypeVariableReferenceType >>> encoderForFieldTy
 outputConstructorDecoder :: Text -> [TypeVariable] -> Constructor -> Text
 outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName name) maybePayload) =
   let decoder = maybe alwaysSucceedingDecoder decoderWithDataField maybePayload
-      constructorName = upperCaseFirst name
-      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", constructorName]
+      constructorName' = upperCaseFirst name
+      alwaysSucceedingDecoder = mconcat ["Decode.succeed ", constructorName']
       payloadTypeVariables = fromMaybe [] $ foldMap typeVariablesFrom maybePayload
       maybeArguments = typeVariableDecodersAsArguments payloadTypeVariables
       fullName =
@@ -646,7 +652,7 @@ outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName n
       decoderWithDataField payload =
         mconcat
           [ "Decode.object (fun get -> ",
-            constructorName,
+            constructorName',
             "(get.Required.Field \"data\" ",
             decoderForFieldType payload,
             "))"
@@ -654,7 +660,7 @@ outputConstructorDecoder unionName typeVariables (Constructor (ConstructorName n
    in mconcat
         [ mconcat
             [ "    static member ",
-              constructorName,
+              constructorName',
               "Decoder",
               maybeArguments,
               ": Decoder<",
@@ -694,9 +700,9 @@ outputCaseUnion name constructors typeVariables =
   let cases =
         constructors
           & fmap
-            ( \(Constructor (ConstructorName constructorName) maybePayload) ->
+            ( \(Constructor (ConstructorName constructorName') maybePayload) ->
                 let payload = maybe "" (outputFieldType >>> (" of " <>)) maybePayload
-                 in mconcat ["    | ", upperCaseFirst constructorName, payload]
+                 in mconcat ["    | ", upperCaseFirst constructorName', payload]
             )
           & Text.intercalate "\n"
       maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
@@ -735,10 +741,10 @@ outputDefinitionReference :: DefinitionReference -> Text
 outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
 outputDefinitionReference
   ( ImportedDefinitionReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [upperCaseFirst moduleName, ".", name]
+    mconcat [upperCaseFirst moduleName', ".", name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -748,23 +754,23 @@ outputDefinitionReference
      in mconcat [name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( AppliedImportedGenericReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
-     in mconcat [upperCaseFirst moduleName, ".", name, "<", appliedFieldTypes, ">"]
+     in mconcat [upperCaseFirst moduleName', ".", name, "<", appliedFieldTypes, ">"]
 outputDefinitionReference
   ( GenericDeclarationReference
-      (ModuleName moduleName)
+      (ModuleName moduleName')
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [upperCaseFirst moduleName, ".", name, maybeAppliedOutput]
-outputDefinitionReference (DeclarationReference (ModuleName moduleName) (DefinitionName name)) =
-  mconcat [upperCaseFirst moduleName, ".", name]
+     in mconcat [upperCaseFirst moduleName', ".", name, maybeAppliedOutput]
+outputDefinitionReference (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
+  mconcat [upperCaseFirst moduleName', ".", name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"
@@ -829,7 +835,7 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( AppliedImportedGenericReference
-          _moduleName
+          _moduleName'
           (AppliedTypes fieldTypes)
           (TypeDefinition (DefinitionName definitionName) _)
         )
@@ -838,14 +844,14 @@ fieldTypeName
 fieldTypeName
   ( DefinitionReferenceType
       ( GenericDeclarationReference
-          (ModuleName _moduleName)
+          (ModuleName _moduleName')
           (DefinitionName definitionName)
           (AppliedTypes fieldTypes)
         )
     ) =
     mconcat [definitionName, "Of", fieldTypes & fmap fieldTypeName & mconcat]
 fieldTypeName
-  (DefinitionReferenceType (DeclarationReference _moduleName (DefinitionName definitionName))) =
+  (DefinitionReferenceType (DeclarationReference _moduleName' (DefinitionName definitionName))) =
     definitionName
 
 joinTypeVariables :: [TypeVariable] -> Text
