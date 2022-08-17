@@ -278,7 +278,7 @@ outputUnionTypeInfo typeTag =
 outputField :: StructField -> Text
 outputField (StructField fieldName fieldType) =
   mconcat
-    [ "@JsonProperty(\"",
+    [ "@get:JsonProperty(\"",
       unFieldName fieldName,
       "\")\n",
       "    val ",
