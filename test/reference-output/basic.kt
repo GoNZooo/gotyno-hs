@@ -11,15 +11,15 @@ import java.math.BigInteger
 
 class Basic {
 data class Recruiter(
-    @JsonProperty("Name")
+    @get:JsonProperty("Name")
     val Name: String,
-    @JsonProperty("emails")
+    @get:JsonProperty("emails")
     val emails: ArrayList<String?>,
-    @JsonProperty("recruiter")
+    @get:JsonProperty("recruiter")
     val recruiter: Recruiter?,
-    @JsonProperty("created")
+    @get:JsonProperty("created")
     val created: BigInteger,
-    @JsonProperty("type")
+    @get:JsonProperty("type")
     val type: String = "Recruiter"
 )
 
@@ -41,7 +41,7 @@ sealed class GetSearchesFilter {
 }
 
 data class SearchesParameters(
-    @JsonProperty("filters")
+    @get:JsonProperty("filters")
     val filters: ArrayList<GetSearchesFilter>
 )
 
@@ -54,28 +54,28 @@ enum class StillSize(val data: Any) {
 }
 
 data class LogInData(
-    @JsonProperty("username")
+    @get:JsonProperty("username")
     val username: String,
-    @JsonProperty("password")
+    @get:JsonProperty("password")
     val password: String
 )
 
 data class UserId(
-    @JsonProperty("value")
+    @get:JsonProperty("value")
     val value: String
 )
 
 data class Channel(
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("private")
+    @get:JsonProperty("private")
     val private: Boolean
 )
 
 data class Email(
-    @JsonProperty("value")
+    @get:JsonProperty("value")
     val value: String,
-    @JsonProperty("public")
+    @get:JsonProperty("public")
     val public: Boolean
 )
 
@@ -126,21 +126,21 @@ sealed class Either<L, R> {
 }
 
 data class Person(
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("age")
+    @get:JsonProperty("age")
     val age: Byte,
-    @JsonProperty("efficiency")
+    @get:JsonProperty("efficiency")
     val efficiency: Float,
-    @JsonProperty("on_vacation")
+    @get:JsonProperty("on_vacation")
     val on_vacation: Boolean,
-    @JsonProperty("hobbies")
+    @get:JsonProperty("hobbies")
     val hobbies: ArrayList<String>,
-    @JsonProperty("last_fifteen_comments")
+    @get:JsonProperty("last_fifteen_comments")
     val last_fifteen_comments: ArrayList<String>,
-    @JsonProperty("recruiter")
+    @get:JsonProperty("recruiter")
     val recruiter: Recruiter,
-    @JsonProperty("spouse")
+    @get:JsonProperty("spouse")
     val spouse: Maybe<Person>
 )
 

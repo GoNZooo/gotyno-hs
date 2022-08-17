@@ -11,73 +11,73 @@ import java.math.BigInteger
 
 class Github {
 data class UserData(
-    @JsonProperty("login")
+    @get:JsonProperty("login")
     val login: String,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("avatar_url")
+    @get:JsonProperty("avatar_url")
     val avatar_url: String,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("html_url")
+    @get:JsonProperty("html_url")
     val html_url: String,
-    @JsonProperty("followers_url")
+    @get:JsonProperty("followers_url")
     val followers_url: String,
-    @JsonProperty("gists_url")
+    @get:JsonProperty("gists_url")
     val gists_url: String,
-    @JsonProperty("repos_url")
+    @get:JsonProperty("repos_url")
     val repos_url: String,
-    @JsonProperty("site_admin")
+    @get:JsonProperty("site_admin")
     val site_admin: Boolean,
-    @JsonProperty("bio")
+    @get:JsonProperty("bio")
     val bio: String,
-    @JsonProperty("public_repos")
+    @get:JsonProperty("public_repos")
     val public_repos: Int,
-    @JsonProperty("followers")
+    @get:JsonProperty("followers")
     val followers: Int,
-    @JsonProperty("following")
+    @get:JsonProperty("following")
     val following: Int,
-    @JsonProperty("created_at")
+    @get:JsonProperty("created_at")
     val created_at: String,
-    @JsonProperty("updated_at")
+    @get:JsonProperty("updated_at")
     val updated_at: String,
-    @JsonProperty("location")
+    @get:JsonProperty("location")
     val location: String?,
-    @JsonProperty("blog")
+    @get:JsonProperty("blog")
     val blog: String?
 )
 
 data class OwnerData(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("login")
+    @get:JsonProperty("login")
     val login: String,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("html_url")
+    @get:JsonProperty("html_url")
     val html_url: String,
-    @JsonProperty("followers_url")
+    @get:JsonProperty("followers_url")
     val followers_url: String,
-    @JsonProperty("gists_url")
+    @get:JsonProperty("gists_url")
     val gists_url: String,
-    @JsonProperty("repos_url")
+    @get:JsonProperty("repos_url")
     val repos_url: String,
-    @JsonProperty("site_admin")
+    @get:JsonProperty("site_admin")
     val site_admin: Boolean
 )
 
 data class OrganizationData(
-    @JsonProperty("login")
+    @get:JsonProperty("login")
     val login: String,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("avatar_url")
+    @get:JsonProperty("avatar_url")
     val avatar_url: String,
-    @JsonProperty("members_url")
+    @get:JsonProperty("members_url")
     val members_url: String?,
-    @JsonProperty("repos_url")
+    @get:JsonProperty("repos_url")
     val repos_url: String,
-    @JsonProperty("description")
+    @get:JsonProperty("description")
     val description: String?
 )
 
@@ -95,153 +95,153 @@ sealed class Owner {
 }
 
 data class Repository(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("full_name")
+    @get:JsonProperty("full_name")
     val full_name: String,
-    @JsonProperty("private")
+    @get:JsonProperty("private")
     val private: Boolean,
-    @JsonProperty("fork")
+    @get:JsonProperty("fork")
     val fork: Boolean,
-    @JsonProperty("created_at")
+    @get:JsonProperty("created_at")
     val created_at: String,
-    @JsonProperty("updated_at")
+    @get:JsonProperty("updated_at")
     val updated_at: String,
-    @JsonProperty("description")
+    @get:JsonProperty("description")
     val description: String?,
-    @JsonProperty("owner")
+    @get:JsonProperty("owner")
     val owner: Owner,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("html_url")
+    @get:JsonProperty("html_url")
     val html_url: String,
-    @JsonProperty("language")
+    @get:JsonProperty("language")
     val language: String?
 )
 
 data class Pusher(
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("email")
+    @get:JsonProperty("email")
     val email: String
 )
 
 data class Author(
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("email")
+    @get:JsonProperty("email")
     val email: String,
-    @JsonProperty("username")
+    @get:JsonProperty("username")
     val username: String
 )
 
 data class Label(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String,
-    @JsonProperty("color")
+    @get:JsonProperty("color")
     val color: String,
-    @JsonProperty("default")
+    @get:JsonProperty("default")
     val default: Boolean,
-    @JsonProperty("description")
+    @get:JsonProperty("description")
     val description: String
 )
 
 data class Issue(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("html_url")
+    @get:JsonProperty("html_url")
     val html_url: String,
-    @JsonProperty("repository_url")
+    @get:JsonProperty("repository_url")
     val repository_url: String,
-    @JsonProperty("number")
+    @get:JsonProperty("number")
     val number: Int,
-    @JsonProperty("title")
+    @get:JsonProperty("title")
     val title: String,
-    @JsonProperty("user")
+    @get:JsonProperty("user")
     val user: UserData,
-    @JsonProperty("labels")
+    @get:JsonProperty("labels")
     val labels: ArrayList<Label>,
-    @JsonProperty("state")
+    @get:JsonProperty("state")
     val state: String,
-    @JsonProperty("locked")
+    @get:JsonProperty("locked")
     val locked: Boolean,
-    @JsonProperty("assignee")
+    @get:JsonProperty("assignee")
     val assignee: UserData?,
-    @JsonProperty("assignees")
+    @get:JsonProperty("assignees")
     val assignees: ArrayList<UserData>,
-    @JsonProperty("comments")
+    @get:JsonProperty("comments")
     val comments: Int,
-    @JsonProperty("created_at")
+    @get:JsonProperty("created_at")
     val created_at: String,
-    @JsonProperty("updated_at")
+    @get:JsonProperty("updated_at")
     val updated_at: String,
-    @JsonProperty("closed_at")
+    @get:JsonProperty("closed_at")
     val closed_at: String?,
-    @JsonProperty("author_association")
+    @get:JsonProperty("author_association")
     val author_association: String,
-    @JsonProperty("body")
+    @get:JsonProperty("body")
     val body: String
 )
 
 data class Commit(
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: String,
-    @JsonProperty("tree_id")
+    @get:JsonProperty("tree_id")
     val tree_id: String,
-    @JsonProperty("distinct")
+    @get:JsonProperty("distinct")
     val distinct: Boolean,
-    @JsonProperty("message")
+    @get:JsonProperty("message")
     val message: String,
-    @JsonProperty("timestamp")
+    @get:JsonProperty("timestamp")
     val timestamp: String,
-    @JsonProperty("url")
+    @get:JsonProperty("url")
     val url: String,
-    @JsonProperty("author")
+    @get:JsonProperty("author")
     val author: Author,
-    @JsonProperty("committer")
+    @get:JsonProperty("committer")
     val committer: Author,
-    @JsonProperty("added")
+    @get:JsonProperty("added")
     val added: ArrayList<String>,
-    @JsonProperty("removed")
+    @get:JsonProperty("removed")
     val removed: ArrayList<String>,
-    @JsonProperty("modified")
+    @get:JsonProperty("modified")
     val modified: ArrayList<String>
 )
 
 data class PushData(
-    @JsonProperty("repository")
+    @get:JsonProperty("repository")
     val repository: Repository,
-    @JsonProperty("ref")
+    @get:JsonProperty("ref")
     val ref: String,
-    @JsonProperty("before")
+    @get:JsonProperty("before")
     val before: String,
-    @JsonProperty("after")
+    @get:JsonProperty("after")
     val after: String,
-    @JsonProperty("pusher")
+    @get:JsonProperty("pusher")
     val pusher: Pusher,
-    @JsonProperty("organization")
+    @get:JsonProperty("organization")
     val organization: OrganizationData,
-    @JsonProperty("sender")
+    @get:JsonProperty("sender")
     val sender: UserData,
-    @JsonProperty("created")
+    @get:JsonProperty("created")
     val created: Boolean,
-    @JsonProperty("deleted")
+    @get:JsonProperty("deleted")
     val deleted: Boolean,
-    @JsonProperty("forced")
+    @get:JsonProperty("forced")
     val forced: Boolean,
-    @JsonProperty("compare")
+    @get:JsonProperty("compare")
     val compare: String,
-    @JsonProperty("commits")
+    @get:JsonProperty("commits")
     val commits: ArrayList<Commit>,
-    @JsonProperty("head_commit")
+    @get:JsonProperty("head_commit")
     val head_commit: Commit
 )
 
@@ -256,11 +256,11 @@ sealed class WebhookEvent {
 }
 
 data class RepositorySearchData(
-    @JsonProperty("total_count")
+    @get:JsonProperty("total_count")
     val total_count: Int,
-    @JsonProperty("incomplete_results")
+    @get:JsonProperty("incomplete_results")
     val incomplete_results: Boolean,
-    @JsonProperty("items")
+    @get:JsonProperty("items")
     val items: ArrayList<Repository>
 )
 }
