@@ -14,48 +14,48 @@ import org.gotynoOutput.HasGeneric
 
 class Generics {
 data class UsingGenerics(
-    @JsonProperty("field1")
+    @get:JsonProperty("field1")
     val field1: Basic.Maybe<String>,
-    @JsonProperty("field2")
+    @get:JsonProperty("field2")
     val field2: Basic.Either<String, Int>
 )
 
 data class UsingOwnGenerics<T>(
-    @JsonProperty("field1")
+    @get:JsonProperty("field1")
     val field1: Basic.Maybe<T>
 )
 
 data class KnownForMovie(
-    @JsonProperty("poster_path")
+    @get:JsonProperty("poster_path")
     val poster_path: String?,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("title")
+    @get:JsonProperty("title")
     val title: String?,
-    @JsonProperty("vote_average")
+    @get:JsonProperty("vote_average")
     val vote_average: Float,
-    @JsonProperty("release_date")
+    @get:JsonProperty("release_date")
     val release_date: String?,
-    @JsonProperty("overview")
+    @get:JsonProperty("overview")
     val overview: String,
-    @JsonProperty("media_type")
+    @get:JsonProperty("media_type")
     val media_type: String = "movie"
 )
 
 data class KnownForShow(
-    @JsonProperty("poster_path")
+    @get:JsonProperty("poster_path")
     val poster_path: String?,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("vote_average")
+    @get:JsonProperty("vote_average")
     val vote_average: Float,
-    @JsonProperty("overview")
+    @get:JsonProperty("overview")
     val overview: String,
-    @JsonProperty("first_air_date")
+    @get:JsonProperty("first_air_date")
     val first_air_date: String?,
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String?,
-    @JsonProperty("media_type")
+    @get:JsonProperty("media_type")
     val media_type: String = "tv"
 )
 
@@ -81,32 +81,32 @@ sealed class KnownFor {
 }
 
 data class KnownForMovieWithoutTypeTag(
-    @JsonProperty("poster_path")
+    @get:JsonProperty("poster_path")
     val poster_path: String?,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("title")
+    @get:JsonProperty("title")
     val title: String?,
-    @JsonProperty("vote_average")
+    @get:JsonProperty("vote_average")
     val vote_average: Float,
-    @JsonProperty("release_date")
+    @get:JsonProperty("release_date")
     val release_date: String?,
-    @JsonProperty("overview")
+    @get:JsonProperty("overview")
     val overview: String
 )
 
 data class KnownForShowWithoutTypeTag(
-    @JsonProperty("poster_path")
+    @get:JsonProperty("poster_path")
     val poster_path: String?,
-    @JsonProperty("id")
+    @get:JsonProperty("id")
     val id: Int,
-    @JsonProperty("vote_average")
+    @get:JsonProperty("vote_average")
     val vote_average: Float,
-    @JsonProperty("overview")
+    @get:JsonProperty("overview")
     val overview: String,
-    @JsonProperty("first_air_date")
+    @get:JsonProperty("first_air_date")
     val first_air_date: String?,
-    @JsonProperty("name")
+    @get:JsonProperty("name")
     val name: String?
 )
 

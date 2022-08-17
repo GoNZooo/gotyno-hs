@@ -13,19 +13,19 @@ import org.gotynoOutput.Basic
 
 class ImportExample {
 data class UsesImport(
-    @JsonProperty("recruiter")
+    @get:JsonProperty("recruiter")
     val recruiter: Basic.Recruiter,
-    @JsonProperty("type")
+    @get:JsonProperty("type")
     val type: String = "UsesImport"
 )
 
 data class HoldsSomething<T>(
-    @JsonProperty("holdingField")
+    @get:JsonProperty("holdingField")
     val holdingField: T
 )
 
 data class StructureUsingImport(
-    @JsonProperty("event")
+    @get:JsonProperty("event")
     val event: Basic.Event
 )
 
@@ -43,7 +43,7 @@ sealed class UnionUsingImport {
 }
 
 data class AllConcrete(
-    @JsonProperty("field")
+    @get:JsonProperty("field")
     val field: HoldsSomething<Basic.Either<Basic.Maybe<StructureUsingImport>, UnionUsingImport>>
 )
 }

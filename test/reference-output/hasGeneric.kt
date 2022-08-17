@@ -26,14 +26,14 @@ sealed class Result<T, E> {
 }
 
 data class Holder<T>(
-    @JsonProperty("value")
+    @get:JsonProperty("value")
     val value: T
 )
 
 data class MaybeHolder<T>(
-    @JsonProperty("value")
+    @get:JsonProperty("value")
     val value: External_Option<T>,
-    @JsonProperty("otherValue")
+    @get:JsonProperty("otherValue")
     val otherValue: Other_Plain
 )
 
