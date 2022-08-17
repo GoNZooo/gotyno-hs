@@ -11,10 +11,15 @@ import java.math.BigInteger
 
 class Basic {
 data class Recruiter(
+    @JsonProperty("Name")
     val Name: String,
+    @JsonProperty("emails")
     val emails: ArrayList<String?>,
+    @JsonProperty("recruiter")
     val recruiter: Recruiter?,
+    @JsonProperty("created")
     val created: BigInteger,
+    @JsonProperty("type")
     val type: String = "Recruiter"
 )
 
@@ -36,6 +41,7 @@ sealed class GetSearchesFilter {
 }
 
 data class SearchesParameters(
+    @JsonProperty("filters")
     val filters: ArrayList<GetSearchesFilter>
 )
 
@@ -48,21 +54,28 @@ enum class StillSize(val data: Any) {
 }
 
 data class LogInData(
+    @JsonProperty("username")
     val username: String,
+    @JsonProperty("password")
     val password: String
 )
 
 data class UserId(
+    @JsonProperty("value")
     val value: String
 )
 
 data class Channel(
+    @JsonProperty("name")
     val name: String,
+    @JsonProperty("private")
     val private: Boolean
 )
 
 data class Email(
+    @JsonProperty("value")
     val value: String,
+    @JsonProperty("public")
     val public: Boolean
 )
 
@@ -113,13 +126,21 @@ sealed class Either<L, R> {
 }
 
 data class Person(
+    @JsonProperty("name")
     val name: String,
+    @JsonProperty("age")
     val age: Byte,
+    @JsonProperty("efficiency")
     val efficiency: Float,
+    @JsonProperty("on_vacation")
     val on_vacation: Boolean,
+    @JsonProperty("hobbies")
     val hobbies: ArrayList<String>,
+    @JsonProperty("last_fifteen_comments")
     val last_fifteen_comments: ArrayList<String>,
+    @JsonProperty("recruiter")
     val recruiter: Recruiter,
+    @JsonProperty("spouse")
     val spouse: Maybe<Person>
 )
 
