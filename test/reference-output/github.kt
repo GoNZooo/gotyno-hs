@@ -8,8 +8,10 @@ import com.fasterxml.jackson.core.*
 import com.fasterxml.jackson.databind.deser.std.*
 import java.text.ParseException
 import java.math.BigInteger
+import kotlinx.serialization.Serializable
 
 class Github {
+@Serializable
 data class UserData(
     @get:JsonProperty("login")
     val login: String,
@@ -47,6 +49,7 @@ data class UserData(
     val blog: String?
 ) : java.io.Serializable
 
+@Serializable
 data class OwnerData(
     @get:JsonProperty("id")
     val id: Int,
@@ -66,6 +69,7 @@ data class OwnerData(
     val site_admin: Boolean
 ) : java.io.Serializable
 
+@Serializable
 data class OrganizationData(
     @get:JsonProperty("login")
     val login: String,
@@ -81,19 +85,23 @@ data class OrganizationData(
     val description: String?
 ) : java.io.Serializable
 
+@Serializable
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type"
 )
-sealed class Owner {
+sealed class Owner : java.io.Serializable {
+    @Serializable
     @JsonTypeName("User")
-    data class User(@JsonValue(true) val data: OwnerData) : Owner(), java.io.Serializable
+    data class User(@JsonValue(true) val data: OwnerData) : Owner(), java.io.Serializable {val type = "User"}
 
+    @Serializable
     @JsonTypeName("Organization")
-    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner(), java.io.Serializable
+    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner(), java.io.Serializable {val type = "Organization"}
 }
 
+@Serializable
 data class Repository(
     @get:JsonProperty("id")
     val id: Int,
@@ -121,6 +129,7 @@ data class Repository(
     val language: String?
 ) : java.io.Serializable
 
+@Serializable
 data class Pusher(
     @get:JsonProperty("name")
     val name: String,
@@ -128,6 +137,7 @@ data class Pusher(
     val email: String
 ) : java.io.Serializable
 
+@Serializable
 data class Author(
     @get:JsonProperty("name")
     val name: String,
@@ -137,6 +147,7 @@ data class Author(
     val username: String
 ) : java.io.Serializable
 
+@Serializable
 data class Label(
     @get:JsonProperty("id")
     val id: Int,
@@ -152,6 +163,7 @@ data class Label(
     val description: String
 ) : java.io.Serializable
 
+@Serializable
 data class Issue(
     @get:JsonProperty("id")
     val id: Int,
@@ -191,6 +203,7 @@ data class Issue(
     val body: String
 ) : java.io.Serializable
 
+@Serializable
 data class Commit(
     @get:JsonProperty("id")
     val id: String,
@@ -216,6 +229,7 @@ data class Commit(
     val modified: ArrayList<String>
 ) : java.io.Serializable
 
+@Serializable
 data class PushData(
     @get:JsonProperty("repository")
     val repository: Repository,
@@ -245,16 +259,19 @@ data class PushData(
     val head_commit: Commit
 ) : java.io.Serializable
 
+@Serializable
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type"
 )
-sealed class WebhookEvent {
+sealed class WebhookEvent : java.io.Serializable {
+    @Serializable
     @JsonTypeName("push")
-    data class Push(val data: PushData) : WebhookEvent(), java.io.Serializable
+    data class Push(val data: PushData) : WebhookEvent(), java.io.Serializable {val type = "push"}
 }
 
+@Serializable
 data class RepositorySearchData(
     @get:JsonProperty("total_count")
     val total_count: Int,

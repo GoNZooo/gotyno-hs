@@ -8,28 +8,34 @@ import com.fasterxml.jackson.core.*
 import com.fasterxml.jackson.databind.deser.std.*
 import java.text.ParseException
 import java.math.BigInteger
+import kotlinx.serialization.Serializable
 
 import org.gotynoDeclarations.*
 
 class HasGeneric {
+@Serializable
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type"
 )
-sealed class Result<T, E> {
+sealed class Result<T, E> : java.io.Serializable {
+    @Serializable
     @JsonTypeName("Success")
-    data class Success<T, E>(val data: T) : Result<T, E>(), java.io.Serializable
+    data class Success<T, E>(val data: T) : Result<T, E>(), java.io.Serializable {val type = "Success"}
 
+    @Serializable
     @JsonTypeName("Failure")
-    data class Failure<T, E>(val data: E) : Result<T, E>(), java.io.Serializable
+    data class Failure<T, E>(val data: E) : Result<T, E>(), java.io.Serializable {val type = "Failure"}
 }
 
+@Serializable
 data class Holder<T>(
     @get:JsonProperty("value")
     val value: T
 ) : java.io.Serializable
 
+@Serializable
 data class MaybeHolder<T>(
     @get:JsonProperty("value")
     val value: External_Option<T>,
@@ -37,16 +43,19 @@ data class MaybeHolder<T>(
     val otherValue: Other_Plain
 ) : java.io.Serializable
 
+@Serializable
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type"
 )
-sealed class HasGenericEvent<T> {
+sealed class HasGenericEvent<T> : java.io.Serializable {
+    @Serializable
     @JsonTypeName("PlainEvent")
-    data class PlainEvent<T>(val data: Other_Plain) : HasGenericEvent<T>(), java.io.Serializable
+    data class PlainEvent<T>(val data: Other_Plain) : HasGenericEvent<T>(), java.io.Serializable {val type = "PlainEvent"}
 
+    @Serializable
     @JsonTypeName("GenericEvent")
-    data class GenericEvent<T>(val data: External_Option<T>) : HasGenericEvent<T>(), java.io.Serializable
+    data class GenericEvent<T>(val data: External_Option<T>) : HasGenericEvent<T>(), java.io.Serializable {val type = "GenericEvent"}
 }
 }
