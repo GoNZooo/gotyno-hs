@@ -208,7 +208,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataClassOrObject = mconcat ["    ", maybe createObject createDataClass maybeFieldType]
-          createObject = mconcat ["object ", name & unConstructorName & upperCaseFirst]
+          createObject = mconcat ["class ", name & unConstructorName & upperCaseFirst, typeVariablesOutput]
           createDataClass fieldType = mconcat ["data class ", name & unConstructorName & upperCaseFirst, typeVariablesOutput, "(val data: ", outputFieldType fieldType, ")"]
           constructorInfo =
             mconcat $
@@ -236,7 +236,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
           dataClassOrObject = mconcat ["    ", maybe createObject createDataClass maybeDefinitionReference]
-          createObject = mconcat ["object ", name & unConstructorName & upperCaseFirst]
+          createObject = mconcat ["class ", name & unConstructorName & upperCaseFirst, typeVariablesOutput]
           createDataClass definitionReference =
             mconcat
               [ "data class ",
