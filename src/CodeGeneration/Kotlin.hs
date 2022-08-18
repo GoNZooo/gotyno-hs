@@ -41,7 +41,8 @@ modulePrelude =
       "import com.fasterxml.jackson.core.*\n",
       "import com.fasterxml.jackson.databind.deser.std.*\n",
       "import java.text.ParseException\n",
-      "import java.math.BigInteger"
+      "import java.math.BigInteger\n",
+      "import kotlinx.serialization.Serializable"
     ]
 
 outputDefinition :: TypeDefinition -> Maybe Text
@@ -66,7 +67,7 @@ outputEmbeddedUnion unionName typeTag constructors =
       "\n",
       "sealed class ",
       nameOf unionName,
-      " {\n",
+      " : java.io.Serializable {\n",
       outputEmbeddedCaseUnion unionName typeTag constructors [],
       "\n",
       "}"
@@ -74,7 +75,8 @@ outputEmbeddedUnion unionName typeTag constructors =
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
-  let typeHeaderOutput = mconcat ["sealed class ", nameOf unionName, " {"]
+  let typeHeaderOutput =
+        mconcat ["@Serializable\n", "sealed class ", nameOf unionName, " : java.io.Serializable {"]
       jsonSerializationAnnotation =
         mconcat ["@JsonDeserialize(using = ", nameOf unionName, ".Deserializer::class)"]
       dataClassesOutput = cases & fmap outputDataClass & Text.intercalate "\n"
@@ -85,7 +87,8 @@ outputUntaggedUnion unionName cases =
       compareFieldTypes _other _other2 = EQ
       outputDataClass fieldType =
         mconcat
-          [ "    data class ",
+          [ "    @Serializable\n",
+            "    data class ",
             caseName fieldType,
             "(@JsonValue(true) val data: ",
             outputFieldType fieldType,
@@ -142,7 +145,15 @@ outputEnumeration name values' =
         values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                mconcat ["    ", Text.toUpper i, "(", outputLiteralValue literal, ")"]
+                mconcat
+                  [ "    @JsonProperty(",
+                    outputLiteralValue literal,
+                    ") ",
+                    Text.toUpper i,
+                    "(",
+                    outputLiteralValue literal,
+                    ")"
+                  ]
             )
           & Text.intercalate ",\n"
       outputLiteralValue (LiteralString t) = mconcat ["\"", t, "\""]
@@ -164,20 +175,20 @@ outputPlainStruct name fields =
       literalCompare (StructField _aName (LiteralType _al)) _other = GT
       literalCompare _other (StructField _aName (LiteralType _bl)) = LT
       literalCompare _a _b = EQ
-      typeOutput = mconcat ["data class ", nameOf name]
-   in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n)"]
+      typeOutput = mconcat ["@Serializable\n", "data class ", nameOf name]
+   in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n) : java.io.Serializable"]
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
   let fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
       typeVariablesOutput = mconcat ["<", joinTypeVariables typeVariables, ">"]
-      typeOutput = mconcat ["data class ", nameOf name, typeVariablesOutput]
+      typeOutput = mconcat ["@Serializable\n", "data class ", nameOf name, typeVariablesOutput]
    in mconcat
         [ typeOutput,
           "(\n    ",
           fieldsOutput,
           "\n",
-          ")"
+          ") : java.io.Serializable"
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
@@ -195,7 +206,7 @@ outputUnion name typeTag unionType =
         [ outputUnionTypeInfo typeTag,
           "\n",
           typeOutput,
-          " {\n",
+          " : java.io.Serializable {\n",
           caseUnionOutput,
           "\n}"
         ]
@@ -207,58 +218,63 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
     outputDataClass (Constructor name maybeFieldType) =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput =
-            mconcat ["val data: ", maybe "Unit = Unit" outputFieldType maybeFieldType]
+          dataFieldOutput fieldType = mconcat ["(val data: ", outputFieldType fieldType, ")"]
+          typeOfClass = maybe "class" (const "data class") maybeFieldType
+          classOutput =
+            mconcat
+              [ "    ",
+                typeOfClass,
+                " ",
+                name & nameOf & upperCaseFirst,
+                typeVariablesOutput,
+                maybe "" dataFieldOutput maybeFieldType
+              ]
           constructorInfo =
-            mconcat $
-              ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
-                <> maybe
-                  ["    @JsonInclude(JsonInclude.Include.NON_DEFAULT)\n"]
-                  (const [])
-                  maybeFieldType
+            mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
        in mconcat
             [ constructorInfo,
-              "    data class ",
-              name & unConstructorName & upperCaseFirst,
-              typeVariablesOutput,
-              "(",
-              dataFieldOutput,
-              ") : ",
+              classOutput,
+              " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "()"
+              "(), java.io.Serializable {val type = \"",
+              nameOf name,
+              "\"}"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
 
-outputEmbeddedCaseUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> [TypeVariable] -> Text
+outputEmbeddedCaseUnion ::
+  DefinitionName -> FieldName -> [EmbeddedConstructor] -> [TypeVariable] -> Text
 outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
   constructors & fmap outputDataClass & Text.intercalate "\n\n"
   where
     outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
-          outputFields reference =
-            mconcat ["@JsonValue(true) val data: ", nameOf reference]
+          dataFieldOutput definitionReference =
+            mconcat ["(@JsonValue(true) val data: ", nameOf definitionReference, ")"]
+          typeOfClass = maybe "class" (const "data class") maybeDefinitionReference
+          classOutput =
+            mconcat
+              [ "    ",
+                typeOfClass,
+                " ",
+                name & nameOf & upperCaseFirst,
+                typeVariablesOutput,
+                maybe "" dataFieldOutput maybeDefinitionReference
+              ]
           constructorInfo =
-            mconcat $
-              ["    @JsonTypeName(\"", nameOf name, "\")\n"]
-                <> maybe
-                  ["    @JsonInclude(JsonInclude.Include.NON_DEFAULT)\n"]
-                  (const [])
-                  maybeDefinitionReference
+            mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
        in mconcat
             [ constructorInfo,
-              "    data class ",
-              name & nameOf & upperCaseFirst,
-              typeVariablesOutput,
-              "(",
-              dataFieldOutput,
-              ") : ",
+              classOutput,
+              " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "()"
+              "(), java.io.Serializable {val type = \"",
+              nameOf name,
+              "\"}"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
@@ -266,9 +282,10 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
 outputUnionTypeInfo :: FieldName -> Text
 outputUnionTypeInfo typeTag =
   mconcat
-    [ "@JsonTypeInfo(\n",
+    [ "@Serializable\n",
+      "@JsonTypeInfo(\n",
       "    use = JsonTypeInfo.Id.NAME,\n",
-      "    include = JsonTypeInfo.As.PROPERTY,\n",
+      "    include = JsonTypeInfo.As.EXISTING_PROPERTY,\n",
       "    property = \"",
       unFieldName typeTag,
       "\"\n",
@@ -328,7 +345,14 @@ outputDefinitionReference
   (GenericDeclarationReference moduleName' definitionName (AppliedTypes appliedTypes)) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat ["<", appliedFieldTypes, ">"]
-     in mconcat [moduleName' & nameOf & uppercaseModuleName, "_", nameOf definitionName, maybeAppliedOutput]
+     in mconcat
+          [ moduleName'
+              & nameOf
+              & uppercaseModuleName,
+            "_",
+            nameOf definitionName,
+            maybeAppliedOutput
+          ]
 outputDefinitionReference (DeclarationReference moduleName' definitionName') =
   mconcat [moduleName' & nameOf & uppercaseModuleName, "_", nameOf definitionName']
 
@@ -426,8 +450,7 @@ fieldTypeName
     definitionName
 
 joinTypeVariables :: [TypeVariable] -> Text
-joinTypeVariables typeVariables =
-  typeVariables & fmap unTypeVariable & Text.intercalate ", "
+joinTypeVariables = fmap unTypeVariable >>> Text.intercalate ", "
 
 uppercaseModuleName :: Text -> Text
 uppercaseModuleName = upperCaseFirst
