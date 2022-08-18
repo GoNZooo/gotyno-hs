@@ -18,12 +18,12 @@ data class UsingGenerics(
     val field1: Basic.Maybe<String>,
     @get:JsonProperty("field2")
     val field2: Basic.Either<String, Int>
-)
+) : java.io.Serializable
 
 data class UsingOwnGenerics<T>(
     @get:JsonProperty("field1")
     val field1: Basic.Maybe<T>
-)
+) : java.io.Serializable
 
 data class KnownForMovie(
     @get:JsonProperty("poster_path")
@@ -40,7 +40,7 @@ data class KnownForMovie(
     val overview: String,
     @get:JsonProperty("media_type")
     val media_type: String = "movie"
-)
+) : java.io.Serializable
 
 data class KnownForShow(
     @get:JsonProperty("poster_path")
@@ -57,7 +57,7 @@ data class KnownForShow(
     val name: String?,
     @get:JsonProperty("media_type")
     val media_type: String = "tv"
-)
+) : java.io.Serializable
 
 @JsonDeserialize(using = KnownFor.Deserializer::class)
 sealed class KnownFor {
@@ -93,7 +93,7 @@ data class KnownForMovieWithoutTypeTag(
     val release_date: String?,
     @get:JsonProperty("overview")
     val overview: String
-)
+) : java.io.Serializable
 
 data class KnownForShowWithoutTypeTag(
     @get:JsonProperty("poster_path")
@@ -108,7 +108,7 @@ data class KnownForShowWithoutTypeTag(
     val first_air_date: String?,
     @get:JsonProperty("name")
     val name: String?
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -117,10 +117,10 @@ data class KnownForShowWithoutTypeTag(
 )
 sealed class KnownForEmbedded {
     @JsonTypeName("movieStartingWithLowercase")
-    data class MovieStartingWithLowercase(@JsonValue(true) val data: KnownForMovieWithoutTypeTag) : KnownForEmbedded()
+    data class MovieStartingWithLowercase(@JsonValue(true) val data: KnownForMovieWithoutTypeTag) : KnownForEmbedded(), java.io.Serializable
 
     @JsonTypeName("tvStartingWithLowercase")
-    data class TvStartingWithLowercase(@JsonValue(true) val data: KnownForShowWithoutTypeTag) : KnownForEmbedded()
+    data class TvStartingWithLowercase(@JsonValue(true) val data: KnownForShowWithoutTypeTag) : KnownForEmbedded(), java.io.Serializable
 }
 
 @JsonTypeInfo(
@@ -130,9 +130,9 @@ sealed class KnownForEmbedded {
 )
 sealed class KnownForEmbeddedWithUpperCase {
     @JsonTypeName("Movie")
-    data class Movie(@JsonValue(true) val data: KnownForMovieWithoutTypeTag) : KnownForEmbeddedWithUpperCase()
+    data class Movie(@JsonValue(true) val data: KnownForMovieWithoutTypeTag) : KnownForEmbeddedWithUpperCase(), java.io.Serializable
 
     @JsonTypeName("Tv")
-    data class Tv(@JsonValue(true) val data: KnownForShowWithoutTypeTag) : KnownForEmbeddedWithUpperCase()
+    data class Tv(@JsonValue(true) val data: KnownForShowWithoutTypeTag) : KnownForEmbeddedWithUpperCase(), java.io.Serializable
 }
 }

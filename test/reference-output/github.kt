@@ -45,7 +45,7 @@ data class UserData(
     val location: String?,
     @get:JsonProperty("blog")
     val blog: String?
-)
+) : java.io.Serializable
 
 data class OwnerData(
     @get:JsonProperty("id")
@@ -64,7 +64,7 @@ data class OwnerData(
     val repos_url: String,
     @get:JsonProperty("site_admin")
     val site_admin: Boolean
-)
+) : java.io.Serializable
 
 data class OrganizationData(
     @get:JsonProperty("login")
@@ -79,7 +79,7 @@ data class OrganizationData(
     val repos_url: String,
     @get:JsonProperty("description")
     val description: String?
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -88,10 +88,10 @@ data class OrganizationData(
 )
 sealed class Owner {
     @JsonTypeName("User")
-    data class User(@JsonValue(true) val data: OwnerData) : Owner()
+    data class User(@JsonValue(true) val data: OwnerData) : Owner(), java.io.Serializable
 
     @JsonTypeName("Organization")
-    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner()
+    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner(), java.io.Serializable
 }
 
 data class Repository(
@@ -119,14 +119,14 @@ data class Repository(
     val html_url: String,
     @get:JsonProperty("language")
     val language: String?
-)
+) : java.io.Serializable
 
 data class Pusher(
     @get:JsonProperty("name")
     val name: String,
     @get:JsonProperty("email")
     val email: String
-)
+) : java.io.Serializable
 
 data class Author(
     @get:JsonProperty("name")
@@ -135,7 +135,7 @@ data class Author(
     val email: String,
     @get:JsonProperty("username")
     val username: String
-)
+) : java.io.Serializable
 
 data class Label(
     @get:JsonProperty("id")
@@ -150,7 +150,7 @@ data class Label(
     val default: Boolean,
     @get:JsonProperty("description")
     val description: String
-)
+) : java.io.Serializable
 
 data class Issue(
     @get:JsonProperty("id")
@@ -189,7 +189,7 @@ data class Issue(
     val author_association: String,
     @get:JsonProperty("body")
     val body: String
-)
+) : java.io.Serializable
 
 data class Commit(
     @get:JsonProperty("id")
@@ -214,7 +214,7 @@ data class Commit(
     val removed: ArrayList<String>,
     @get:JsonProperty("modified")
     val modified: ArrayList<String>
-)
+) : java.io.Serializable
 
 data class PushData(
     @get:JsonProperty("repository")
@@ -243,7 +243,7 @@ data class PushData(
     val commits: ArrayList<Commit>,
     @get:JsonProperty("head_commit")
     val head_commit: Commit
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -252,7 +252,7 @@ data class PushData(
 )
 sealed class WebhookEvent {
     @JsonTypeName("push")
-    data class Push(val data: PushData) : WebhookEvent()
+    data class Push(val data: PushData) : WebhookEvent(), java.io.Serializable
 }
 
 data class RepositorySearchData(
@@ -262,5 +262,5 @@ data class RepositorySearchData(
     val incomplete_results: Boolean,
     @get:JsonProperty("items")
     val items: ArrayList<Repository>
-)
+) : java.io.Serializable
 }

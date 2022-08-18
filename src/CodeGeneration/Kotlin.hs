@@ -165,7 +165,7 @@ outputPlainStruct name fields =
       literalCompare _other (StructField _aName (LiteralType _bl)) = LT
       literalCompare _a _b = EQ
       typeOutput = mconcat ["data class ", nameOf name]
-   in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n)"]
+   in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n) : java.io.Serializable"]
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
@@ -177,7 +177,7 @@ outputGenericStruct name typeVariables fields =
           "(\n    ",
           fieldsOutput,
           "\n",
-          ")"
+          ") : java.io.Serializable"
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
@@ -226,7 +226,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
               ") : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "()"
+              "(), java.io.Serializable"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
@@ -258,7 +258,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
               ") : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "()"
+              "(), java.io.Serializable"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]

@@ -21,7 +21,7 @@ data class Recruiter(
     val created: BigInteger,
     @get:JsonProperty("type")
     val type: String = "Recruiter"
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -30,20 +30,20 @@ data class Recruiter(
 )
 sealed class GetSearchesFilter {
     @JsonTypeName("SearchesByQueryLike")
-    data class SearchesByQueryLike(val data: String) : GetSearchesFilter()
+    data class SearchesByQueryLike(val data: String) : GetSearchesFilter(), java.io.Serializable
 
     @JsonTypeName("SearchesByResultLike")
-    data class SearchesByResultLike(val data: String) : GetSearchesFilter()
+    data class SearchesByResultLike(val data: String) : GetSearchesFilter(), java.io.Serializable
 
     @JsonTypeName("NoSearchesFilter")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class NoSearchesFilter(val data: Unit = Unit) : GetSearchesFilter()
+    data class NoSearchesFilter(val data: Unit = Unit) : GetSearchesFilter(), java.io.Serializable
 }
 
 data class SearchesParameters(
     @get:JsonProperty("filters")
     val filters: ArrayList<GetSearchesFilter>
-)
+) : java.io.Serializable
 
 enum class StillSize(val data: Any) {
     W92("w92"),
@@ -58,26 +58,26 @@ data class LogInData(
     val username: String,
     @get:JsonProperty("password")
     val password: String
-)
+) : java.io.Serializable
 
 data class UserId(
     @get:JsonProperty("value")
     val value: String
-)
+) : java.io.Serializable
 
 data class Channel(
     @get:JsonProperty("name")
     val name: String,
     @get:JsonProperty("private")
     val private: Boolean
-)
+) : java.io.Serializable
 
 data class Email(
     @get:JsonProperty("value")
     val value: String,
     @get:JsonProperty("public")
     val public: Boolean
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -86,16 +86,16 @@ data class Email(
 )
 sealed class Event {
     @JsonTypeName("LogIn")
-    data class LogIn(val data: LogInData) : Event()
+    data class LogIn(val data: LogInData) : Event(), java.io.Serializable
 
     @JsonTypeName("LogOut")
-    data class LogOut(val data: UserId) : Event()
+    data class LogOut(val data: UserId) : Event(), java.io.Serializable
 
     @JsonTypeName("JoinChannels")
-    data class JoinChannels(val data: ArrayList<Channel>) : Event()
+    data class JoinChannels(val data: ArrayList<Channel>) : Event(), java.io.Serializable
 
     @JsonTypeName("SetEmails")
-    data class SetEmails(val data: ArrayList<Email>) : Event()
+    data class SetEmails(val data: ArrayList<Email>) : Event(), java.io.Serializable
 }
 
 @JsonTypeInfo(
@@ -106,10 +106,10 @@ sealed class Event {
 sealed class Maybe<T> {
     @JsonTypeName("Nothing")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class Nothing<T>(val data: Unit = Unit) : Maybe<T>()
+    data class Nothing<T>(val data: Unit = Unit) : Maybe<T>(), java.io.Serializable
 
     @JsonTypeName("Just")
-    data class Just<T>(val data: T) : Maybe<T>()
+    data class Just<T>(val data: T) : Maybe<T>(), java.io.Serializable
 }
 
 @JsonTypeInfo(
@@ -119,10 +119,10 @@ sealed class Maybe<T> {
 )
 sealed class Either<L, R> {
     @JsonTypeName("Left")
-    data class Left<L, R>(val data: L) : Either<L, R>()
+    data class Left<L, R>(val data: L) : Either<L, R>(), java.io.Serializable
 
     @JsonTypeName("Right")
-    data class Right<L, R>(val data: R) : Either<L, R>()
+    data class Right<L, R>(val data: R) : Either<L, R>(), java.io.Serializable
 }
 
 data class Person(
@@ -142,7 +142,7 @@ data class Person(
     val recruiter: Recruiter,
     @get:JsonProperty("spouse")
     val spouse: Maybe<Person>
-)
+) : java.io.Serializable
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -151,10 +151,10 @@ data class Person(
 )
 sealed class EmbeddedEvent {
     @JsonTypeName("EmbeddedLogIn")
-    data class EmbeddedLogIn(@JsonValue(true) val data: LogInData) : EmbeddedEvent()
+    data class EmbeddedLogIn(@JsonValue(true) val data: LogInData) : EmbeddedEvent(), java.io.Serializable
 
     @JsonTypeName("SystemImploded")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class SystemImploded(val data: Unit = Unit) : EmbeddedEvent()
+    data class SystemImploded(val data: Unit = Unit) : EmbeddedEvent(), java.io.Serializable
 }
 }
