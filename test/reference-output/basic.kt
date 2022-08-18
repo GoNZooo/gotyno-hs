@@ -37,7 +37,7 @@ sealed class GetSearchesFilter {
 
     @JsonTypeName("NoSearchesFilter")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class NoSearchesFilter(val data: Unit = Unit) : GetSearchesFilter(), java.io.Serializable
+    object NoSearchesFilter : GetSearchesFilter(), java.io.Serializable
 }
 
 data class SearchesParameters(
@@ -106,7 +106,7 @@ sealed class Event {
 sealed class Maybe<T> {
     @JsonTypeName("Nothing")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class Nothing<T>(val data: Unit = Unit) : Maybe<T>(), java.io.Serializable
+    object Nothing : Maybe<T>(), java.io.Serializable
 
     @JsonTypeName("Just")
     data class Just<T>(val data: T) : Maybe<T>(), java.io.Serializable
@@ -155,6 +155,6 @@ sealed class EmbeddedEvent {
 
     @JsonTypeName("SystemImploded")
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    data class SystemImploded(val data: Unit = Unit) : EmbeddedEvent(), java.io.Serializable
+    object SystemImploded : EmbeddedEvent(), java.io.Serializable
 }
 }

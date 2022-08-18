@@ -207,8 +207,9 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
     outputDataClass (Constructor name maybeFieldType) =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput =
-            mconcat ["val data: ", maybe "Unit = Unit" outputFieldType maybeFieldType]
+          dataClassOrObject = mconcat ["    ", maybe createObject createDataClass maybeFieldType]
+          createObject = mconcat ["object ", name & unConstructorName & upperCaseFirst]
+          createDataClass fieldType = mconcat ["data class ", name & unConstructorName & upperCaseFirst, typeVariablesOutput, "(val data: ", outputFieldType fieldType, ")"]
           constructorInfo =
             mconcat $
               ["    @JsonTypeName(\"", unConstructorName name, "\")\n"]
@@ -218,12 +219,8 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
                   maybeFieldType
        in mconcat
             [ constructorInfo,
-              "    data class ",
-              name & unConstructorName & upperCaseFirst,
-              typeVariablesOutput,
-              "(",
-              dataFieldOutput,
-              ") : ",
+              dataClassOrObject,
+              " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
               "(), java.io.Serializable"
@@ -238,9 +235,17 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
     outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
       let typeVariablesOutput =
             if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput = maybe "val data: Unit = Unit" outputFields maybeDefinitionReference
-          outputFields reference =
-            mconcat ["@JsonValue(true) val data: ", nameOf reference]
+          dataClassOrObject = mconcat ["    ", maybe createObject createDataClass maybeDefinitionReference]
+          createObject = mconcat ["object ", name & unConstructorName & upperCaseFirst]
+          createDataClass definitionReference =
+            mconcat
+              [ "data class ",
+                name & unConstructorName & upperCaseFirst,
+                typeVariablesOutput,
+                "(@JsonValue(true) val data: ",
+                nameOf definitionReference,
+                ")"
+              ]
           constructorInfo =
             mconcat $
               ["    @JsonTypeName(\"", nameOf name, "\")\n"]
@@ -250,12 +255,8 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
                   maybeDefinitionReference
        in mconcat
             [ constructorInfo,
-              "    data class ",
-              name & nameOf & upperCaseFirst,
-              typeVariablesOutput,
-              "(",
-              dataFieldOutput,
-              ") : ",
+              dataClassOrObject,
+              " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
               "(), java.io.Serializable"
