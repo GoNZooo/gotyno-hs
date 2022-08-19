@@ -38,6 +38,10 @@ instance HasName DefinitionReference where
   {-# INLINE nameOf #-}
   nameOf = definitionNameOf >>> nameOf
 
+instance HasName FieldName where
+  {-# INLINE nameOf #-}
+  nameOf = (^. unwrap)
+
 class HasDefinitionName a where
   definitionNameOf :: a -> DefinitionName
 

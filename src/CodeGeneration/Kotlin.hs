@@ -212,7 +212,7 @@ outputUnion name typeTag unionType =
         ]
 
 outputCaseUnion :: DefinitionName -> FieldName -> [Constructor] -> [TypeVariable] -> Text
-outputCaseUnion unionName _typeTag constructors typeVariables =
+outputCaseUnion unionName typeTag constructors typeVariables =
   constructors & fmap outputDataClass & Text.intercalate "\n\n"
   where
     outputDataClass (Constructor name maybeFieldType) =
@@ -237,7 +237,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
               " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {val type = \"",
+              "(), java.io.Serializable {val ", nameOf typeTag," = \"",
               nameOf name,
               "\"}"
             ]
@@ -246,7 +246,7 @@ outputCaseUnion unionName _typeTag constructors typeVariables =
 
 outputEmbeddedCaseUnion ::
   DefinitionName -> FieldName -> [EmbeddedConstructor] -> [TypeVariable] -> Text
-outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
+outputEmbeddedCaseUnion unionName typeTag constructors typeVariables =
   constructors & fmap outputDataClass & Text.intercalate "\n\n"
   where
     outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
@@ -272,7 +272,7 @@ outputEmbeddedCaseUnion unionName _typeTag constructors typeVariables =
               " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {val type = \"",
+              "(), java.io.Serializable {val ", nameOf typeTag," = \"",
               nameOf name,
               "\"}"
             ]
