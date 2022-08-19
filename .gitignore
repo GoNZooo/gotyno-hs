@@ -13,3 +13,6 @@ gotyno-hs.cabal
 .devcontainer/build
 **/node_modules
 *.hie
+.idea
+out/*
+*.iml
