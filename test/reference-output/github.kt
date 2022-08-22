@@ -94,11 +94,15 @@ data class OrganizationData(
 sealed class Owner : java.io.Serializable {
     @Serializable
     @JsonTypeName("User")
-    data class User(@JsonValue(true) val data: OwnerData) : Owner(), java.io.Serializable {val type = "User"}
+    data class User(@JsonValue(true) val data: OwnerData) : Owner(), java.io.Serializable {
+        val type = "User"
+    }
 
     @Serializable
     @JsonTypeName("Organization")
-    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner(), java.io.Serializable {val type = "Organization"}
+    data class Organization(@JsonValue(true) val data: OrganizationData) : Owner(), java.io.Serializable {
+        val type = "Organization"
+    }
 }
 
 @Serializable
@@ -268,7 +272,9 @@ data class PushData(
 sealed class WebhookEvent : java.io.Serializable {
     @Serializable
     @JsonTypeName("push")
-    data class Push(val data: PushData) : WebhookEvent(), java.io.Serializable {val type = "push"}
+    data class Push(val data: PushData) : WebhookEvent(), java.io.Serializable {
+        val type = "push"
+    }
 }
 
 @Serializable

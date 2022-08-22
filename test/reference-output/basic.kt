@@ -34,15 +34,29 @@ data class Recruiter(
 sealed class GetSearchesFilter : java.io.Serializable {
     @Serializable
     @JsonTypeName("SearchesByQueryLike")
-    data class SearchesByQueryLike(val data: String) : GetSearchesFilter(), java.io.Serializable {val type = "SearchesByQueryLike"}
+    data class SearchesByQueryLike(val data: String) : GetSearchesFilter(), java.io.Serializable {
+        val type = "SearchesByQueryLike"
+    }
 
     @Serializable
     @JsonTypeName("SearchesByResultLike")
-    data class SearchesByResultLike(val data: String) : GetSearchesFilter(), java.io.Serializable {val type = "SearchesByResultLike"}
+    data class SearchesByResultLike(val data: String) : GetSearchesFilter(), java.io.Serializable {
+        val type = "SearchesByResultLike"
+    }
 
     @Serializable
     @JsonTypeName("NoSearchesFilter")
-    class NoSearchesFilter : GetSearchesFilter(), java.io.Serializable {val type = "NoSearchesFilter"}
+    class NoSearchesFilter : GetSearchesFilter(), java.io.Serializable {
+        val type = "NoSearchesFilter"
+
+        override fun equals(other: Any?): Boolean {
+            return other is NoSearchesFilter
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+    }
 }
 
 @Serializable
@@ -98,19 +112,27 @@ data class Email(
 sealed class Event : java.io.Serializable {
     @Serializable
     @JsonTypeName("LogIn")
-    data class LogIn(val data: LogInData) : Event(), java.io.Serializable {val type = "LogIn"}
+    data class LogIn(val data: LogInData) : Event(), java.io.Serializable {
+        val type = "LogIn"
+    }
 
     @Serializable
     @JsonTypeName("LogOut")
-    data class LogOut(val data: UserId) : Event(), java.io.Serializable {val type = "LogOut"}
+    data class LogOut(val data: UserId) : Event(), java.io.Serializable {
+        val type = "LogOut"
+    }
 
     @Serializable
     @JsonTypeName("JoinChannels")
-    data class JoinChannels(val data: ArrayList<Channel>) : Event(), java.io.Serializable {val type = "JoinChannels"}
+    data class JoinChannels(val data: ArrayList<Channel>) : Event(), java.io.Serializable {
+        val type = "JoinChannels"
+    }
 
     @Serializable
     @JsonTypeName("SetEmails")
-    data class SetEmails(val data: ArrayList<Email>) : Event(), java.io.Serializable {val type = "SetEmails"}
+    data class SetEmails(val data: ArrayList<Email>) : Event(), java.io.Serializable {
+        val type = "SetEmails"
+    }
 }
 
 @Serializable
@@ -122,11 +144,23 @@ sealed class Event : java.io.Serializable {
 sealed class Maybe<T> : java.io.Serializable {
     @Serializable
     @JsonTypeName("Nothing")
-    class Nothing<T> : Maybe<T>(), java.io.Serializable {val type = "Nothing"}
+    class Nothing<T> : Maybe<T>(), java.io.Serializable {
+        val type = "Nothing"
+
+        override fun equals(other: Any?): Boolean {
+            return other is Nothing<*>
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+    }
 
     @Serializable
     @JsonTypeName("Just")
-    data class Just<T>(val data: T) : Maybe<T>(), java.io.Serializable {val type = "Just"}
+    data class Just<T>(val data: T) : Maybe<T>(), java.io.Serializable {
+        val type = "Just"
+    }
 }
 
 @Serializable
@@ -138,11 +172,15 @@ sealed class Maybe<T> : java.io.Serializable {
 sealed class Either<L, R> : java.io.Serializable {
     @Serializable
     @JsonTypeName("Left")
-    data class Left<L, R>(val data: L) : Either<L, R>(), java.io.Serializable {val type = "Left"}
+    data class Left<L, R>(val data: L) : Either<L, R>(), java.io.Serializable {
+        val type = "Left"
+    }
 
     @Serializable
     @JsonTypeName("Right")
-    data class Right<L, R>(val data: R) : Either<L, R>(), java.io.Serializable {val type = "Right"}
+    data class Right<L, R>(val data: R) : Either<L, R>(), java.io.Serializable {
+        val type = "Right"
+    }
 }
 
 @Serializable
@@ -174,10 +212,22 @@ data class Person(
 sealed class EmbeddedEvent : java.io.Serializable {
     @Serializable
     @JsonTypeName("EmbeddedLogIn")
-    data class EmbeddedLogIn(@JsonValue(true) val data: LogInData) : EmbeddedEvent(), java.io.Serializable {val type = "EmbeddedLogIn"}
+    data class EmbeddedLogIn(@JsonValue(true) val data: LogInData) : EmbeddedEvent(), java.io.Serializable {
+        val type = "EmbeddedLogIn"
+    }
 
     @Serializable
     @JsonTypeName("SystemImploded")
-    class SystemImploded : EmbeddedEvent(), java.io.Serializable {val type = "SystemImploded"}
+    class SystemImploded : EmbeddedEvent(), java.io.Serializable {
+        val type = "SystemImploded"
+
+        override fun equals(other: Any?): Boolean {
+            return other is SystemImploded
+        }
+
+        override fun hashCode(): Int {
+            return 0
+        }
+    }
 }
 }

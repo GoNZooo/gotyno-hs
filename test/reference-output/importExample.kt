@@ -42,11 +42,15 @@ data class StructureUsingImport(
 sealed class UnionUsingImport : java.io.Serializable {
     @Serializable
     @JsonTypeName("CoolEvent")
-    data class CoolEvent(val data: Basic.Event) : UnionUsingImport(), java.io.Serializable {val type = "CoolEvent"}
+    data class CoolEvent(val data: Basic.Event) : UnionUsingImport(), java.io.Serializable {
+        val type = "CoolEvent"
+    }
 
     @Serializable
     @JsonTypeName("Other")
-    data class Other(val data: Basic.Person) : UnionUsingImport(), java.io.Serializable {val type = "Other"}
+    data class Other(val data: Basic.Person) : UnionUsingImport(), java.io.Serializable {
+        val type = "Other"
+    }
 }
 
 @Serializable
