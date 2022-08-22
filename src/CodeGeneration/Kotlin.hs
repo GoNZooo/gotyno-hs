@@ -225,21 +225,52 @@ outputCaseUnion unionName typeTag constructors typeVariables =
               [ "    ",
                 typeOfClass,
                 " ",
-                name & nameOf & upperCaseFirst,
+                className,
                 typeVariablesOutput,
                 maybe "" dataFieldOutput maybeFieldType
               ]
           constructorInfo =
             mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
+          className = name & nameOf & upperCaseFirst
+          classOverrides =
+            maybe
+              ( mconcat
+                  [ "\n",
+                    "        override fun equals(other: Any?): Boolean {\n",
+                    "            return other is ",
+                    className,
+                    genericPlaceholders,
+                    "\n",
+                    "        }\n",
+                    "\n",
+                    "        override fun hashCode(): Int {\n",
+                    "            return 0\n",
+                    "        }\n"
+                  ]
+              )
+              (const "")
+              maybeFieldType
+          genericPlaceholders =
+            if null typeVariables
+              then ""
+              else
+                mconcat
+                  [ "<",
+                    typeVariables
+                      & fmap ((^. unwrap) >>> const "*")
+                      & Text.intercalate ",",
+                    ">"
+                  ]
        in mconcat
             [ constructorInfo,
               classOutput,
               " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {val ", nameOf typeTag," = \"",
-              nameOf name,
-              "\"}"
+              "(), java.io.Serializable {\n",
+              mconcat ["        val ", nameOf typeTag, " = \"", nameOf name, "\"\n"],
+              classOverrides,
+              "    }"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
@@ -260,21 +291,52 @@ outputEmbeddedCaseUnion unionName typeTag constructors typeVariables =
               [ "    ",
                 typeOfClass,
                 " ",
-                name & nameOf & upperCaseFirst,
+                className,
                 typeVariablesOutput,
                 maybe "" dataFieldOutput maybeDefinitionReference
               ]
+          className = name & nameOf & upperCaseFirst
           constructorInfo =
             mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
+          genericPlaceholders =
+            if null typeVariables
+              then ""
+              else
+                mconcat
+                  [ "<",
+                    typeVariables
+                      & fmap ((^. unwrap) >>> const "*")
+                      & Text.intercalate ",",
+                    ">"
+                  ]
+          classOverrides =
+            maybe
+              ( mconcat
+                  [ "\n",
+                    "        override fun equals(other: Any?): Boolean {\n",
+                    "            return other is ",
+                    className,
+                    genericPlaceholders,
+                    "\n",
+                    "        }\n",
+                    "\n",
+                    "        override fun hashCode(): Int {\n",
+                    "            return 0\n",
+                    "        }\n"
+                  ]
+              )
+              (const "")
+              maybeDefinitionReference
        in mconcat
             [ constructorInfo,
               classOutput,
               " : ",
               nameOf unionName,
               maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {val ", nameOf typeTag," = \"",
-              nameOf name,
-              "\"}"
+              "(), java.io.Serializable {\n",
+              mconcat ["        val ", nameOf typeTag, " = \"", nameOf name, "\"\n"],
+              classOverrides,
+              "    }"
             ]
     maybeUnionTypeVariableOutput =
       if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
