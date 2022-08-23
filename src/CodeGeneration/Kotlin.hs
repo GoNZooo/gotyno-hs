@@ -163,7 +163,9 @@ outputEnumeration name values' =
    in mconcat
         [ mconcat ["enum class ", nameOf name, "(val data: Any) {\n"],
           valuesOutput,
+          ";\n",
           "\n",
+          "    companion object {}\n",
           "}"
         ]
 
