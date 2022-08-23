@@ -70,7 +70,9 @@ enum class StillSize(val data: Any) {
     @JsonProperty("w185") W185("w185"),
     @JsonProperty("w300") W300("w300"),
     @JsonProperty("h632") H632("h632"),
-    @JsonProperty("original") ORIGINAL("original")
+    @JsonProperty("original") ORIGINAL("original");
+
+    companion object {}
 }
 
 @Serializable

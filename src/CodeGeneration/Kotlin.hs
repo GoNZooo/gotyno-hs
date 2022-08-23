@@ -165,7 +165,7 @@ outputEnumeration name values' =
           valuesOutput,
           ";\n",
           "\n",
-          "companion object {}\n",
+          "    companion object {}\n",
           "}"
         ]
 
