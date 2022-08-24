@@ -5,11 +5,27 @@ module Types where
 
 import Qtility
 import RIO.Time (NominalDiffTime)
+import Text.Megaparsec (ParsecT)
 
+-- | Represents the compiler state at any given moment in compilation.
+data AppState = AppState
+  { _modulesReference :: IORef [Module],
+    _currentDeclarationNamesReference :: IORef (Set ModuleName),
+    _currentDefinitionsReference :: IORef [TypeDefinition],
+    _currentDefinitionNameReference :: IORef (Maybe DefinitionName)
+  }
+
+type Parser = ParsecT Void Text (RIO AppState)
+
+-- | Where to write compiler output to.
 data OutputDestination
-  = SameAsInput
-  | OutputPath FilePath
-  | StandardOut
+  = -- | Write to the same folder as the input files, no matter whether they are in the same
+    -- folder or not.
+    SameAsInput
+  | -- | Write to a specified folder.
+    OutputPath FilePath
+  | -- | Write to standard out (@stdout@).
+    StandardOut
   deriving (Eq, Show, Generic)
 
 data Languages = Languages
@@ -29,6 +45,7 @@ data Options = Options
   }
   deriving (Eq, Show, Generic)
 
+-- | A parsed module which should contain everything we need to output to a language.
 data Module = Module
   { _moduleName :: ModuleName,
     _moduleImports :: [Import],
@@ -54,9 +71,9 @@ data TypeDefinition = TypeDefinition
   deriving (Eq, Show, Generic)
 
 data ImportedTypeDefinition = ImportedTypeDefinition
-  { _importedTypeDefinitionSourceModule :: !ModuleName,
-    _importedTypeDefinitionName :: !DefinitionName,
-    _importedTypeDefinitionTypeData :: !TypeData
+  { _importedTypeDefinitionSourceModule :: ModuleName,
+    _importedTypeDefinitionName :: DefinitionName,
+    _importedTypeDefinitionTypeData :: TypeData
   }
   deriving (Eq, Show, Generic)
 
@@ -84,25 +101,25 @@ data TagType
   deriving (Eq, Show, Generic)
 
 data TypeData
-  = Struct !StructType
-  | Union !FieldName !UnionType
-  | EmbeddedUnion !FieldName ![EmbeddedConstructor]
-  | UntaggedUnion ![FieldType]
-  | Enumeration ![EnumerationValue]
-  | DeclaredType !ModuleName ![TypeVariable]
+  = Struct StructType
+  | Union FieldName UnionType
+  | EmbeddedUnion FieldName [EmbeddedConstructor]
+  | UntaggedUnion [FieldType]
+  | Enumeration [EnumerationValue]
+  | DeclaredType ModuleName [TypeVariable]
   deriving (Eq, Show, Generic)
 
-data EmbeddedConstructor = EmbeddedConstructor !ConstructorName !(Maybe DefinitionReference)
+data EmbeddedConstructor = EmbeddedConstructor ConstructorName (Maybe DefinitionReference)
   deriving (Eq, Show, Generic)
 
 data StructType
-  = PlainStruct ![StructField]
-  | GenericStruct ![TypeVariable] ![StructField]
+  = PlainStruct [StructField]
+  | GenericStruct [TypeVariable] [StructField]
   deriving (Eq, Show, Generic)
 
 data UnionType
-  = PlainUnion ![Constructor]
-  | GenericUnion ![TypeVariable] ![Constructor]
+  = PlainUnion [Constructor]
+  | GenericUnion [TypeVariable] [Constructor]
   deriving (Eq, Show, Generic)
 
 data Constructor = Constructor
@@ -124,21 +141,21 @@ data EnumerationValue = EnumerationValue
   deriving (Eq, Show, Generic)
 
 data FieldType
-  = LiteralType !LiteralTypeValue
-  | BasicType !BasicTypeValue
-  | ComplexType !ComplexTypeValue
-  | DefinitionReferenceType !DefinitionReference
-  | RecursiveReferenceType !DefinitionName
-  | TypeVariableReferenceType !TypeVariable
+  = LiteralType LiteralTypeValue
+  | BasicType BasicTypeValue
+  | ComplexType ComplexTypeValue
+  | DefinitionReferenceType DefinitionReference
+  | RecursiveReferenceType DefinitionName
+  | TypeVariableReferenceType TypeVariable
   deriving (Eq, Show, Generic)
 
 data DefinitionReference
-  = DefinitionReference !TypeDefinition
-  | ImportedDefinitionReference !ModuleName !TypeDefinition
-  | AppliedGenericReference ![FieldType] !TypeDefinition
-  | AppliedImportedGenericReference !ModuleName !AppliedTypes !TypeDefinition
-  | DeclarationReference !ModuleName !DefinitionName
-  | GenericDeclarationReference !ModuleName !DefinitionName !AppliedTypes
+  = DefinitionReference TypeDefinition
+  | ImportedDefinitionReference ModuleName TypeDefinition
+  | AppliedGenericReference [FieldType] TypeDefinition
+  | AppliedImportedGenericReference ModuleName AppliedTypes TypeDefinition
+  | DeclarationReference ModuleName DefinitionName
+  | GenericDeclarationReference ModuleName DefinitionName AppliedTypes
   deriving (Eq, Show, Generic)
 
 newtype AppliedTypes = AppliedTypes {unAppliedTypes :: [FieldType]}
@@ -169,10 +186,10 @@ data ComplexTypeValue
   deriving (Eq, Show, Generic)
 
 data LiteralTypeValue
-  = LiteralString !Text
-  | LiteralInteger !Integer
-  | LiteralFloat !Float
-  | LiteralBoolean !Bool
+  = LiteralString Text
+  | LiteralInteger Integer
+  | LiteralFloat Float
+  | LiteralBoolean Bool
   deriving (Eq, Show, Generic)
 
 data CompilationState = CompilationState
@@ -252,5 +269,6 @@ foldMapM
     ''ModuleStatistics,
     ''FailedCompilation,
     ''LanguageOutputStatistics,
-    ''Languages
+    ''Languages,
+    ''AppState
   ]

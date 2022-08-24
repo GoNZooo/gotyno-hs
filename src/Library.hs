@@ -37,9 +37,9 @@ runMain
       _optionsInputs = inputs,
       _optionsVerbose = verbose
     } = do
-    start <- Time.getCurrentTime
-    maybeModules <- Parsing.parseModules inputs
-    postParsing <- Time.getCurrentTime
+    !start <- Time.getCurrentTime
+    !maybeModules <- Parsing.parseModules inputs
+    !postParsing <- Time.getCurrentTime
     case maybeModules of
       Right modules -> do
         startTS <- Time.getCurrentTime

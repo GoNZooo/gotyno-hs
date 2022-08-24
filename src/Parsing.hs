@@ -15,37 +15,28 @@ import qualified Text.Megaparsec.Char.Lexer as Lexer
 import Text.Show.Pretty (pPrint)
 import Types
 
-data AppState = AppState
-  { modulesReference :: !(IORef [Module]),
-    currentDeclarationNamesReference :: !(IORef (Set ModuleName)),
-    currentDefinitionsReference :: !(IORef [TypeDefinition]),
-    currentDefinitionNameReference :: !(IORef (Maybe DefinitionName))
-  }
-
-type Parser = ParsecT Void Text (RIO AppState)
-
 parseModules :: [FilePath] -> IO (Either [String] [Module])
 parseModules files = do
-  modulesReference <- newIORef []
-  currentDefinitionsReference <- newIORef []
-  currentDeclarationNamesReference <- newIORef Set.empty
-  currentDefinitionNameReference <- newIORef Nothing
+  modulesReference' <- newIORef []
+  currentDefinitionsReference' <- newIORef []
+  currentDeclarationNamesReference' <- newIORef Set.empty
+  currentNameReference <- newIORef Nothing
   let state =
         AppState
-          { currentDefinitionsReference,
-            currentDefinitionNameReference,
-            currentDeclarationNamesReference,
-            modulesReference
+          { _currentDefinitionsReference = currentDefinitionsReference',
+            _currentDefinitionNameReference = currentNameReference,
+            _currentDeclarationNamesReference = currentDeclarationNamesReference',
+            _modulesReference = modulesReference'
           }
   results <- for files $ \f -> do
     let moduleName' = f & FilePath.takeBaseName & pack & ModuleName
     fileContents <- readFileUtf8 f
     maybeModule <- run state (moduleP moduleName' f) fileContents
-    writeIORef currentDefinitionsReference mempty
-    writeIORef currentDeclarationNamesReference mempty
+    writeIORef currentDefinitionsReference' mempty
+    writeIORef currentDeclarationNamesReference' mempty
     case maybeModule of
       Right module' -> do
-        addModule module' modulesReference
+        addModule module' modulesReference'
         pure $ Right module'
       Left e -> pure $ Left $ mconcat ["Error parsing module '", f, "': \n", errorBundlePretty e]
 
@@ -295,8 +286,8 @@ fieldNameP = do
 
 recursiveReferenceP :: Parser DefinitionName
 recursiveReferenceP = do
-  AppState {currentDefinitionNameReference} <- ask
-  maybeCurrentDefinitionName <- readIORef currentDefinitionNameReference
+  currentNameReference <- view currentDefinitionNameReference
+  maybeCurrentDefinitionName <- readIORef currentNameReference
   case maybeCurrentDefinitionName of
     Just currentDefinitionName@(DefinitionName n) -> do
       _ <- string n
@@ -536,23 +527,23 @@ definitionNameP = do
 
 addDeclarationName :: ModuleName -> Parser ()
 addDeclarationName moduleName' = do
-  AppState {currentDeclarationNamesReference} <- ask
-  modifyIORef currentDeclarationNamesReference (Set.insert moduleName')
+  namesReference <- view currentDeclarationNamesReference
+  modifyIORef namesReference (Set.insert moduleName')
 
 getDeclarationNames :: Parser (Set ModuleName)
 getDeclarationNames = do
-  AppState {currentDeclarationNamesReference} <- ask
-  readIORef currentDeclarationNamesReference
+  namesReference <- view currentDeclarationNamesReference
+  readIORef namesReference
 
 getModule :: String -> Parser (Maybe Module)
 getModule importName = do
-  AppState {modulesReference} <- ask
-  modules <- readIORef modulesReference
+  modulesReference' <- view modulesReference
+  modules <- readIORef modulesReference'
   pure $ List.find (\module' -> module' ^. moduleName . unwrap == pack importName) modules
 
 addModule :: Module -> IORef [Module] -> IO ()
-addModule module' modulesReference = do
-  modifyIORef modulesReference (module' :)
+addModule module' modulesReference' = do
+  modifyIORef modulesReference' (module' :)
 
 readCurrentDefinitionName :: Parser DefinitionName
 readCurrentDefinitionName = do
@@ -562,27 +553,27 @@ readCurrentDefinitionName = do
 
 setCurrentDefinitionName :: DefinitionName -> Parser ()
 setCurrentDefinitionName name = do
-  AppState {currentDefinitionNameReference} <- ask
-  writeIORef currentDefinitionNameReference (Just name)
+  currentNameReference <- view currentDefinitionNameReference
+  writeIORef currentNameReference (Just name)
 
 getDefinitions :: Parser [TypeDefinition]
 getDefinitions = do
-  AppState {currentDefinitionsReference} <- ask
-  readIORef currentDefinitionsReference
+  definitionsReference <- view currentDefinitionsReference
+  readIORef definitionsReference
 
 getDefinition :: DefinitionName -> Parser (Maybe TypeDefinition)
 getDefinition name = do
-  AppState {currentDefinitionsReference} <- ask
-  definitions <- readIORef currentDefinitionsReference
+  definitionsReference <- view currentDefinitionsReference
+  definitions <- readIORef definitionsReference
   pure $
     List.find (\(TypeDefinition definitionName _typeData) -> name == definitionName) definitions
 
 addDefinition :: TypeDefinition -> Parser ()
 addDefinition definition@(TypeDefinition (DefinitionName definitionName) _typeData) = do
-  AppState {currentDefinitionsReference} <- ask
-  definitions <- readIORef currentDefinitionsReference
+  definitionsReference <- view currentDefinitionsReference
+  definitions <- readIORef definitionsReference
   if not (hasDefinition definition definitions)
-    then modifyIORef currentDefinitionsReference (definition :)
+    then modifyIORef' definitionsReference (definition :)
     else reportError $ "Duplicate definition with name '" <> unpack definitionName <> "'"
 
 hasDefinition :: TypeDefinition -> [TypeDefinition] -> Bool
