@@ -213,30 +213,30 @@ outputUnion name typeTag unionType =
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       typeVariables = unionType & typeVariablesFrom & fromMaybe []
    in mconcat
-        [ outputUnionTypeInfo typeTag,
-          "\n",
-          outputUnionTypeDeclaration name typeVariables,
+        [ outputUnionTypeDeclaration name typeTag typeVariables,
           " {\n",
           caseUnionOutput,
           "\n}"
         ]
 
-outputUnionTypeDeclaration :: DefinitionName -> [TypeVariable] -> Text
-outputUnionTypeDeclaration name typeVariables = do
-  let maybeTypeVariables =
-        if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-  mconcat ["sealed class ", nameOf name, maybeTypeVariables, " : java.io.Serializable"]
-
 outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName typeTag constructors =
   mconcat
-    [ outputUnionTypeInfo typeTag,
-      "\n",
-      outputUnionTypeDeclaration unionName [],
+    [ outputUnionTypeDeclaration unionName typeTag [],
       " {\n",
       constructors & fmap (outputUnionClass unionName typeTag []) & Text.intercalate "\n\n",
       "\n",
       "}"
+    ]
+
+outputUnionTypeDeclaration :: DefinitionName -> FieldName -> [TypeVariable] -> Text
+outputUnionTypeDeclaration name typeTag typeVariables = do
+  let maybeTypeVariables =
+        if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+  mconcat
+    [ outputUnionJsonTypeInfo typeTag,
+      "\n",
+      mconcat ["sealed class ", nameOf name, maybeTypeVariables, " : java.io.Serializable"]
     ]
 
 outputUnionClass ::
@@ -306,8 +306,8 @@ outputUnionClass unionName typeTag typeVariables constructor = do
           "    }"
         ]
 
-outputUnionTypeInfo :: FieldName -> Text
-outputUnionTypeInfo typeTag =
+outputUnionJsonTypeInfo :: FieldName -> Text
+outputUnionJsonTypeInfo typeTag =
   mconcat
     [ "@Serializable\n",
       "@JsonTypeInfo(\n",
