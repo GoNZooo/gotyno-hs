@@ -14,6 +14,14 @@ instance HasName DefinitionName where
   {-# INLINE nameOf #-}
   nameOf = (^. unwrap)
 
+instance HasName Constructor where
+  {-# INLINE nameOf #-}
+  nameOf = (^. constructorName . unwrap)
+
+instance HasName EmbeddedConstructor where
+  {-# INLINE nameOf #-}
+  nameOf = (^. embeddedConstructorName . unwrap)
+
 instance HasName ConstructorName where
   {-# INLINE nameOf #-}
   nameOf = (^. unwrap)

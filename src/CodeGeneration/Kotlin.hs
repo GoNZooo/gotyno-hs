@@ -1,10 +1,32 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module CodeGeneration.Kotlin (outputModule) where
 
 import CodeGeneration.Utilities
+import Data.Kind (Type)
 import Qtility
 import qualified RIO.List as List
 import qualified RIO.Text as Text
 import Types
+
+-- | Type class for outputting union constructors, useful for generalizing between embedded and
+-- standard constructors.
+class (HasName c) => ConstructorOutput c where
+  type PayloadType c :: Type
+  payloadL :: Lens' c (Maybe (PayloadType c))
+  dataFieldOutput :: PayloadType c -> Text
+
+instance ConstructorOutput Constructor where
+  type PayloadType Constructor = FieldType
+  payloadL = constructorPayloadType
+  dataFieldOutput fieldType = do
+    mconcat ["(val data: ", outputFieldType fieldType, ")"]
+
+instance ConstructorOutput EmbeddedConstructor where
+  type PayloadType EmbeddedConstructor = DefinitionReference
+  payloadL = embeddedConstructorPayload
+  dataFieldOutput definitionReference = do
+    mconcat ["(@JsonValue(true) val data: ", nameOf definitionReference, ")"]
 
 outputModule :: Module -> Text
 outputModule module' =
@@ -59,19 +81,6 @@ outputDefinition (TypeDefinition name (UntaggedUnion unionCases)) =
 outputDefinition (TypeDefinition name (EmbeddedUnion typeTag constructors)) =
   pure $ outputEmbeddedUnion name typeTag constructors
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName' _typeVariables)) = Nothing
-
-outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedUnion unionName typeTag constructors =
-  mconcat
-    [ outputUnionTypeInfo typeTag,
-      "\n",
-      "sealed class ",
-      nameOf unionName,
-      " : java.io.Serializable {\n",
-      outputEmbeddedCaseUnion unionName typeTag constructors [],
-      "\n",
-      "}"
-    ]
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
@@ -195,153 +204,107 @@ outputGenericStruct name typeVariables fields =
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
-  let caseUnionOutput = outputCaseUnion name typeTag (constructorsFrom unionType) typeVariables
+  let caseUnionOutput =
+        unionType
+          & constructorsFrom
+          & fmap (outputUnionClass name typeTag typeVariables)
+          & Text.intercalate "\n\n"
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
-      maybeTypeVariables =
-        if null typeVariables
-          then ""
-          else mconcat ["<", Text.intercalate ", " (unTypeVariable <$> typeVariables), ">"]
-      typeOutput = mconcat ["sealed class ", nameOf name, maybeTypeVariables]
       typeVariables = unionType & typeVariablesFrom & fromMaybe []
    in mconcat
         [ outputUnionTypeInfo typeTag,
           "\n",
-          typeOutput,
-          " : java.io.Serializable {\n",
+          outputUnionTypeDeclaration name typeVariables,
+          " {\n",
           caseUnionOutput,
           "\n}"
         ]
 
-outputCaseUnion :: DefinitionName -> FieldName -> [Constructor] -> [TypeVariable] -> Text
-outputCaseUnion unionName typeTag constructors typeVariables =
-  constructors & fmap outputDataClass & Text.intercalate "\n\n"
-  where
-    outputDataClass (Constructor name maybeFieldType) =
-      let typeVariablesOutput =
-            if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput fieldType = mconcat ["(val data: ", outputFieldType fieldType, ")"]
-          typeOfClass = maybe "class" (const "data class") maybeFieldType
-          classOutput =
-            mconcat
-              [ "    ",
-                typeOfClass,
-                " ",
-                className,
-                typeVariablesOutput,
-                maybe "" dataFieldOutput maybeFieldType
-              ]
-          constructorInfo =
-            mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
-          className = name & nameOf & upperCaseFirst
-          classOverrides =
-            maybe
-              ( mconcat
-                  [ "\n",
-                    "        override fun equals(other: Any?): Boolean {\n",
-                    "            return other is ",
-                    className,
-                    genericPlaceholders,
-                    "\n",
-                    "        }\n",
-                    "\n",
-                    "        override fun hashCode(): Int {\n",
-                    "            return 0\n",
-                    "        }\n"
-                  ]
-              )
-              (const "")
-              maybeFieldType
-          genericPlaceholders =
-            if null typeVariables
-              then ""
-              else
-                mconcat
-                  [ "<",
-                    typeVariables
-                      & fmap ((^. unwrap) >>> const "*")
-                      & Text.intercalate ",",
-                    ">"
-                  ]
-       in mconcat
-            [ constructorInfo,
-              classOutput,
-              " : ",
-              nameOf unionName,
-              maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {\n",
-              mconcat ["        val ", nameOf typeTag, " = \"", nameOf name, "\"\n"],
-              classOverrides,
-              "    }"
-            ]
-    maybeUnionTypeVariableOutput =
-      if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+outputUnionTypeDeclaration :: DefinitionName -> [TypeVariable] -> Text
+outputUnionTypeDeclaration name typeVariables = do
+  let maybeTypeVariables =
+        if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+  mconcat ["sealed class ", nameOf name, maybeTypeVariables, " : java.io.Serializable"]
 
-outputEmbeddedCaseUnion ::
-  DefinitionName -> FieldName -> [EmbeddedConstructor] -> [TypeVariable] -> Text
-outputEmbeddedCaseUnion unionName typeTag constructors typeVariables =
-  constructors & fmap outputDataClass & Text.intercalate "\n\n"
-  where
-    outputDataClass (EmbeddedConstructor name maybeDefinitionReference) =
-      let typeVariablesOutput =
-            if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
-          dataFieldOutput definitionReference =
-            mconcat ["(@JsonValue(true) val data: ", nameOf definitionReference, ")"]
-          typeOfClass = maybe "class" (const "data class") maybeDefinitionReference
-          classOutput =
-            mconcat
-              [ "    ",
-                typeOfClass,
-                " ",
+outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
+outputEmbeddedUnion unionName typeTag constructors =
+  mconcat
+    [ outputUnionTypeInfo typeTag,
+      "\n",
+      outputUnionTypeDeclaration unionName [],
+      " {\n",
+      constructors & fmap (outputUnionClass unionName typeTag []) & Text.intercalate "\n\n",
+      "\n",
+      "}"
+    ]
+
+outputUnionClass ::
+  forall c.
+  (ConstructorOutput c) =>
+  DefinitionName ->
+  FieldName ->
+  [TypeVariable] ->
+  c ->
+  Text
+outputUnionClass unionName typeTag typeVariables constructor = do
+  let typeVariablesOutput =
+        if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+      typeOfClass = maybe "class" (const "data class") (constructor ^. payloadL)
+      constructorInfo =
+        mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf constructor, "\")\n"]
+      className = constructor & nameOf & upperCaseFirst
+      classOutput =
+        mconcat
+          [ "    ",
+            typeOfClass,
+            " ",
+            className,
+            typeVariablesOutput,
+            maybe "" (dataFieldOutput @c) (constructor ^. payloadL)
+          ]
+      classOverrides =
+        maybe
+          ( mconcat
+              [ "\n",
+                "        override fun equals(other: Any?): Boolean {\n",
+                "            return other is ",
                 className,
-                typeVariablesOutput,
-                maybe "" dataFieldOutput maybeDefinitionReference
+                genericPlaceholders,
+                "\n",
+                "        }\n",
+                "\n",
+                "        override fun hashCode(): Int {\n",
+                "            return 0\n",
+                "        }\n"
               ]
-          className = name & nameOf & upperCaseFirst
-          constructorInfo =
-            mconcat ["    @Serializable\n", "    @JsonTypeName(\"", nameOf name, "\")\n"]
-          genericPlaceholders =
-            if null typeVariables
-              then ""
-              else
-                mconcat
-                  [ "<",
-                    typeVariables
-                      & fmap ((^. unwrap) >>> const "*")
-                      & Text.intercalate ",",
-                    ">"
-                  ]
-          classOverrides =
-            maybe
-              ( mconcat
-                  [ "\n",
-                    "        override fun equals(other: Any?): Boolean {\n",
-                    "            return other is ",
-                    className,
-                    genericPlaceholders,
-                    "\n",
-                    "        }\n",
-                    "\n",
-                    "        override fun hashCode(): Int {\n",
-                    "            return 0\n",
-                    "        }\n"
-                  ]
-              )
-              (const "")
-              maybeDefinitionReference
-       in mconcat
-            [ constructorInfo,
-              classOutput,
-              " : ",
-              nameOf unionName,
-              maybeUnionTypeVariableOutput,
-              "(), java.io.Serializable {\n",
-              mconcat ["        val ", nameOf typeTag, " = \"", nameOf name, "\"\n"],
-              classOverrides,
-              "    }"
-            ]
-    maybeUnionTypeVariableOutput =
-      if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+          )
+          (const "")
+          (constructor ^. payloadL)
+      genericPlaceholders =
+        if null typeVariables
+          then ""
+          else
+            mconcat
+              [ "<",
+                typeVariables
+                  & fmap ((^. unwrap) >>> const "*")
+                  & Text.intercalate ",",
+                ">"
+              ]
+      maybeUnionTypeVariableOutput =
+        if null typeVariables then "" else mconcat ["<", joinTypeVariables typeVariables, ">"]
+   in mconcat
+        [ constructorInfo,
+          classOutput,
+          " : ",
+          nameOf unionName,
+          maybeUnionTypeVariableOutput,
+          "(), java.io.Serializable {\n",
+          mconcat ["        val ", nameOf typeTag, " = \"", nameOf constructor, "\"\n"],
+          classOverrides,
+          "    }"
+        ]
 
 outputUnionTypeInfo :: FieldName -> Text
 outputUnionTypeInfo typeTag =

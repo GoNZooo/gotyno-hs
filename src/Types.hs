@@ -109,7 +109,10 @@ data TypeData
   | DeclaredType ModuleName [TypeVariable]
   deriving (Eq, Show, Generic)
 
-data EmbeddedConstructor = EmbeddedConstructor ConstructorName (Maybe DefinitionReference)
+data EmbeddedConstructor = EmbeddedConstructor
+  { _embeddedConstructorName :: ConstructorName,
+    _embeddedConstructorPayload :: Maybe DefinitionReference
+  }
   deriving (Eq, Show, Generic)
 
 data StructType
