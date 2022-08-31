@@ -170,7 +170,7 @@ outputEnumeration name values' =
       outputLiteralValue (LiteralFloat f) = tshow f
       outputLiteralValue (LiteralBoolean b) = bool "false" "true" b
    in mconcat
-        [ mconcat ["enum class ", nameOf name, "(val data: Any) {\n"],
+        [ mconcat ["enum class ", nameOf name, "(val data: Any) : java.io.Serializable {\n"],
           valuesOutput,
           ";\n",
           "\n",
