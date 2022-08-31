@@ -65,7 +65,7 @@ data class SearchesParameters(
     val filters: ArrayList<GetSearchesFilter>
 ) : java.io.Serializable
 
-enum class StillSize(val data: Any) {
+enum class StillSize(val data: Any) : java.io.Serializable {
     @JsonProperty("w92") W92("w92"),
     @JsonProperty("w185") W185("w185"),
     @JsonProperty("w300") W300("w300"),
