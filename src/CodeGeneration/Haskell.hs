@@ -30,7 +30,8 @@ outputModule module' =
           "\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
           if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
-          definitionOutput
+          definitionOutput,
+          "\n"
         ]
 
 modulePrelude :: Text -> Text
@@ -74,7 +75,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
       toJsonOutput =
         mconcat
           [ "instance ToJSON ",
-            unDefinitionName unionName,
+            unionName & nameOf & sanitizeName,
             " where",
             "\n  ",
             toJsonCaseOutput
@@ -106,7 +107,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
       fromJsonOutput =
         mconcat
           [ "instance FromJSON ",
-            unDefinitionName unionName,
+            unionName & nameOf & sanitizeName,
             " where",
             "\n  parseJSON = withObject \"",
             unDefinitionName unionName,
@@ -315,26 +316,26 @@ outputUnion name typeTag unionType =
       lowerCasedTypeVariables = fmap (unTypeVariable >>> lowerCaseFirst) typeVariables
       toJsonHeader =
         if null typeVariables
-          then mconcat ["instance ToJSON ", unDefinitionName name, " where"]
+          then mconcat ["instance ToJSON ", name & nameOf & sanitizeName, " where"]
           else
             mconcat
               [ "instance (",
                 lowerCasedTypeVariables & fmap ("ToJSON " <>) & Text.intercalate ", ",
                 ") => ToJSON (",
-                unDefinitionName name,
+                name & nameOf & sanitizeName,
                 " ",
                 Text.intercalate " " lowerCasedTypeVariables,
                 ") where"
               ]
       fromJsonHeader =
         if null typeVariables
-          then mconcat ["instance FromJSON ", unDefinitionName name, " where"]
+          then mconcat ["instance FromJSON ", name & nameOf & sanitizeName, " where"]
           else
             mconcat
               [ "instance (",
                 lowerCasedTypeVariables & fmap ("FromJSON " <>) & Text.intercalate ", ",
                 ") => FromJSON (",
-                unDefinitionName name,
+                name & nameOf & sanitizeName,
                 " ",
                 Text.intercalate " " lowerCasedTypeVariables,
                 ") where"
@@ -377,14 +378,38 @@ outputCaseUnion name constructors typeVariables =
           & Text.intercalate "\n  | "
       maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
    in mconcat
-        [ mconcat ["data ", unDefinitionName name, maybeTypeVariables, "\n  = "],
+        [ mconcat ["data ", name & nameOf & sanitizeName, maybeTypeVariables, "\n  = "],
           cases
         ]
   where
     outputCaseConstructor (Constructor (ConstructorName constructorName') Nothing) =
-      upperCaseFirst constructorName'
+      constructorName' & upperCaseFirst & sanitizeName
     outputCaseConstructor (Constructor (ConstructorName constructorName') (Just payload)) =
-      mconcat [upperCaseFirst constructorName', " ", outputFieldType payload]
+      mconcat
+        [ constructorName' & upperCaseFirst & sanitizeName,
+          " ",
+          outputFieldType payload
+        ]
+
+sanitizeName :: (Eq s, IsString s) => s -> s
+sanitizeName "Nothing" = "Nothing'"
+sanitizeName "Just" = "Just'"
+sanitizeName "Left" = "Left'"
+sanitizeName "Right" = "Right'"
+sanitizeName "True" = "True'"
+sanitizeName "False" = "False'"
+sanitizeName "Type" = "Type'"
+sanitizeName "Data" = "Data'"
+sanitizeName "String" = "String'"
+sanitizeName "Int" = "Int'"
+sanitizeName "Double" = "Double'"
+sanitizeName "Float" = "Float'"
+sanitizeName "Bool" = "Bool'"
+sanitizeName "Char" = "Char'"
+sanitizeName "Ordering" = "Ordering'"
+sanitizeName "Maybe" = "Maybe'"
+sanitizeName "Either" = "Either'"
+sanitizeName other = other
 
 outputField :: DefinitionName -> StructField -> Text
 outputField definitionName (StructField fieldName fieldType) =

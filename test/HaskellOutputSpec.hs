@@ -32,7 +32,8 @@ spec = do
                 "  }",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON ''StructOne"
+                "deriveLensAndJSON ''StructOne",
+                ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleStruct.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -66,7 +67,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON",
                 "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_Holder\") >>> lowerCaseFirst}",
                 "",
-                "makeLenses ''Holder"
+                "makeLenses ''Holder",
+                ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericStruct.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -96,7 +98,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON ExamplePlainUnion where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExamplePlainUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -125,7 +128,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance (FromJSON t, FromJSON u) => FromJSON (ExampleGenericUnion t u) where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleGenericUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -151,7 +155,8 @@ spec = do
                 "  | ExampleUntaggedUnionBoolean Bool",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''ExampleUntaggedUnion"
+                "deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''ExampleUntaggedUnion",
+                ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleUntaggedUnion.gotyno"]
       Haskell.outputModule parsedModule `shouldBe` expectedOutput
@@ -203,7 +208,8 @@ spec = do
                 "      \"Case1\" -> Case1 <$> parseJSON (Object o)",
                 "      \"Case2\" -> Case2 <$> parseJSON (Object o)",
                 "      \"NoPayload\" -> pure NoPayload",
-                "      tagValue -> fail $ \"Invalid type tag: \" <> show tagValue"
+                "      tagValue -> fail $ \"Invalid type tag: \" <> show tagValue",
+                ""
               ]
       result <- parseModules ["test/examples/haskellExampleEmbeddedUnion.gotyno"]
       shouldBeRight result
@@ -245,7 +251,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON UnionUsingImport where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                ""
               ]
       result <-
         parseModules
@@ -301,7 +308,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance FromJSON UnionComposite where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                ""
               ]
       result <- parseModules ["test/examples/haskellExampleCompositeTypes.gotyno"]
       shouldBeRight result
@@ -377,7 +385,8 @@ spec = do
                 "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"type\"",
                 "",
                 "instance (FromJSON t) => FromJSON (HasGenericEvent t) where",
-                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\""
+                "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"type\"",
+                ""
               ]
       result <- parseModules ["examples/hasGeneric.gotyno"]
       shouldBeRight result
@@ -411,7 +420,8 @@ spec = do
                 "  toJSON ExampleEnumTwo = String \"two\"",
                 "",
                 "instance FromJSON ExampleEnum where",
-                "  parseJSON = Helpers.enumFromJSON [(String \"zero\", ExampleEnumZero), (String \"one\", ExampleEnumOne), (String \"two\", ExampleEnumTwo)]"
+                "  parseJSON = Helpers.enumFromJSON [(String \"zero\", ExampleEnumZero), (String \"one\", ExampleEnumOne), (String \"two\", ExampleEnumTwo)]",
+                ""
               ]
       result <- parseModules ["test/examples/haskellExampleEnum.gotyno"]
       shouldBeRight result

@@ -8,12 +8,14 @@ import Test.Hspec
 main :: IO ()
 main = do
   tsReferenceOutput <- ParsingSpec.typeScriptReferenceOutput
+  hsReferenceOutput <- ParsingSpec.haskellReferenceOutput
   fsReferenceOutput <- ParsingSpec.fSharpReferenceOutput
   pyReferenceOutput <- ParsingSpec.pythonReferenceOutput
   ktReferenceOutput <- ParsingSpec.kotlinReferenceOutput
   hspec $ do
     ParsingSpec.spec
       tsReferenceOutput
+      hsReferenceOutput
       fsReferenceOutput
       pyReferenceOutput
       ktReferenceOutput
