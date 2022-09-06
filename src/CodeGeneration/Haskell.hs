@@ -1,5 +1,6 @@
 module CodeGeneration.Haskell (outputModule) where
 
+import CodeGeneration.Utilities (nameOf)
 import Qtility
 import qualified RIO.Text as Text
 import Types
@@ -25,7 +26,7 @@ outputModule module' =
             )
           & Text.intercalate "\n"
    in mconcat
-        [ module' ^. moduleName . unwrap & modulePrelude,
+        [ module' ^. moduleName . unwrap & upperCaseFirst & modulePrelude,
           "\n",
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
           if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
@@ -255,8 +256,40 @@ outputPlainStruct name fields =
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
   let fullName = unDefinitionName name <> joinTypeVariables typeVariables
-      deriveLensAndJSONOutput = mconcat ["deriveLensAndJSON ''", unDefinitionName name]
+      jsonInstanceOutput = mconcat [fromJsonOutput, "\n\n", toJsonOutput]
+      classHeaderOutput instanceType =
+        mconcat
+          [ "instance (",
+            classRequirements instanceType,
+            ") => ",
+            instanceType,
+            " (",
+            fullName,
+            ") where"
+          ]
+      toJsonOutput =
+        mconcat
+          [ classHeaderOutput "ToJSON",
+            "\n",
+            "  toJSON = JSON.genericToJSON\n",
+            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
+            nameOf name,
+            "\") >>> lowerCaseFirst}"
+          ]
+      fromJsonOutput =
+        mconcat
+          [ classHeaderOutput "FromJSON",
+            "\n",
+            "  parseJSON = JSON.genericParseJSON\n",
+            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
+            nameOf name,
+            "\") >>> lowerCaseFirst}"
+          ]
       fieldsOutput = fields & fmap (outputField name) & Text.intercalate ",\n    "
+      classRequirements instanceType =
+        typeVariables
+          & fmap (\t -> t ^. unwrap & haskellifyTypeVariable & (mconcat [instanceType, " "] <>))
+          & Text.intercalate ", "
    in mconcat
         [ mconcat ["data ", fullName, " = ", unDefinitionName name, "\n"],
           "  { ",
@@ -265,7 +298,10 @@ outputGenericStruct name typeVariables fields =
           "\n",
           "  deriving (Eq, Show, Generic)",
           "\n\n",
-          deriveLensAndJSONOutput
+          jsonInstanceOutput,
+          "\n\n",
+          "makeLenses ''",
+          nameOf name
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
