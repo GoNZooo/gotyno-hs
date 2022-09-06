@@ -1,6 +1,7 @@
 module ParsingSpec where
 
 import qualified CodeGeneration.FSharp as FSharp
+import qualified CodeGeneration.Haskell as Haskell
 import qualified CodeGeneration.Kotlin as Kotlin
 import qualified CodeGeneration.Python as Python
 import qualified CodeGeneration.TypeScript as TypeScript
@@ -11,6 +12,14 @@ import Test.Hspec
 import Types
 
 data TypeScriptReferenceOutput = TypeScriptReferenceOutput
+  { basic :: !Text,
+    import' :: !Text,
+    hasGeneric :: !Text,
+    generics :: !Text,
+    gitHub :: !Text
+  }
+
+data HaskellReferenceOutput = HaskellReferenceOutput
   { basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -48,6 +57,15 @@ typeScriptReferenceOutput = do
   generics <- genericsReferenceOutput "ts"
   gitHub <- gitHubReferenceOutput "ts"
   pure TypeScriptReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+
+haskellReferenceOutput :: IO HaskellReferenceOutput
+haskellReferenceOutput = do
+  basic <- basicReferenceOutput "hs"
+  import' <- importReferenceOutput "hs"
+  hasGeneric <- hasGenericReferenceOutput "hs"
+  generics <- genericsReferenceOutput "hs"
+  gitHub <- gitHubReferenceOutput "hs"
+  pure HaskellReferenceOutput {basic, import', hasGeneric, generics, gitHub}
 
 fSharpReferenceOutput :: IO FSharpReferenceOutput
 fSharpReferenceOutput = do
@@ -95,12 +113,14 @@ pythonReferenceOutput = do
 
 spec ::
   TypeScriptReferenceOutput ->
+  HaskellReferenceOutput ->
   FSharpReferenceOutput ->
   PythonReferenceOutput ->
   KotlinReferenceOutput ->
   Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
+  (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub) = do
@@ -400,14 +420,11 @@ spec
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
-        let basicTypeScriptOutput = TypeScript.outputModule basicModule
-            basicFSharpOutput = FSharp.outputModule basicModule
-            basicPythonOutput = Python.outputModule basicModule
-            basicKotlinOutput = Kotlin.outputModule basicModule
-        basicTypeScriptOutput `shouldBe` tsBasic
-        basicFSharpOutput `shouldBe` fsBasic
-        basicPythonOutput `shouldBe` pyBasic
-        basicKotlinOutput `shouldBe` ktBasic
+        TypeScript.outputModule basicModule `shouldBe` tsBasic
+        Haskell.outputModule basicModule `shouldBe` hsBasic
+        FSharp.outputModule basicModule `shouldBe` fsBasic
+        Python.outputModule basicModule `shouldBe` pyBasic
+        Kotlin.outputModule basicModule `shouldBe` ktBasic
 
       it "Mirrors reference output for `importExample.gotyno`" $ do
         importModule <-
@@ -416,19 +433,17 @@ spec
                     & fmap ("examples/" <>)
                     & parseModules
                 )
-        let importTypeScriptOutput = TypeScript.outputModule importModule
-            importFSharpOutput = FSharp.outputModule importModule
-        importTypeScriptOutput `shouldBe` tsImport
-        importFSharpOutput `shouldBe` fsImport
+        TypeScript.outputModule importModule `shouldBe` tsImport
+        Haskell.outputModule importModule `shouldBe` hsImport
+        FSharp.outputModule importModule `shouldBe` fsImport
         Kotlin.outputModule importModule `shouldBe` ktImport
 
       it "Mirrors reference output for `hasGeneric.gotyno`" $ do
         hasGenericModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/hasGeneric.gotyno"]
-        let hasGenericTypeScriptOutput = TypeScript.outputModule hasGenericModule
-            hasGenericFSharpOutput = FSharp.outputModule hasGenericModule
-        hasGenericTypeScriptOutput `shouldBe` tsHasGeneric
-        hasGenericFSharpOutput `shouldBe` fsHasGeneric
+        TypeScript.outputModule hasGenericModule `shouldBe` tsHasGeneric
+        Haskell.outputModule hasGenericModule `shouldBe` hsHasGeneric
+        FSharp.outputModule hasGenericModule `shouldBe` fsHasGeneric
         Kotlin.outputModule hasGenericModule `shouldBe` ktHasGeneric
 
       it "Mirrors reference output for `generics.gotyno`" $ do
@@ -438,21 +453,18 @@ spec
                     & fmap ("examples/" <>)
                     & parseModules
                 )
-        let genericsTypeScriptOutput = TypeScript.outputModule genericsModule
-            genericsFSharpOutput = FSharp.outputModule genericsModule
-            genericsPythonOutput = Python.outputModule genericsModule
-        genericsTypeScriptOutput `shouldBe` tsGenerics
-        genericsFSharpOutput `shouldBe` fsGenerics
-        genericsPythonOutput `shouldBe` pyGenerics
+        TypeScript.outputModule genericsModule `shouldBe` tsGenerics
+        Haskell.outputModule genericsModule `shouldBe` hsGenerics
+        FSharp.outputModule genericsModule `shouldBe` fsGenerics
+        Python.outputModule genericsModule `shouldBe` pyGenerics
         Kotlin.outputModule genericsModule `shouldBe` ktGenerics
 
       it "Mirrors reference output for `github.gotyno`" $ do
         gitHubModule <-
           (getRight >>> PartialList.head) <$> parseModules ["./examples/github.gotyno"]
-        let gitHubTypeScriptOutput = TypeScript.outputModule gitHubModule
-            gitHubFSharpOutput = FSharp.outputModule gitHubModule
-        gitHubTypeScriptOutput `shouldBe` tsGitHub
-        gitHubFSharpOutput `shouldBe` fsGitHub
+        TypeScript.outputModule gitHubModule `shouldBe` tsGitHub
+        Haskell.outputModule gitHubModule `shouldBe` hsGitHub
+        FSharp.outputModule gitHubModule `shouldBe` fsGitHub
         Kotlin.outputModule gitHubModule `shouldBe` ktGitHub
 
       it "Basic `python.gotyno` module is output correctly" $ do
