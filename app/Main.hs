@@ -5,8 +5,8 @@ module Main where
 import Library
 import Options.Applicative.Simple
 import qualified Paths_gotyno_hs
+import Qtility
 import Types hiding (Parser)
-import Prelude
 
 -- This `main` function just delegates to the library's definition of `main`
 main :: IO ()

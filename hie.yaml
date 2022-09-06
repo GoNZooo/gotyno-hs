@@ -1,8 +1,13 @@
 cradle:
   stack:
-      - component: gotyno-hs:test:gotyno-hs-test
-        path: test
-      - component: gotyno-hs:lib
-        path: src
-      - component: gotyno-hs:exe:gotyno-hs
-        path: app
+    - path: "./src"
+      component: "gotyno-hs:lib"
+
+    - path: "./app/Main.hs"
+      component: "gotyno-hs:exe:gotyno-hs"
+
+    - path: "./app/Paths_gotyno_hs.hs"
+      component: "gotyno-hs:exe:gotyno-hs"
+
+    - path: "./test"
+      component: "gotyno-hs:test:gotyno-hs-test"
