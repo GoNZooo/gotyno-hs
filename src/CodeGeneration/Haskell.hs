@@ -22,7 +22,12 @@ outputModule module' =
         module' ^. moduleDeclarationNames
           & fmap
             ( \(ModuleName declarationModuleName) ->
-                mconcat ["import qualified ", upperCaseFirst declarationModuleName]
+                mconcat
+                  [ "import qualified GotynoDeclarations.",
+                    upperCaseFirst declarationModuleName,
+                    " as ",
+                    upperCaseFirst declarationModuleName
+                  ]
             )
           & Text.intercalate "\n"
    in mconcat
