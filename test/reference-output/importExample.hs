@@ -53,7 +53,7 @@ instance FromJSON UnionUsingImport where
   parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions "type"
 
 data AllConcrete = AllConcrete
-  { _allConcreteField :: (HoldsSomething (Basic.Either (Basic.Maybe StructureUsingImport) UnionUsingImport))
+  { _allConcreteField :: (HoldsSomething (Basic.Either' (Basic.Maybe' StructureUsingImport) UnionUsingImport))
   }
   deriving (Eq, Show, Generic)
 

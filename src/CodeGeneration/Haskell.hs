@@ -92,7 +92,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
       constructorToJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
         mconcat
           [ "toJSON (",
-            n,
+            upperCaseFirst n,
             " payload) = toJSON payload & atKey \"",
             tag,
             "\" ?~ String \"",
@@ -102,7 +102,7 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
       constructorToJson (EmbeddedConstructor (ConstructorName n) Nothing) =
         mconcat
           [ "toJSON ",
-            n,
+            upperCaseFirst n,
             " = object [] & atKey \"",
             tag,
             "\" ?~ String \"",
@@ -129,9 +129,9 @@ outputEmbeddedUnion unionName (FieldName tag) constructors =
           & fmap constructorFromJson
           & Text.intercalate "\n      "
       constructorFromJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
-        mconcat ["\"", n, "\" -> ", n, " <$> parseJSON (Object o)"]
+        mconcat ["\"", n, "\" -> ", upperCaseFirst n, " <$> parseJSON (Object o)"]
       constructorFromJson (EmbeddedConstructor (ConstructorName n) Nothing) =
-        mconcat ["\"", n, "\" -> pure ", n]
+        mconcat ["\"", n, "\" -> pure ", upperCaseFirst n]
    in mconcat
         [ typeOutput,
           "\n",
@@ -152,22 +152,44 @@ embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
   let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
-      deriveLensAndJSONOutput =
-        mconcat ["deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''", unDefinitionName unionName]
       unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
+      caseConstructor fieldType = mconcat [nameOf unionName, fieldTypeName fieldType]
       outputCaseLine fieldType =
         mconcat
-          [ unDefinitionName unionName,
-            fieldTypeName fieldType,
+          [ caseConstructor fieldType,
             " ",
             outputFieldType fieldType
           ]
+      jsonInstanceOutput =
+        mconcat [fromJsonInstance, "\n\n", toJsonInstance]
+      fromJsonInstance =
+        mconcat
+          [ "instance FromJSON ",
+            unionName & nameOf & sanitizeName,
+            " where\n",
+            "  parseJSON v =\n",
+            "    ",
+            fromJsonCaseOutput
+          ]
+      toJsonInstance =
+        mconcat
+          [ "instance ToJSON ",
+            unionName & nameOf & sanitizeName,
+            " where\n",
+            toJsonCaseOutput
+          ]
+      fromJsonCaseOutput =
+        cases & fmap fromJsonCase & Text.intercalate "\n      <|> "
+      toJsonCaseOutput =
+        cases & fmap toJsonCase & Text.intercalate "\n"
+      fromJsonCase fieldType = mconcat ["(", caseConstructor fieldType, " <$> parseJSON v)"]
+      toJsonCase fieldType = mconcat ["  toJSON (", caseConstructor fieldType, " v) = toJSON v"]
    in mconcat
         [ typeOutput,
           "\n",
           "  deriving (Eq, Show, Generic)",
           "\n\n",
-          deriveLensAndJSONOutput
+          jsonInstanceOutput
         ]
 
 outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
@@ -456,7 +478,7 @@ outputDefinitionReference
       (ModuleName moduleName')
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [upperCaseFirst moduleName', ".", name]
+    mconcat [upperCaseFirst moduleName', ".", sanitizeName name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -471,7 +493,15 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-     in mconcat ["(", upperCaseFirst moduleName', ".", name, " ", appliedFieldTypes, ")"]
+     in mconcat
+          [ "(",
+            upperCaseFirst moduleName',
+            ".",
+            sanitizeName name,
+            " ",
+            appliedFieldTypes,
+            ")"
+          ]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName')
@@ -480,9 +510,9 @@ outputDefinitionReference
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
         maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
-     in mconcat ["(", upperCaseFirst moduleName', ".", name, maybeAppliedOutput, ")"]
+     in mconcat ["(", upperCaseFirst moduleName', ".", sanitizeName name, maybeAppliedOutput, ")"]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
-  mconcat [upperCaseFirst moduleName', ".", name]
+  mconcat [upperCaseFirst moduleName', ".", sanitizeName name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "Text"

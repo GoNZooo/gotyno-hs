@@ -63,8 +63,8 @@ haskellReferenceOutput = do
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
-  let generics = ""
-      gitHub = ""
+  generics <- genericsReferenceOutput "hs"
+  let gitHub = ""
   pure HaskellReferenceOutput {basic, import', hasGeneric, generics, gitHub}
 
 fSharpReferenceOutput :: IO FSharpReferenceOutput
@@ -453,12 +453,10 @@ spec
                     & fmap ("examples/" <>)
                     & parseModules
                 )
-        let genericsTypeScriptOutput = TypeScript.outputModule genericsModule
-            genericsFSharpOutput = FSharp.outputModule genericsModule
-            genericsPythonOutput = Python.outputModule genericsModule
-        genericsTypeScriptOutput `shouldBe` tsGenerics
-        genericsFSharpOutput `shouldBe` fsGenerics
-        genericsPythonOutput `shouldBe` pyGenerics
+        TypeScript.outputModule genericsModule `shouldBe` tsGenerics
+        Haskell.outputModule genericsModule `shouldBe` hsGenerics
+        FSharp.outputModule genericsModule `shouldBe` fsGenerics
+        Python.outputModule genericsModule `shouldBe` pyGenerics
         Kotlin.outputModule genericsModule `shouldBe` ktGenerics
 
       it "Mirrors reference output for `github.gotyno`" $ do

@@ -155,7 +155,16 @@ spec = do
                 "  | ExampleUntaggedUnionBoolean Bool",
                 "  deriving (Eq, Show, Generic)",
                 "",
-                "deriveLensAndJSON' 'Helpers.untaggedUnionOptions ''ExampleUntaggedUnion",
+                "instance FromJSON ExampleUntaggedUnion where",
+                "  parseJSON v =",
+                "    (ExampleUntaggedUnionString <$> parseJSON v)",
+                "      <|> (ExampleUntaggedUnionF64 <$> parseJSON v)",
+                "      <|> (ExampleUntaggedUnionBoolean <$> parseJSON v)",
+                "",
+                "instance ToJSON ExampleUntaggedUnion where",
+                "  toJSON (ExampleUntaggedUnionString v) = toJSON v",
+                "  toJSON (ExampleUntaggedUnionF64 v) = toJSON v",
+                "  toJSON (ExampleUntaggedUnionBoolean v) = toJSON v",
                 ""
               ]
       Right [parsedModule] <- parseModules ["test/examples/haskellExampleUntaggedUnion.gotyno"]
