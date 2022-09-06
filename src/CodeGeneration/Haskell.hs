@@ -5,37 +5,32 @@ import qualified RIO.Text as Text
 import Types
 
 outputModule :: Module -> Text
-outputModule
-  Module
-    { _moduleName = ModuleName name,
-      _moduleDefinitions = definitions,
-      _moduleImports = imports,
-      _moduleDeclarationNames = declarationNames
-    } =
-    let definitionOutput = definitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
-        importsOutput = imports & fmap outputImport & Text.intercalate "\n"
-        outputImport import' =
-          let importName = import' ^. unwrap . moduleName . unwrap
-           in mconcat
-                [ "import qualified GotynoOutput.",
-                  upperCaseFirst importName,
-                  " as ",
-                  upperCaseFirst importName
-                ]
-        declarationImportsOutput =
-          declarationNames
-            & fmap
-              ( \(ModuleName declarationModuleName) ->
-                  mconcat ["import qualified ", upperCaseFirst declarationModuleName]
-              )
-            & Text.intercalate "\n"
-     in mconcat
-          [ modulePrelude (upperCaseFirst name),
-            "\n",
-            if Text.null importsOutput then "" else importsOutput <> "\n\n",
-            if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
-            definitionOutput
-          ]
+outputModule module' =
+  let definitionOutput =
+        module' ^. moduleDefinitions & mapMaybe outputDefinition & Text.intercalate "\n\n"
+      importsOutput = module' ^. moduleImports & fmap outputImport & Text.intercalate "\n"
+      outputImport import' =
+        let importName = import' ^. unwrap . moduleName . unwrap
+         in mconcat
+              [ "import qualified GotynoOutput.",
+                upperCaseFirst importName,
+                " as ",
+                upperCaseFirst importName
+              ]
+      declarationImportsOutput =
+        module' ^. moduleDeclarationNames
+          & fmap
+            ( \(ModuleName declarationModuleName) ->
+                mconcat ["import qualified ", upperCaseFirst declarationModuleName]
+            )
+          & Text.intercalate "\n"
+   in mconcat
+        [ module' ^. moduleName . unwrap & modulePrelude,
+          "\n",
+          if Text.null importsOutput then "" else importsOutput <> "\n\n",
+          if Text.null declarationImportsOutput then "" else declarationImportsOutput <> "\n\n",
+          definitionOutput
+        ]
 
 modulePrelude :: Text -> Text
 modulePrelude name =
