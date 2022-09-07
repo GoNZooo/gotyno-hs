@@ -16,8 +16,8 @@ export type UserData = {
     following: number;
     created_at: string;
     updated_at: string;
-    location: string | null | undefined;
-    blog: string | null | undefined;
+    location?: string;
+    blog?: string;
 };
 
 export function isUserData(value: unknown): value is UserData {
@@ -51,9 +51,9 @@ export type OrganizationData = {
     login: string;
     id: number;
     avatar_url: string;
-    members_url: string | null | undefined;
+    members_url?: string;
     repos_url: string;
-    description: string | null | undefined;
+    description?: string;
 };
 
 export function isOrganizationData(value: unknown): value is OrganizationData {
@@ -88,9 +88,9 @@ export type Organization = {
     login: string;
     id: number;
     avatar_url: string;
-    members_url: string | null | undefined;
+    members_url?: string;
     repos_url: string;
-    description: string | null | undefined;
+    description?: string;
 };
 
 export function User(data: OwnerData): User {
@@ -133,11 +133,11 @@ export type Repository = {
     fork: boolean;
     created_at: string;
     updated_at: string;
-    description: string | null | undefined;
+    description?: string;
     owner: Owner;
     url: string;
     html_url: string;
-    language: string | null | undefined;
+    language?: string;
 };
 
 export function isRepository(value: unknown): value is Repository {
@@ -203,12 +203,12 @@ export type Issue = {
     labels: Label[];
     state: string;
     locked: boolean;
-    assignee: UserData | null | undefined;
+    assignee?: UserData;
     assignees: UserData[];
     comments: number;
     created_at: string;
     updated_at: string;
-    closed_at: string | null | undefined;
+    closed_at?: string;
     author_association: string;
     body: string;
 };

@@ -28,7 +28,8 @@ outputModule module' =
           if Text.null importsOutput then "" else importsOutput <> "\n\n",
           declarationImportOutput,
           if null declarationNames then "" else "\n\n",
-          definitionOutput
+          definitionOutput,
+          "\n"
         ]
 
 modulePrelude :: Text
@@ -1088,6 +1089,8 @@ unionEnumConstructorTag unionName constructorName' =
   mconcat [unionName, "Tag.", upperCaseFirst constructorName']
 
 outputField :: StructField -> Text
+outputField (StructField (FieldName name) (ComplexType (OptionalType fieldType))) =
+  mconcat ["    ", name, "?: ", outputFieldType fieldType, ";\n"]
 outputField (StructField (FieldName name) fieldType) =
   mconcat ["    ", name, ": ", outputFieldType fieldType, ";\n"]
 
