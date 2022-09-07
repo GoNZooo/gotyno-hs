@@ -34,11 +34,11 @@ export function validateUsingOwnGenerics<T>(validateT: svt.Validator<T>): svt.Va
 
 export type KnownForMovie = {
     media_type: "movie";
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
-    title: string | null | undefined;
+    title?: string;
     vote_average: number;
-    release_date: string | null | undefined;
+    release_date?: string;
     overview: string;
 };
 
@@ -52,12 +52,12 @@ export function validateKnownForMovie(value: unknown): svt.ValidationResult<Know
 
 export type KnownForShow = {
     media_type: "tv";
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
     vote_average: number;
     overview: string;
-    first_air_date: string | null | undefined;
-    name: string | null | undefined;
+    first_air_date?: string;
+    name?: string;
 };
 
 export function isKnownForShow(value: unknown): value is KnownForShow {
@@ -79,11 +79,11 @@ export function validateKnownFor(value: unknown): svt.ValidationResult<KnownFor>
 }
 
 export type KnownForMovieWithoutTypeTag = {
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
-    title: string | null | undefined;
+    title?: string;
     vote_average: number;
-    release_date: string | null | undefined;
+    release_date?: string;
     overview: string;
 };
 
@@ -96,12 +96,12 @@ export function validateKnownForMovieWithoutTypeTag(value: unknown): svt.Validat
 }
 
 export type KnownForShowWithoutTypeTag = {
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
     vote_average: number;
     overview: string;
-    first_air_date: string | null | undefined;
-    name: string | null | undefined;
+    first_air_date?: string;
+    name?: string;
 };
 
 export function isKnownForShowWithoutTypeTag(value: unknown): value is KnownForShowWithoutTypeTag {
@@ -121,22 +121,22 @@ export enum KnownForEmbeddedTag {
 
 export type MovieStartingWithLowercase = {
     media_type: KnownForEmbeddedTag.MovieStartingWithLowercase;
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
-    title: string | null | undefined;
+    title?: string;
     vote_average: number;
-    release_date: string | null | undefined;
+    release_date?: string;
     overview: string;
 };
 
 export type TvStartingWithLowercase = {
     media_type: KnownForEmbeddedTag.TvStartingWithLowercase;
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
     vote_average: number;
     overview: string;
-    first_air_date: string | null | undefined;
-    name: string | null | undefined;
+    first_air_date?: string;
+    name?: string;
 };
 
 export function MovieStartingWithLowercase(data: KnownForMovieWithoutTypeTag): MovieStartingWithLowercase {
@@ -180,22 +180,22 @@ export enum KnownForEmbeddedWithUpperCaseTag {
 
 export type Movie = {
     media_type: KnownForEmbeddedWithUpperCaseTag.Movie;
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
-    title: string | null | undefined;
+    title?: string;
     vote_average: number;
-    release_date: string | null | undefined;
+    release_date?: string;
     overview: string;
 };
 
 export type Tv = {
     media_type: KnownForEmbeddedWithUpperCaseTag.Tv;
-    poster_path: string | null | undefined;
+    poster_path?: string;
     id: number;
     vote_average: number;
     overview: string;
-    first_air_date: string | null | undefined;
-    name: string | null | undefined;
+    first_air_date?: string;
+    name?: string;
 };
 
 export function Movie(data: KnownForMovieWithoutTypeTag): Movie {

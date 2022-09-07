@@ -4,7 +4,7 @@ export type Recruiter = {
     type: "Recruiter";
     Name: string;
     emails: (string | null | undefined)[];
-    recruiter: Recruiter | null | undefined;
+    recruiter?: Recruiter;
     created: bigint;
 };
 
