@@ -1,0 +1,296 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           gotyno-hs
+version:        1.2.16
+synopsis:       A type definition compiler supporting multiple output languages.
+description:    Compiles type definitions into F#, TypeScript and Python, with validators, decoders and encoders.
+category:       Compiler
+maintainer:     Rickard Andersson <gonz@severnatazvezda.com>
+license:        BSD2
+license-file:   LICENSE.txt
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+    examples/basic.gotyno
+    examples/generics.gotyno
+    examples/github.gotyno
+    examples/hasGeneric.gotyno
+    examples/importExample.gotyno
+    examples/python.gotyno
+    test/reference-output/arrayOfArraysOfNullableStrings.ts
+    test/reference-output/basic.ts
+    test/reference-output/external.ts
+    test/reference-output/generics.ts
+    test/reference-output/github.ts
+    test/reference-output/hasGeneric.ts
+    test/reference-output/importExample.ts
+    test/reference-output/other.ts
+    test/reference-output/basic.fs
+    test/reference-output/generics.fs
+    test/reference-output/github.fs
+    test/reference-output/hasGeneric.fs
+    test/reference-output/importExample.fs
+    test/reference-output/basic.py
+    test/reference-output/exceptionNotification.py
+    test/reference-output/fromField.py
+    test/reference-output/generics.py
+    test/reference-output/github.py
+    test/reference-output/hasGeneric.py
+    test/reference-output/importExample.py
+    test/reference-output/optionType.py
+    test/reference-output/python.py
+    test/reference-output/untaggedUnionValidator.py
+    test/reference-output/untaggedUnionWithDeclaration.py
+    test/examples/applyingNonGeneric.gotyno
+    test/examples/arrayOfArraysOfNullableString.gotyno
+    test/examples/crlf.gotyno
+    test/examples/declaration1.gotyno
+    test/examples/declaration2.gotyno
+    test/examples/declaredGenerics1.gotyno
+    test/examples/declaredGenerics2.gotyno
+    test/examples/declaredGenerics3.gotyno
+    test/examples/declaredGenerics4.gotyno
+    test/examples/declaredGenerics5.gotyno
+    test/examples/enumWithSpaces.gotyno
+    test/examples/exceptionNotification.gotyno
+    test/examples/fromField.gotyno
+    test/examples/haskellExampleCompositeTypes.gotyno
+    test/examples/haskellExampleEmbeddedUnion.gotyno
+    test/examples/haskellExampleEnum.gotyno
+    test/examples/haskellExampleGenericStruct.gotyno
+    test/examples/haskellExampleGenericUnion.gotyno
+    test/examples/haskellExamplePlainUnion.gotyno
+    test/examples/haskellExampleStruct.gotyno
+    test/examples/haskellExampleUntaggedUnion.gotyno
+    test/examples/haskellExampleUsingImport.gotyno
+    test/examples/importOne.gotyno
+    test/examples/importThree.gotyno
+    test/examples/importTwo.gotyno
+    test/examples/notApplyingEnoughGenericTypes.gotyno
+    test/examples/notEnoughAppliedImportedGenerics.gotyno
+    test/examples/oneCharacterFieldNames.gotyno
+    test/examples/optionType.gotyno
+    test/examples/relaxedWhiteSpace.gotyno
+    test/examples/result.gotyno
+    test/examples/tooManyAppliedImportedTypeParameters.gotyno
+    test/examples/untaggedUnionValidator.gotyno
+    test/examples/untaggedUnionWithDeclaration.gotyno
+
+library
+  exposed-modules:
+      CodeGeneration.FSharp
+      CodeGeneration.Haskell
+      CodeGeneration.Kotlin
+      CodeGeneration.Python
+      CodeGeneration.TypeScript
+      CodeGeneration.Utilities
+      Compilation
+      Gotyno.Helpers
+      Library
+      Parsing
+      Types
+      UI
+  other-modules:
+      Paths_gotyno_hs
+  hs-source-dirs:
+      src
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DeriveLift
+      DerivingStrategies
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      EmptyCase
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternGuards
+      PolyKinds
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeFamilies
+      TypeSynonymInstances
+      ViewPatterns
+      TypeApplications
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Werror=incomplete-patterns
+  build-depends:
+      aeson
+    , base >=4.9.1.0 && <5
+    , brick
+    , fsnotify
+    , lens
+    , megaparsec
+    , pretty-show
+    , qtility
+    , rio
+    , text
+    , vty
+  default-language: Haskell2010
+
+executable gotyno-hs
+  main-is: Main.hs
+  other-modules:
+      Paths_gotyno_hs
+  hs-source-dirs:
+      app
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DeriveLift
+      DerivingStrategies
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      EmptyCase
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternGuards
+      PolyKinds
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeFamilies
+      TypeSynonymInstances
+      ViewPatterns
+      TypeApplications
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.9.1.0 && <5
+    , brick
+    , fsnotify
+    , gotyno-hs
+    , lens
+    , megaparsec
+    , optparse-simple
+    , pretty-show
+    , qtility
+    , rio
+    , text
+    , vty
+  default-language: Haskell2010
+
+test-suite gotyno-hs-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      HaskellOutputSpec
+      ParsingSpec
+      Paths_gotyno_hs
+  hs-source-dirs:
+      test
+  default-extensions:
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DeriveLift
+      DerivingStrategies
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      EmptyCase
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PartialTypeSignatures
+      PatternGuards
+      PolyKinds
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeFamilies
+      TypeSynonymInstances
+      ViewPatterns
+      TypeApplications
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Werror=incomplete-patterns -Wall
+  build-depends:
+      aeson
+    , base >=4.9.1.0 && <5
+    , brick
+    , fsnotify
+    , gotyno-hs
+    , hspec >=2.0.0
+    , lens
+    , megaparsec
+    , pretty-show
+    , qtility
+    , rio
+    , text
+    , vty
+  default-language: Haskell2010

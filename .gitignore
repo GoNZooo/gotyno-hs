@@ -9,7 +9,6 @@ cabal.sandbox.config
 *.swp
 *~
 \#*
-gotyno-hs.cabal
 .devcontainer/build
 **/node_modules
 *.hie
