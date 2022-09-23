@@ -49,6 +49,7 @@ can't personally vouch for them in a production context right now.
 
 - PureScript
 - Elixir
+- D
 
 ## Maybe supported in the future
 
