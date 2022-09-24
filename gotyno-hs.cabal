@@ -17,6 +17,7 @@ extra-source-files:
     README.md
     CHANGELOG.md
     examples/basic.gotyno
+    examples/basicStruct.gotyno
     examples/generics.gotyno
     examples/github.gotyno
     examples/hasGeneric.gotyno
@@ -83,6 +84,7 @@ extra-source-files:
 
 library
   exposed-modules:
+      CodeGeneration.DLang
       CodeGeneration.FSharp
       CodeGeneration.Haskell
       CodeGeneration.Kotlin

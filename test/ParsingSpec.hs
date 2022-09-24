@@ -1,5 +1,6 @@
 module ParsingSpec where
 
+import qualified CodeGeneration.DLang as DLang
 import qualified CodeGeneration.FSharp as FSharp
 import qualified CodeGeneration.Haskell as Haskell
 import qualified CodeGeneration.Kotlin as Kotlin
@@ -49,6 +50,10 @@ data KotlinReferenceOutput = KotlinReferenceOutput
     gitHub :: !Text
   }
 
+newtype DLangReferenceOutput = DLangReferenceOutput
+  { basicStruct :: Text
+  }
+
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
 typeScriptReferenceOutput = do
   basic <- basicReferenceOutput "ts"
@@ -85,6 +90,15 @@ kotlinReferenceOutput = do
   gitHub <- gitHubReferenceOutput "kt"
   pure KotlinReferenceOutput {basic, import', hasGeneric, generics, gitHub}
 
+dLangReferenceOutput :: IO DLangReferenceOutput
+dLangReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "d"
+  pure DLangReferenceOutput {basicStruct}
+
+basicStructReferenceOutput :: FilePath -> IO Text
+basicStructReferenceOutput extension =
+  readFileUtf8 $ "./test/reference-output/basicStruct." <> extension
+
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
 
@@ -117,13 +131,15 @@ spec ::
   FSharpReferenceOutput ->
   PythonReferenceOutput ->
   KotlinReferenceOutput ->
+  DLangReferenceOutput ->
   Spec
 spec
   (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
-  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub) = do
+  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub)
+  (DLangReferenceOutput dBasicStruct) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -417,6 +433,11 @@ spec
         name `shouldBe` ModuleName "basic"
         imports `shouldBe` []
         length definitions `shouldBe` 13
+
+      it "Mirrors reference output for `basic.gotyno`" $ do
+        basicStructModule <-
+          (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
+        DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
