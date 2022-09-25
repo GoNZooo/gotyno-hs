@@ -50,8 +50,9 @@ data KotlinReferenceOutput = KotlinReferenceOutput
     gitHub :: !Text
   }
 
-newtype DLangReferenceOutput = DLangReferenceOutput
-  { basicStruct :: Text
+data DLangReferenceOutput = DLangReferenceOutput
+  { basicStruct :: !Text,
+    basicUnion :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -93,11 +94,16 @@ kotlinReferenceOutput = do
 dLangReferenceOutput :: IO DLangReferenceOutput
 dLangReferenceOutput = do
   basicStruct <- basicStructReferenceOutput "d"
-  pure DLangReferenceOutput {basicStruct}
+  basicUnion <- basicUnionReferenceOutput "d"
+  pure DLangReferenceOutput {basicStruct, basicUnion}
 
 basicStructReferenceOutput :: FilePath -> IO Text
 basicStructReferenceOutput extension =
   readFileUtf8 $ "./test/reference-output/basicStruct." <> extension
+
+basicUnionReferenceOutput :: FilePath -> IO Text
+basicUnionReferenceOutput extension =
+  readFileUtf8 $ "./test/reference-output/basicUnion." <> extension
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -139,7 +145,7 @@ spec
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub)
-  (DLangReferenceOutput dBasicStruct) = do
+  (DLangReferenceOutput dBasicStruct dBasicUnion) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -434,10 +440,15 @@ spec
         imports `shouldBe` []
         length definitions `shouldBe` 13
 
-      it "Mirrors reference output for `basic.gotyno`" $ do
+      it "Mirrors reference output for `basicStruct.gotyno`" $ do
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
+
+      it "Mirrors reference output for `basicUnion.gotyno`" $ do
+        basicUnionModule <-
+          (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
+        DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]

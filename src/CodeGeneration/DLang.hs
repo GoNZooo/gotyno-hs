@@ -322,90 +322,33 @@ outputGenericStruct name typeVariables fields =
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
-outputUnion name typeTag unionType =
-  let caseUnionOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
+outputUnion name _typeTag unionType =
+  let payloadStructsOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
+      unionTypeOutput = mconcat ["alias ", nameOf name, " = ", "SumType!(", payloadNames, ");"]
+      payloadNames =
+        unionType & constructorsFrom & fmap (nameOf >>> (nameOf name <>)) & Text.intercalate ", "
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       typeVariables = case unionType of
         PlainUnion _constructors -> []
         GenericUnion ts _constructors -> ts
-      lowerCasedTypeVariables = fmap (unTypeVariable >>> lowerCaseFirst) typeVariables
-      toJsonHeader =
-        if null typeVariables
-          then mconcat ["instance ToJSON ", name & nameOf & sanitizeName, " where"]
-          else
-            mconcat
-              [ "instance (",
-                lowerCasedTypeVariables & fmap ("ToJSON " <>) & Text.intercalate ", ",
-                ") => ToJSON (",
-                name & nameOf & sanitizeName,
-                " ",
-                Text.intercalate " " lowerCasedTypeVariables,
-                ") where"
-              ]
-      fromJsonHeader =
-        if null typeVariables
-          then mconcat ["instance FromJSON ", name & nameOf & sanitizeName, " where"]
-          else
-            mconcat
-              [ "instance (",
-                lowerCasedTypeVariables & fmap ("FromJSON " <>) & Text.intercalate ", ",
-                ") => FromJSON (",
-                name & nameOf & sanitizeName,
-                " ",
-                Text.intercalate " " lowerCasedTypeVariables,
-                ") where"
-              ]
-      toJsonOutput =
-        Text.intercalate
-          "\n"
-          [ toJsonHeader,
-            mconcat
-              [ "  toJSON = JSON.genericToJSON $ Helpers.gotynoOptions \"",
-                unFieldName typeTag,
-                "\""
-              ]
-          ]
-      fromJsonOutput =
-        Text.intercalate
-          "\n"
-          [ fromJsonHeader,
-            mconcat
-              [ "  parseJSON = JSON.genericParseJSON $ Helpers.gotynoOptions \"",
-                unFieldName typeTag,
-                "\""
-              ]
-          ]
    in mconcat
-        [ caseUnionOutput,
-          "\n",
-          "  deriving (Eq, Show, Generic)",
+        [ payloadStructsOutput,
           "\n\n",
-          toJsonOutput,
-          "\n\n",
-          fromJsonOutput
+          unionTypeOutput
         ]
 
 outputCaseUnion :: DefinitionName -> [Constructor] -> [TypeVariable] -> Text
-outputCaseUnion name constructors typeVariables =
-  let cases =
-        constructors
-          & fmap outputCaseConstructor
-          & Text.intercalate "\n  | "
-      maybeTypeVariables = if null typeVariables then "" else joinTypeVariables typeVariables
-   in mconcat
-        [ mconcat ["data ", name & nameOf & sanitizeName, maybeTypeVariables, "\n  = "],
-          cases
-        ]
+outputCaseUnion name constructors _typeVariables =
+  constructors & fmap outputCaseConstructor & Text.intercalate "\n\n"
   where
     outputCaseConstructor (Constructor (ConstructorName constructorName') Nothing) =
-      constructorName' & upperCaseFirst & sanitizeName
+      let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
+       in mconcat ["struct ", nameOf name, sanitizedName, "\n{\n}"]
     outputCaseConstructor (Constructor (ConstructorName constructorName') (Just payload)) =
-      mconcat
-        [ constructorName' & upperCaseFirst & sanitizeName,
-          " ",
-          outputFieldType payload
-        ]
+      let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
+          payloadOutput = outputFieldType payload
+       in mconcat ["struct ", nameOf name, sanitizedName, "\n{\n    ", payloadOutput, " data;\n}"]
 
 sanitizeName :: s -> s
 sanitizeName other = other
