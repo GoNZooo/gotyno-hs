@@ -423,19 +423,19 @@ outputDefinitionReference (DeclarationReference (ModuleName moduleName') (Defini
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"
-outputBasicType U8 = "Int"
-outputBasicType U16 = "Int"
+outputBasicType U8 = "uint8_t"
+outputBasicType U16 = "uint16_t"
 outputBasicType U32 = "uint32_t"
-outputBasicType U64 = "Helpers.BigInteger"
-outputBasicType U128 = "Helpers.BigInteger"
-outputBasicType I8 = "Int"
-outputBasicType I16 = "Int"
-outputBasicType I32 = "Int"
-outputBasicType I64 = "Helpers.BigInteger"
-outputBasicType I128 = "Helpers.BigInteger"
-outputBasicType F32 = "Float"
-outputBasicType F64 = "Double"
-outputBasicType Boolean = "Bool"
+outputBasicType U64 = "uint64_t"
+outputBasicType U128 = "BigInt"
+outputBasicType I8 = "int8_t"
+outputBasicType I16 = "int16_t"
+outputBasicType I32 = "int32_t"
+outputBasicType I64 = "int64_t"
+outputBasicType I128 = "BigInt"
+outputBasicType F32 = "float"
+outputBasicType F64 = "double"
+outputBasicType Boolean = "bool"
 
 fieldTypeName :: FieldType -> Text
 fieldTypeName (LiteralType (LiteralString s)) = mconcat ["\"", s, "\""]

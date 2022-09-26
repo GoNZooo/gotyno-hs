@@ -4,7 +4,7 @@ import std.sumtype;
 
 struct PayloadStruct
 {
-    uint32_t field1;
+    int32_t field1;
 }
 
 struct BasicUnionHasStringPayload
