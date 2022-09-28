@@ -272,53 +272,15 @@ outputPlainStruct name fields =
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
-  let fullName = unDefinitionName name <> joinTypeVariables typeVariables
-      jsonInstanceOutput = mconcat [fromJsonOutput, "\n\n", toJsonOutput]
-      classHeaderOutput instanceType =
-        mconcat
-          [ "instance (",
-            classRequirements instanceType,
-            ") => ",
-            instanceType,
-            " (",
-            fullName,
-            ") where"
-          ]
-      toJsonOutput =
-        mconcat
-          [ classHeaderOutput "ToJSON",
-            "\n",
-            "  toJSON = JSON.genericToJSON\n",
-            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
-            nameOf name,
-            "\") >>> lowerCaseFirst}"
-          ]
-      fromJsonOutput =
-        mconcat
-          [ classHeaderOutput "FromJSON",
-            "\n",
-            "  parseJSON = JSON.genericParseJSON\n",
-            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
-            nameOf name,
-            "\") >>> lowerCaseFirst}"
-          ]
+  let fullName = mconcat [nameOf name, "(", joinTypeVariables typeVariables, ")"]
       fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
-      classRequirements instanceType =
-        typeVariables
-          & fmap (\t -> t ^. unwrap & haskellifyTypeVariable & (mconcat [instanceType, " "] <>))
-          & Text.intercalate ", "
    in mconcat
-        [ mconcat ["data ", fullName, " = ", unDefinitionName name, "\n"],
-          "  { ",
-          fieldsOutput,
-          "\n  }",
+        [ mconcat ["struct ", fullName],
           "\n",
-          "  deriving (Eq, Show, Generic)",
-          "\n\n",
-          jsonInstanceOutput,
-          "\n\n",
-          "makeLenses ''",
-          nameOf name
+          "{",
+          "\n    ",
+          fieldsOutput,
+          "\n}"
         ]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
@@ -373,10 +335,7 @@ outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldTyp
 outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =
   outputDefinitionReference definitionReference
-outputFieldType (TypeVariableReferenceType (TypeVariable t)) = haskellifyTypeVariable t
-
-haskellifyTypeVariable :: Text -> Text
-haskellifyTypeVariable = Text.toLower
+outputFieldType (TypeVariableReferenceType (TypeVariable t)) = t
 
 outputDefinitionReference :: DefinitionReference -> Text
 outputDefinitionReference (DefinitionReference (TypeDefinition (DefinitionName name) _)) = name
@@ -515,11 +474,8 @@ fieldTypeName
     definitionName
 
 joinTypeVariables :: [TypeVariable] -> Text
-joinTypeVariables typeVariables =
-  typeVariables
-    & fmap (\(TypeVariable t) -> haskellifyTypeVariable t)
-    & Text.intercalate " "
-    & (" " <>)
+joinTypeVariables =
+  fmap (\(TypeVariable t) -> t) >>> Text.intercalate ", "
 
 pascalToSnake :: Text -> Text
 pascalToSnake =
