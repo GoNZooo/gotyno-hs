@@ -65,11 +65,7 @@ outputDefinition (TypeDefinition _name (DeclaredType _moduleName' _typeVariables
 
 outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
 outputEmbeddedUnion unionName (FieldName tag) constructors =
-  let typeOutput =
-        outputCaseUnion
-          unionName
-          constructorsAsConstructors
-          []
+  let typeOutput = outputCaseUnion constructorsAsConstructors []
       constructorsAsConstructors = embeddedConstructorsToConstructors constructors
       toJsonOutput =
         mconcat
@@ -285,10 +281,10 @@ outputGenericStruct name typeVariables fields =
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name _typeTag unionType =
-  let payloadStructsOutput = outputCaseUnion name (constructorsFrom unionType) typeVariables
+  let payloadStructsOutput = outputCaseUnion (constructorsFrom unionType) typeVariables
       unionTypeOutput = mconcat ["alias ", nameOf name, " = ", "SumType!(", payloadNames, ");"]
       payloadNames =
-        unionType & constructorsFrom & fmap (nameOf >>> (nameOf name <>)) & Text.intercalate ", "
+        unionType & constructorsFrom & fmap (nameOf >>> (<> "Data")) & Text.intercalate ", "
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       typeVariables = case unionType of
@@ -300,17 +296,17 @@ outputUnion name _typeTag unionType =
           unionTypeOutput
         ]
 
-outputCaseUnion :: DefinitionName -> [Constructor] -> [TypeVariable] -> Text
-outputCaseUnion name constructors _typeVariables =
+outputCaseUnion :: [Constructor] -> [TypeVariable] -> Text
+outputCaseUnion constructors _typeVariables =
   constructors & fmap outputCaseConstructor & Text.intercalate "\n\n"
   where
     outputCaseConstructor (Constructor (ConstructorName constructorName') Nothing) =
       let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
-       in mconcat ["struct ", nameOf name, sanitizedName, "\n{\n}"]
+       in mconcat ["struct ", sanitizedName, "Data\n{\n}"]
     outputCaseConstructor (Constructor (ConstructorName constructorName') (Just payload)) =
       let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
           payloadOutput = outputFieldType payload
-       in mconcat ["struct ", nameOf name, sanitizedName, "\n{\n    ", payloadOutput, " data;\n}"]
+       in mconcat ["struct ", sanitizedName, "Data\n{\n    ", payloadOutput, " data;\n}"]
 
 sanitizeName :: s -> s
 sanitizeName other = other

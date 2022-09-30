@@ -7,18 +7,18 @@ struct PayloadStruct
     int32_t field1;
 }
 
-struct BasicUnionHasStringPayload
+struct HasStringPayloadData
 {
     string data;
 }
 
-struct BasicUnionHasPayload
+struct HasPayloadData
 {
     PayloadStruct data;
 }
 
-struct BasicUnionHasNoPayload
+struct HasNoPayloadData
 {
 }
 
-alias BasicUnion = SumType!(BasicUnionHasStringPayload, BasicUnionHasPayload, BasicUnionHasNoPayload);
+alias BasicUnion = SumType!(HasStringPayloadData, HasPayloadData, HasNoPayloadData);
