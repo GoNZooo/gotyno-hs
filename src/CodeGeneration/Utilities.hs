@@ -109,6 +109,10 @@ instance MaybeHasTypeVariables UnionType where
   typeVariablesFrom (PlainUnion _constructors) = Nothing
   typeVariablesFrom (GenericUnion ts _constructors) = Just ts
 
+instance MaybeHasTypeVariables Constructor where
+  {-# INLINE typeVariablesFrom #-}
+  typeVariablesFrom (Constructor _fields fieldType) = fieldType >>= typeVariablesFrom
+
 {-# INLINE typeVariablesFromFieldType #-}
 typeVariablesFromFieldType :: FieldType -> Maybe [TypeVariable]
 typeVariablesFromFieldType (TypeVariableReferenceType typeVariable) = pure [typeVariable]

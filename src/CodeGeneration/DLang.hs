@@ -1,6 +1,6 @@
 module CodeGeneration.DLang (outputModule) where
 
-import CodeGeneration.Utilities (nameOf)
+import CodeGeneration.Utilities (HasName, MaybeHasTypeVariables (..), nameOf)
 import Qtility
 import qualified RIO.Char as Char
 import qualified RIO.Text as Text
@@ -268,7 +268,7 @@ outputPlainStruct name fields =
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
-  let fullName = mconcat [nameOf name, "(", joinTypeVariables typeVariables, ")"]
+  let fullName = fullNameWithTypeVariables typeVariables name
       fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
    in mconcat
         [ mconcat ["struct ", fullName],
@@ -282,9 +282,14 @@ outputGenericStruct name typeVariables fields =
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name _typeTag unionType =
   let payloadStructsOutput = outputCaseUnion (constructorsFrom unionType) typeVariables
-      unionTypeOutput = mconcat ["alias ", nameOf name, " = ", "SumType!(", payloadNames, ");"]
+      isPlain = null typeVariables
+      unionTypeOutput =
+        if isPlain
+          then mconcat ["alias ", nameOf name, " = ", "SumType!(", joinedPayloadNames, ");"]
+          else outputGenericUnionType name typeVariables (constructorsFrom unionType)
       payloadNames =
-        unionType & constructorsFrom & fmap (nameOf >>> (<> "Data")) & Text.intercalate ", "
+        unionType & constructorsFrom & fmap (nameOf >>> (<> "Data"))
+      joinedPayloadNames = Text.intercalate ", " payloadNames
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       typeVariables = case unionType of
@@ -296,6 +301,29 @@ outputUnion name _typeTag unionType =
           unionTypeOutput
         ]
 
+outputGenericUnionType :: DefinitionName -> [TypeVariable] -> [Constructor] -> Text
+outputGenericUnionType name typeVariables constructors =
+  let fullName = mconcat [nameOf name, "(", joinTypeVariables typeVariables, ")"]
+      joinedPayloadNames = constructors & fmap appliedConstructorName & Text.intercalate ", "
+      appliedConstructorName c =
+        c
+          & constructorName . unwrap %~ (<> "Data")
+          & appliedNameWithTypeVariables (c & typeVariablesFrom & fromMaybe [])
+      thisConstructorOutput =
+        Text.unlines
+          [ "    static foreach (T; Type.Types)",
+            "        this(T v) @safe pure nothrow @nogc { data = v; }"
+          ]
+   in mconcat
+        [ mconcat ["template ", fullName, "\n{\n"],
+          mconcat ["    alias Type = SumType!(", joinedPayloadNames, ");\n"],
+          "    Type data;\n",
+          "    alias data this;\n",
+          "\n",
+          thisConstructorOutput,
+          "}"
+        ]
+
 outputCaseUnion :: [Constructor] -> [TypeVariable] -> Text
 outputCaseUnion constructors _typeVariables =
   constructors & fmap outputCaseConstructor & Text.intercalate "\n\n"
@@ -303,10 +331,19 @@ outputCaseUnion constructors _typeVariables =
     outputCaseConstructor (Constructor (ConstructorName constructorName') Nothing) =
       let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
        in mconcat ["struct ", sanitizedName, "Data\n{\n}"]
-    outputCaseConstructor (Constructor (ConstructorName constructorName') (Just payload)) =
-      let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
-          payloadOutput = outputFieldType payload
-       in mconcat ["struct ", sanitizedName, "Data\n{\n    ", payloadOutput, " data;\n}"]
+    outputCaseConstructor c@(Constructor _constructorName (Just payload)) =
+      let payloadOutput = outputFieldType payload
+          fullName =
+            c
+              & constructorName . unwrap %~ (upperCaseFirst >>> sanitizeName >>> (<> "Data"))
+              & fullNameWithTypeVariables (payload & typeVariablesFrom & fromMaybe [])
+       in mconcat
+            [ "struct ",
+              fullName,
+              "\n{\n    ",
+              payloadOutput,
+              " data;\n}"
+            ]
 
 sanitizeName :: s -> s
 sanitizeName other = other
@@ -483,3 +520,13 @@ pascalToSnake =
             else c `Text.cons` t
       )
       ""
+
+fullNameWithTypeVariables :: HasName a => [TypeVariable] -> a -> Text
+fullNameWithTypeVariables [] a = nameOf a
+fullNameWithTypeVariables typeVariables a =
+  mconcat [nameOf a, "(", joinTypeVariables typeVariables, ")"]
+
+appliedNameWithTypeVariables :: HasName a => [TypeVariable] -> a -> Text
+appliedNameWithTypeVariables [] a = nameOf a
+appliedNameWithTypeVariables typeVariables a =
+  mconcat [nameOf a, "!(", joinTypeVariables typeVariables, ")"]
