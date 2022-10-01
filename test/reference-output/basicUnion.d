@@ -21,4 +21,12 @@ struct HasNoPayloadData
 {
 }
 
-alias BasicUnion = SumType!(HasStringPayloadData, HasPayloadData, HasNoPayloadData);
+struct BasicUnion
+{
+    alias Type = SumType!(HasStringPayloadData, HasPayloadData, HasNoPayloadData);
+    Type data;
+    alias data this;
+
+    static foreach (T; Type.Types)
+        this(T v) @safe pure nothrow @nogc { data = v; }
+}

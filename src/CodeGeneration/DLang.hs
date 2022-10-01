@@ -283,10 +283,7 @@ outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name _typeTag unionType =
   let payloadStructsOutput = outputCaseUnion (constructorsFrom unionType) typeVariables
       isPlain = null typeVariables
-      unionTypeOutput =
-        if isPlain
-          then mconcat ["alias ", nameOf name, " = ", "SumType!(", joinedPayloadNames, ");"]
-          else outputGenericUnionType name typeVariables (constructorsFrom unionType)
+      unionTypeOutput = outputUnionType name typeVariables (constructorsFrom unionType)
       payloadNames =
         unionType & constructorsFrom & fmap (nameOf >>> (<> "Data"))
       joinedPayloadNames = Text.intercalate ", " payloadNames
@@ -301,9 +298,11 @@ outputUnion name _typeTag unionType =
           unionTypeOutput
         ]
 
-outputGenericUnionType :: DefinitionName -> [TypeVariable] -> [Constructor] -> Text
-outputGenericUnionType name typeVariables constructors =
-  let fullName = mconcat [nameOf name, "(", joinTypeVariables typeVariables, ")"]
+outputUnionType :: DefinitionName -> [TypeVariable] -> [Constructor] -> Text
+outputUnionType name typeVariables constructors =
+  let fullName = mconcat [nameOf name, typeVariableOutput]
+      typeVariableOutput =
+        if null typeVariables then "" else mconcat ["(", joinTypeVariables typeVariables, ")"]
       joinedPayloadNames = constructors & fmap appliedConstructorName & Text.intercalate ", "
       appliedConstructorName c =
         c
@@ -314,8 +313,9 @@ outputGenericUnionType name typeVariables constructors =
           [ "    static foreach (T; Type.Types)",
             "        this(T v) @safe pure nothrow @nogc { data = v; }"
           ]
+      templateOrStruct = if null typeVariables then "struct" else "template"
    in mconcat
-        [ mconcat ["template ", fullName, "\n{\n"],
+        [ mconcat [templateOrStruct, " ", fullName, "\n{\n"],
           mconcat ["    alias Type = SumType!(", joinedPayloadNames, ");\n"],
           "    Type data;\n",
           "    alias data this;\n",
