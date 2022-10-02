@@ -45,6 +45,7 @@ modulePrelude name =
   Text.unlines
     [ mconcat ["module gotyno_output.", pascalToSnake name, ";"],
       "",
+      "static import asdf;",
       "import std.sumtype;"
     ]
 

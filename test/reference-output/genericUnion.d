@@ -1,5 +1,6 @@
 module gotyno_output.generic_union;
 
+static import asdf;
 import std.sumtype;
 
 struct HasTPayloadData(T)

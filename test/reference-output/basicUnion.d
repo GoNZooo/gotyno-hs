@@ -1,5 +1,6 @@
 module gotyno_output.basic_union;
 
+static import asdf;
 import std.sumtype;
 
 struct PayloadStruct
