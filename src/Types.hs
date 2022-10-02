@@ -105,7 +105,7 @@ data TypeData
   | Union FieldName UnionType
   | EmbeddedUnion FieldName [EmbeddedConstructor]
   | UntaggedUnion [FieldType]
-  | Enumeration [EnumerationValue]
+  | Enumeration BasicTypeValue [EnumerationValue]
   | DeclaredType ModuleName [TypeVariable]
   deriving (Eq, Show, Generic)
 

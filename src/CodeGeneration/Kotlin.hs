@@ -74,7 +74,8 @@ outputDefinition (TypeDefinition name (Struct (GenericStruct typeVariables field
   pure $ outputGenericStruct name typeVariables fields
 outputDefinition (TypeDefinition name (Union typeTag unionType)) =
   pure $ outputUnion name typeTag unionType
-outputDefinition (TypeDefinition name (Enumeration enumerationValues)) =
+-- @TODO: use the type here to set the type of the enumeration
+outputDefinition (TypeDefinition name (Enumeration _type enumerationValues)) =
   pure $ outputEnumeration name enumerationValues
 outputDefinition (TypeDefinition name (UntaggedUnion unionCases)) =
   pure $ outputUntaggedUnion name unionCases

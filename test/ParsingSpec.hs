@@ -330,6 +330,7 @@ spec
                 TypeDefinition
                   (DefinitionName "EnumName")
                   ( Enumeration
+                      BasicString
                       [ EnumerationValue
                           (EnumerationIdentifier "value1")
                           (LiteralString "value1"),
@@ -397,6 +398,7 @@ spec
                 TypeDefinition
                   (DefinitionName "EnumName")
                   ( Enumeration
+                      BasicString
                       [ EnumerationValue
                           (EnumerationIdentifier "value1")
                           (LiteralString "value1"),
