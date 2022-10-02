@@ -18,6 +18,7 @@ extra-source-files:
     CHANGELOG.md
     examples/basic.gotyno
     examples/basicEnumeration.gotyno
+    examples/basicImport.gotyno
     examples/basicStruct.gotyno
     examples/basicUnion.gotyno
     examples/generics.gotyno

@@ -13,12 +13,7 @@ outputModule module' =
       importsOutput = module' ^. moduleImports & fmap outputImport & Text.intercalate "\n"
       outputImport import' =
         let importName = import' ^. unwrap . moduleName . unwrap
-         in mconcat
-              [ "import qualified GotynoOutput.",
-                upperCaseFirst importName,
-                " as ",
-                upperCaseFirst importName
-              ]
+         in mconcat ["static import gotyno_output.", pascalToSnake importName, ";"]
       declarationImportsOutput =
         module' ^. moduleDeclarationNames
           & fmap
@@ -365,7 +360,7 @@ outputDefinitionReference
       (ModuleName moduleName')
       (TypeDefinition (DefinitionName name) _typeData)
     ) =
-    mconcat [upperCaseFirst moduleName', ".", sanitizeName name]
+    mconcat [pascalToSnake moduleName', ".", sanitizeName name]
 outputDefinitionReference
   ( AppliedGenericReference
       appliedTypes
@@ -382,7 +377,7 @@ outputDefinitionReference
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
      in mconcat
           [ "(",
-            upperCaseFirst moduleName',
+            pascalToSnake moduleName',
             ".",
             sanitizeName name,
             " ",
@@ -399,7 +394,7 @@ outputDefinitionReference
         maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
      in mconcat ["(", upperCaseFirst moduleName', ".", sanitizeName name, maybeAppliedOutput, ")"]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
-  mconcat [upperCaseFirst moduleName', ".", sanitizeName name]
+  mconcat [pascalToSnake moduleName', ".", sanitizeName name]
 
 outputBasicType :: BasicTypeValue -> Text
 outputBasicType BasicString = "string"

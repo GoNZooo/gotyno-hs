@@ -55,7 +55,8 @@ data DLangReferenceOutput = DLangReferenceOutput
     basicUnion :: !Text,
     genericStruct :: !Text,
     genericUnion :: !Text,
-    basicEnumeration :: !Text
+    basicEnumeration :: !Text,
+    basicImport :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -101,7 +102,16 @@ dLangReferenceOutput = do
   genericStruct <- genericStructReferenceOutput "d"
   genericUnion <- genericUnionReferenceOutput "d"
   basicEnumeration <- basicEnumerationReferenceOutput "d"
-  pure DLangReferenceOutput {basicStruct, basicUnion, genericStruct, genericUnion, basicEnumeration}
+  basicImport <- basicImportReferenceOutput "d"
+  pure
+    DLangReferenceOutput
+      { basicStruct,
+        basicUnion,
+        genericStruct,
+        genericUnion,
+        basicEnumeration,
+        basicImport
+      }
 
 basicStructReferenceOutput :: FilePath -> IO Text
 basicStructReferenceOutput extension =
@@ -122,6 +132,10 @@ genericUnionReferenceOutput extension =
 basicEnumerationReferenceOutput :: FilePath -> IO Text
 basicEnumerationReferenceOutput extension =
   readFileUtf8 $ "./test/reference-output/basicEnumeration." <> extension
+
+basicImportReferenceOutput :: FilePath -> IO Text
+basicImportReferenceOutput extension =
+  readFileUtf8 $ "./test/reference-output/basicImport." <> extension
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -163,7 +177,14 @@ spec
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub)
-  (DLangReferenceOutput dBasicStruct dBasicUnion dGenericStruct dGenericUnion dBasicEnumeration) = do
+  ( DLangReferenceOutput
+      dBasicStruct
+      dBasicUnion
+      dGenericStruct
+      dGenericUnion
+      dBasicEnumeration
+      dBasicImport
+    ) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
         modules <- getRight <$> parseModules ["examples/basic.gotyno"]
@@ -484,6 +505,12 @@ spec
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
+
+      it "Mirrors reference output for `basicImport.gotyno`" $ do
+        basicImportModule <-
+          (getRight >>> PartialList.last)
+            <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
+        DLang.outputModule basicImportModule `shouldBe` dBasicImport
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]
