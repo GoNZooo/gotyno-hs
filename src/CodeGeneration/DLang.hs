@@ -182,79 +182,21 @@ outputUntaggedUnion unionName cases =
           jsonInstanceOutput
         ]
 
-outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumeration name values' =
-  let typeOutput = outputEnumerationType name values'
-      toJsonOutput =
-        mconcat
-          [ "instance ToJSON ",
-            unDefinitionName name,
-            " where\n",
-            constructorToJsonOutput
-          ]
-      constructorToJsonOutput =
+outputEnumeration :: BasicTypeValue -> DefinitionName -> [EnumerationValue] -> Text
+outputEnumeration type' name values' =
+  let typeHeader = mconcat ["enum ", name & nameOf & sanitizeName, " : ", outputBasicType type']
+      valuesOutput =
         values'
           & fmap
             ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                let n =
-                      mconcat
-                        [ haskellifyConstructorName $ unDefinitionName name,
-                          haskellifyConstructorName i
-                        ]
-                 in mconcat
-                      [ "  toJSON ",
-                        n,
-                        " = ",
-                        outputLiteral literal
-                      ]
-            )
-          & Text.intercalate "\n"
-      outputLiteral (LiteralString s) = mconcat ["String \"", s, "\""]
-      outputLiteral (LiteralInteger i) = mconcat ["Number $ fromInteger", tshow i]
-      outputLiteral (LiteralFloat f) = mconcat ["Number ", tshow f]
-      outputLiteral (LiteralBoolean b) = mconcat ["Boolean ", tshow b]
-      fromJsonOutput =
-        mconcat
-          [ "instance FromJSON ",
-            unDefinitionName name,
-            " where\n  parseJSON = Helpers.enumFromJSON [",
-            constructorFromJsonOutput,
-            "]"
-          ]
-      constructorFromJsonOutput =
-        values'
-          & fmap
-            ( \(EnumerationValue (EnumerationIdentifier i) literal) ->
-                let n =
-                      mconcat
-                        [ haskellifyConstructorName $ unDefinitionName name,
-                          haskellifyConstructorName i
-                        ]
-                 in mconcat ["(", outputLiteral literal, ", ", n, ")"]
-            )
-          & Text.intercalate ", "
-   in mconcat [typeOutput, "\n\n", toJsonOutput, "\n\n", fromJsonOutput]
-
-outputEnumerationType :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumerationType name values' =
-  let valuesOutput =
-        values'
-          & fmap
-            ( \(EnumerationValue (EnumerationIdentifier i) _literal) ->
                 mconcat
-                  [ haskellifyConstructorName $ unDefinitionName name,
-                    haskellifyConstructorName i
+                  [ i,
+                    " = ",
+                    literal & LiteralType & fieldTypeName
                   ]
             )
-          & Text.intercalate "\n  | "
-   in mconcat
-        [ mconcat ["data ", unDefinitionName name, "\n  = "],
-          valuesOutput,
-          "\n  deriving (Eq, Show, Generic)"
-        ]
-
-haskellifyConstructorName :: Text -> Text
-haskellifyConstructorName = upperCaseFirst
+          & Text.intercalate ",\n    "
+   in mconcat [typeHeader, "\n{\n    ", valuesOutput, "\n}"]
 
 outputPlainStruct :: DefinitionName -> [StructField] -> Text
 outputPlainStruct name fields =
@@ -476,19 +418,10 @@ outputBasicType F64 = "double"
 outputBasicType Boolean = "bool"
 
 fieldTypeName :: FieldType -> Text
-fieldTypeName (LiteralType (LiteralString s)) = mconcat ["\"", s, "\""]
-fieldTypeName (LiteralType (LiteralBoolean b)) = mconcat ["Bool", tshow b]
-fieldTypeName (LiteralType (LiteralFloat f)) =
-  mconcat
-    [ "Float",
-      f & tshow
-        & Text.map
-          ( \case
-              '.' -> '_'
-              c -> c
-          )
-    ]
-fieldTypeName (LiteralType (LiteralInteger i)) = mconcat ["Integer", tshow i]
+fieldTypeName (LiteralType (LiteralBoolean b)) = b & tshow & lowerCaseFirst
+fieldTypeName (LiteralType (LiteralString s)) = tshow s
+fieldTypeName (LiteralType (LiteralInteger i)) = tshow i
+fieldTypeName (LiteralType (LiteralFloat f)) = tshow f
 fieldTypeName (RecursiveReferenceType (DefinitionName name)) = name
 fieldTypeName (BasicType BasicString) = "String"
 fieldTypeName (BasicType F32) = "F32"
