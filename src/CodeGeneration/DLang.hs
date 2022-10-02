@@ -45,7 +45,6 @@ modulePrelude name =
   Text.unlines
     [ mconcat ["module gotyno_output.", pascalToSnake name, ";"],
       "",
-      "static import asdf;",
       "import std.sumtype;"
     ]
 
@@ -283,11 +282,7 @@ outputGenericStruct name typeVariables fields =
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name _typeTag unionType =
   let payloadStructsOutput = outputCaseUnion (constructorsFrom unionType) typeVariables
-      isPlain = null typeVariables
       unionTypeOutput = outputUnionType name typeVariables (constructorsFrom unionType)
-      payloadNames =
-        unionType & constructorsFrom & fmap (nameOf >>> (<> "Data"))
-      joinedPayloadNames = Text.intercalate ", " payloadNames
       constructorsFrom (PlainUnion constructors) = constructors
       constructorsFrom (GenericUnion _typeVariables constructors) = constructors
       typeVariables = case unionType of
@@ -315,6 +310,53 @@ outputUnionType name typeVariables constructors =
             "        this(T v) @safe pure nothrow @nogc { data = v; }"
           ]
       templateOrStruct = if null typeVariables then "struct" else "template"
+      outputConstructorDeserializerCase c@Constructor {_constructorPayloadType = Nothing} =
+        mconcat
+          [ "            case \"",
+            c & nameOf & sanitizeName,
+            "\": {\n",
+            "                data = ",
+            fullNameWithTypeVariables
+              (c & typeVariablesFrom & fromMaybe [])
+              (c & constructorName . unwrap %~ (<> "Data")),
+            "();\n",
+            "                return null;\n",
+            "            }"
+          ]
+      outputConstructorDeserializerCase c@Constructor {_constructorPayloadType = Just p} =
+        mconcat
+          [ "            case \"",
+            nameOf c,
+            "\": {\n",
+            "                ",
+            appliedNameWithTypeVariables
+              (p & typeVariablesFrom & fromMaybe [])
+              (c & constructorName . unwrap %~ (<> "Data")),
+            " v = void;\n",
+            "                if (auto e = asdfData.deserializeValue(v)) return e;\n",
+            "                data = v;\n",
+            "                return null;\n",
+            "            }"
+          ]
+      deserializerCases =
+        constructors
+          & fmap outputConstructorDeserializerCase
+          & Text.intercalate "\n\n"
+      deserializerOutput =
+        mconcat
+          [ "    import asdf;\n",
+            "    SerdeException deserializeFromAsdf(Asdf asdfData)\n",
+            "    {\n",
+            "        string tag;\n",
+            "        if (auto e = asdfData[\"type\"].deserializeValue(tag)) return e;\n",
+            "\n",
+            "        final switch (tag)\n",
+            "        {\n",
+            deserializerCases <> "\n\n",
+            "            default: return new SerdeException(\"Unknown tag: \" ~ tag);\n",
+            "        }\n",
+            "    }"
+          ]
    in mconcat
         [ mconcat [templateOrStruct, " ", fullName, "\n{\n"],
           mconcat ["    alias Type = SumType!(", joinedPayloadNames, ");\n"],
@@ -322,6 +364,9 @@ outputUnionType name typeVariables constructors =
           "    alias data this;\n",
           "\n",
           thisConstructorOutput,
+          "\n",
+          deserializerOutput,
+          "\n",
           "}"
         ]
 
