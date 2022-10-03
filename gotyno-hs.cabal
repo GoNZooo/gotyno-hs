@@ -78,6 +78,7 @@ extra-source-files:
     test/examples/relaxedWhiteSpace.gotyno
     test/examples/result.gotyno
     test/examples/tooManyAppliedImportedTypeParameters.gotyno
+    test/examples/typeVariableParsingAfterDefinitionReference.gotyno
     test/examples/untaggedUnionValidator.gotyno
     test/examples/untaggedUnionWithDeclaration.gotyno
 
