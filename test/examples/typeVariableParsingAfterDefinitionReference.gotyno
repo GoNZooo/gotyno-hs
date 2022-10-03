@@ -1,0 +1,7 @@
+struct TStruct {
+  field: U32
+}
+
+struct GenericStruct <T>{
+  field: TStruct
+}
