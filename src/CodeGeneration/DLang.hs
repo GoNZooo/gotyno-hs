@@ -344,7 +344,7 @@ outputFieldType (LiteralType (LiteralFloat _f)) = outputBasicType F32
 outputFieldType (LiteralType (LiteralBoolean _b)) = outputBasicType Boolean
 outputFieldType (BasicType basicType) = outputBasicType basicType
 outputFieldType (ComplexType (OptionalType fieldType)) =
-  mconcat ["Nullable!", outputFieldType fieldType]
+  mconcat ["Nullable!(", outputFieldType fieldType, ")"]
 outputFieldType (ComplexType (ArrayType _size fieldType)) =
   mconcat [outputFieldType fieldType, "[]"]
 outputFieldType (ComplexType (SliceType fieldType)) =

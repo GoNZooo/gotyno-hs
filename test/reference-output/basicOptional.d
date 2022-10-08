@@ -6,7 +6,9 @@ import std.typecons : Nullable;
 
 struct HasOptionalString
 {
-    Nullable!string stringField;
+    Nullable!(string) stringField;
+    Nullable!(uint32_t[]) optionalArrayField;
+    Nullable!(uint32_t)[] arrayOfOptionalField;
 }
 
 struct DoesNotData
@@ -16,12 +18,12 @@ struct DoesNotData
 
 struct DoesData
 {
-    Nullable!int32_t data;
+    Nullable!(int32_t) data;
 }
 
 struct HasOptionalStructData
 {
-    Nullable!HasOptionalString data;
+    Nullable!(HasOptionalString) data;
 }
 
 struct HasOptionalConstructor

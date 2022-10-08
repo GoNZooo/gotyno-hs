@@ -1,5 +1,7 @@
 struct HasOptionalString {
   stringField: ?String
+  optionalArrayField: ?[]U32
+  arrayOfOptionalField: []?U32
 }
 
 union HasOptionalConstructor {
