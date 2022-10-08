@@ -375,8 +375,8 @@ fieldTypeP imports typeVariables =
   choice
     [ LiteralType <$> literalP,
       ComplexType <$> complexTypeP imports typeVariables,
-      TypeVariableReferenceType <$> typeVariableReferenceP typeVariables,
       DefinitionReferenceType <$> definitionReferenceP imports typeVariables,
+      TypeVariableReferenceType <$> typeVariableReferenceP typeVariables,
       BasicType <$> basicTypeValueP,
       DefinitionReferenceType <$> importedReferenceP imports typeVariables,
       RecursiveReferenceType <$> recursiveReferenceP
