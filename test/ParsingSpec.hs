@@ -481,6 +481,11 @@ spec
             ]
         isLeft result `shouldBe` True
 
+    describe "Type parameter regression tests" $ do
+      it "Should be able to parse definition name when it starts with a type parameter char" $ do
+        result <- parseModules ["test/examples/typeVariableParsingAfterDefinitionReference.gotyno"]
+        shouldBeRight result
+
     describe "Reference output" $ do
       it "Gives the correct parsed output for `basic.gotyno`" $ do
         Module {_moduleName = name, _moduleImports = imports, _moduleDefinitions = definitions} <-
