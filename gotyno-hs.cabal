@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           gotyno-hs
-version:        1.2.16
+version:        1.2.17
 synopsis:       A type definition compiler supporting multiple output languages.
 description:    Compiles type definitions into F#, TypeScript and Python, with validators, decoders and encoders.
 category:       Compiler
