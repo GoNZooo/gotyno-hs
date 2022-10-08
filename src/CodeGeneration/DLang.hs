@@ -40,7 +40,9 @@ modulePrelude name =
   Text.unlines
     [ mconcat ["module gotyno_output.", pascalToSnake name, ";"],
       "",
-      "import std.sumtype;"
+      "import asdf;",
+      "import std.sumtype;",
+      "import std.typecons : Nullable;"
     ]
 
 outputDefinition :: TypeDefinition -> Maybe Text
@@ -342,11 +344,11 @@ outputFieldType (LiteralType (LiteralFloat _f)) = outputBasicType F32
 outputFieldType (LiteralType (LiteralBoolean _b)) = outputBasicType Boolean
 outputFieldType (BasicType basicType) = outputBasicType basicType
 outputFieldType (ComplexType (OptionalType fieldType)) =
-  mconcat ["(Maybe ", outputFieldType fieldType, ")"]
+  mconcat ["Nullable!", outputFieldType fieldType]
 outputFieldType (ComplexType (ArrayType _size fieldType)) =
-  mconcat ["[", outputFieldType fieldType, "]"]
+  mconcat [outputFieldType fieldType, "[]"]
 outputFieldType (ComplexType (SliceType fieldType)) =
-  mconcat ["[", outputFieldType fieldType, "]"]
+  mconcat [outputFieldType fieldType, "[]"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
 outputFieldType (RecursiveReferenceType (DefinitionName name)) = name
 outputFieldType (DefinitionReferenceType definitionReference) =

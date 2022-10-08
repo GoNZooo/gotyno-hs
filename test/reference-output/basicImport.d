@@ -1,6 +1,8 @@
 module gotyno_output.basic_import;
 
+import asdf;
 import std.sumtype;
+import std.typecons : Nullable;
 
 static import gotyno_output.basic_struct;
 

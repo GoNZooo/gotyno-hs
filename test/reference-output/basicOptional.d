@@ -1,31 +1,32 @@
-module gotyno_output.basic_union;
+module gotyno_output.basic_optional;
 
 import asdf;
 import std.sumtype;
 import std.typecons : Nullable;
 
-struct PayloadStruct
+struct HasOptionalString
 {
-    int32_t field1;
+    Nullable!string stringField;
 }
 
-struct HasStringPayloadData
+struct DoesNotData
 {
-    string data;
+    int32_t data;
 }
 
-struct HasPayloadData
+struct DoesData
 {
-    PayloadStruct data;
+    Nullable!int32_t data;
 }
 
-struct HasNoPayloadData
+struct HasOptionalStructData
 {
+    Nullable!HasOptionalString data;
 }
 
-struct BasicUnion
+struct HasOptionalConstructor
 {
-    alias Type = SumType!(HasStringPayloadData, HasPayloadData, HasNoPayloadData);
+    alias Type = SumType!(DoesNotData, DoesData, HasOptionalStructData);
     Type data;
     alias data this;
 
@@ -40,22 +41,24 @@ struct BasicUnion
 
         final switch (tag)
         {
-            case "HasStringPayload": {
-                HasStringPayloadData v = void;
+            case "DoesNot": {
+                DoesNotData v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
-            case "HasPayload": {
-                HasPayloadData v = void;
+            case "Does": {
+                DoesData v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
-            case "HasNoPayload": {
-                data = HasNoPayloadData();
+            case "HasOptionalStruct": {
+                HasOptionalStructData v = void;
+                if (auto e = asdfData.deserializeValue(v)) return e;
+                data = v;
                 return null;
             }
 

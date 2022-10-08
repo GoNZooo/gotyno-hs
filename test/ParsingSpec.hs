@@ -56,7 +56,8 @@ data DLangReferenceOutput = DLangReferenceOutput
     genericStruct :: !Text,
     genericUnion :: !Text,
     basicEnumeration :: !Text,
-    basicImport :: !Text
+    basicImport :: !Text,
+    basicOptional :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -103,6 +104,7 @@ dLangReferenceOutput = do
   genericUnion <- genericUnionReferenceOutput "d"
   basicEnumeration <- basicEnumerationReferenceOutput "d"
   basicImport <- basicImportReferenceOutput "d"
+  basicOptional <- basicOptionalReferenceOutput "d"
   pure
     DLangReferenceOutput
       { basicStruct,
@@ -110,7 +112,8 @@ dLangReferenceOutput = do
         genericStruct,
         genericUnion,
         basicEnumeration,
-        basicImport
+        basicImport,
+        basicOptional
       }
 
 basicStructReferenceOutput :: FilePath -> IO Text
@@ -136,6 +139,10 @@ basicEnumerationReferenceOutput extension =
 basicImportReferenceOutput :: FilePath -> IO Text
 basicImportReferenceOutput extension =
   readFileUtf8 $ "./test/reference-output/basicImport." <> extension
+
+basicOptionalReferenceOutput :: FilePath -> IO Text
+basicOptionalReferenceOutput extension =
+  readFileUtf8 $ "./test/reference-output/basicOptional." <> extension
 
 basicReferenceOutput :: FilePath -> IO Text
 basicReferenceOutput extension = readFileUtf8 $ "./test/reference-output/basic." <> extension
@@ -184,6 +191,7 @@ spec
       dGenericUnion
       dBasicEnumeration
       dBasicImport
+      dBasicOptional
     ) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
@@ -511,6 +519,11 @@ spec
           (getRight >>> PartialList.last)
             <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
         DLang.outputModule basicImportModule `shouldBe` dBasicImport
+
+      it "Mirrors reference output for `basicOptional.gotyno`" $ do
+        basicOptionalModule <-
+          (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
+        DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 
       it "Mirrors reference output for `basic.gotyno`" $ do
         basicModule <- (getRight >>> PartialList.head) <$> parseModules ["examples/basic.gotyno"]

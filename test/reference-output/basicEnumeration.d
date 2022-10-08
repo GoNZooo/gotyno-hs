@@ -1,6 +1,8 @@
 module gotyno_output.basic_enumeration;
 
+import asdf;
 import std.sumtype;
+import std.typecons : Nullable;
 
 enum StringValues : string
 {

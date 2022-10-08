@@ -1,0 +1,9 @@
+struct HasOptionalString {
+  stringField: ?String
+}
+
+union HasOptionalConstructor {
+  DoesNot: I32
+  Does: ?I32
+  HasOptionalStruct: ?HasOptionalString
+}
