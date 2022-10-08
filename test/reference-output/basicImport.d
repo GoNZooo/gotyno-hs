@@ -11,14 +11,14 @@ struct StructUsingImport
     basic_struct.BasicStruct field;
 }
 
-struct ConstructorWithPayloadData
+struct _ConstructorWithPayload
 {
     basic_struct.BasicStruct data;
 }
 
 struct UnionUsingImport
 {
-    alias Type = SumType!(ConstructorWithPayloadData);
+    alias Type = SumType!(_ConstructorWithPayload);
     Type data;
     alias data this;
 
@@ -34,7 +34,7 @@ struct UnionUsingImport
         final switch (tag)
         {
             case "ConstructorWithPayload": {
-                ConstructorWithPayloadData v = void;
+                _ConstructorWithPayload v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;

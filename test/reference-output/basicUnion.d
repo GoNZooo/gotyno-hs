@@ -9,23 +9,23 @@ struct PayloadStruct
     int32_t field1;
 }
 
-struct HasStringPayloadData
+struct _HasStringPayload
 {
     string data;
 }
 
-struct HasPayloadData
+struct _HasPayload
 {
     PayloadStruct data;
 }
 
-struct HasNoPayloadData
+struct _HasNoPayload
 {
 }
 
 struct BasicUnion
 {
-    alias Type = SumType!(HasStringPayloadData, HasPayloadData, HasNoPayloadData);
+    alias Type = SumType!(_HasStringPayload, _HasPayload, _HasNoPayload);
     Type data;
     alias data this;
 
@@ -41,21 +41,21 @@ struct BasicUnion
         final switch (tag)
         {
             case "HasStringPayload": {
-                HasStringPayloadData v = void;
+                _HasStringPayload v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
             case "HasPayload": {
-                HasPayloadData v = void;
+                _HasPayload v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
             case "HasNoPayload": {
-                data = HasNoPayloadData();
+                data = _HasNoPayload();
                 return null;
             }
 

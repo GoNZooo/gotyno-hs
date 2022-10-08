@@ -11,24 +11,24 @@ struct HasOptionalString
     Nullable!(uint32_t)[] arrayOfOptionalField;
 }
 
-struct DoesNotData
+struct _DoesNot
 {
     int32_t data;
 }
 
-struct DoesData
+struct _Does
 {
     Nullable!(int32_t) data;
 }
 
-struct HasOptionalStructData
+struct _HasOptionalStruct
 {
     Nullable!(HasOptionalString) data;
 }
 
 struct HasOptionalConstructor
 {
-    alias Type = SumType!(DoesNotData, DoesData, HasOptionalStructData);
+    alias Type = SumType!(_DoesNot, _Does, _HasOptionalStruct);
     Type data;
     alias data this;
 
@@ -44,21 +44,21 @@ struct HasOptionalConstructor
         final switch (tag)
         {
             case "DoesNot": {
-                DoesNotData v = void;
+                _DoesNot v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
             case "Does": {
-                DoesData v = void;
+                _Does v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
             case "HasOptionalStruct": {
-                HasOptionalStructData v = void;
+                _HasOptionalStruct v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;

@@ -4,18 +4,18 @@ import asdf;
 import std.sumtype;
 import std.typecons : Nullable;
 
-struct HasTPayloadData(T)
+struct _HasTPayload(T)
 {
     T data;
 }
 
-struct HasNoPayloadData
+struct _HasNoPayload
 {
 }
 
-template GenericUnion(T)
+struct GenericUnion(T)
 {
-    alias Type = SumType!(HasTPayloadData!(T), HasNoPayloadData);
+    alias Type = SumType!(_HasTPayload!(T), _HasNoPayload);
     Type data;
     alias data this;
 
@@ -31,14 +31,14 @@ template GenericUnion(T)
         final switch (tag)
         {
             case "HasTPayload": {
-                HasTPayloadData!(T) v = void;
+                _HasTPayload!(T) v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
                 data = v;
                 return null;
             }
 
             case "HasNoPayload": {
-                data = HasNoPayloadData();
+                data = _HasNoPayload();
                 return null;
             }
 

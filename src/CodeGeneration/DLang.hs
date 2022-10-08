@@ -61,80 +61,26 @@ outputDefinition (TypeDefinition name (EmbeddedUnion typeTag constructors)) =
 outputDefinition (TypeDefinition _name (DeclaredType _moduleName' _typeVariables)) = Nothing
 
 outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> Text
-outputEmbeddedUnion unionName (FieldName tag) constructors =
-  let typeOutput = outputCaseUnion constructorsAsConstructors []
-      constructorsAsConstructors = embeddedConstructorsToConstructors constructors
-      toJsonOutput =
-        mconcat
-          [ "instance ToJSON ",
-            unionName & nameOf & sanitizeName,
-            " where",
-            "\n  ",
-            toJsonCaseOutput
-          ]
-      toJsonCaseOutput =
+outputEmbeddedUnion unionName tag constructors =
+  let payloadStructsOutput =
         constructors
-          & fmap constructorToJson
-          & Text.intercalate "\n  "
-      constructorToJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
+          & filter ((^. embeddedConstructorPayload) >>> isNothing)
+          & fmap outputConstructorStruct
+          & Text.intercalate "\n\n"
+      outputConstructorStruct c =
         mconcat
-          [ "toJSON (",
-            upperCaseFirst n,
-            " payload) = toJSON payload & atKey \"",
-            tag,
-            "\" ?~ String \"",
-            n,
-            "\""
+          [ "struct ",
+            c & nameOf & upperCaseFirst & ("_" <>),
+            "\n",
+            "{\n",
+            "}"
           ]
-      constructorToJson (EmbeddedConstructor (ConstructorName n) Nothing) =
-        mconcat
-          [ "toJSON ",
-            upperCaseFirst n,
-            " = object [] & atKey \"",
-            tag,
-            "\" ?~ String \"",
-            n,
-            "\""
-          ]
-      fromJsonOutput =
-        mconcat
-          [ "instance FromJSON ",
-            unionName & nameOf & sanitizeName,
-            " where",
-            "\n  parseJSON = withObject \"",
-            unDefinitionName unionName,
-            "\" $ \\o -> do\n",
-            "    t :: Text <- o .: \"",
-            tag,
-            "\"\n",
-            "    case t of\n      ",
-            fromJsonCaseOutput,
-            "\n      tagValue -> fail $ \"Invalid type tag: \" <> show tagValue"
-          ]
-      fromJsonCaseOutput =
-        constructors
-          & fmap constructorFromJson
-          & Text.intercalate "\n      "
-      constructorFromJson (EmbeddedConstructor (ConstructorName n) (Just _payload)) =
-        mconcat ["\"", n, "\" -> ", upperCaseFirst n, " <$> parseJSON (Object o)"]
-      constructorFromJson (EmbeddedConstructor (ConstructorName n) Nothing) =
-        mconcat ["\"", n, "\" -> pure ", upperCaseFirst n]
+      unionTypeOutput = outputEmbeddedUnionType tag unionName [] constructors
    in mconcat
-        [ typeOutput,
-          "\n",
-          "  deriving (Eq, Show, Generic)",
+        [ payloadStructsOutput,
           "\n\n",
-          toJsonOutput,
-          "\n\n",
-          fromJsonOutput
+          unionTypeOutput
         ]
-
-embeddedConstructorsToConstructors :: [EmbeddedConstructor] -> [Constructor]
-embeddedConstructorsToConstructors = fmap embeddedConstructorToConstructor
-
-embeddedConstructorToConstructor :: EmbeddedConstructor -> Constructor
-embeddedConstructorToConstructor (EmbeddedConstructor name reference) =
-  Constructor name (DefinitionReferenceType <$> reference)
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
@@ -241,14 +187,13 @@ outputUnionType name typeVariables constructors =
       joinedPayloadNames = constructors & fmap appliedConstructorName & Text.intercalate ", "
       appliedConstructorName c =
         c
-          & constructorName . unwrap %~ (<> "Data")
+          & constructorName . unwrap %~ ("_" <>)
           & appliedNameWithTypeVariables (c & typeVariablesFrom & fromMaybe [])
       thisConstructorOutput =
         Text.unlines
           [ "    static foreach (T; Type.Types)",
             "        this(T v) @safe pure nothrow @nogc { data = v; }"
           ]
-      templateOrStruct = if null typeVariables then "struct" else "template"
       outputConstructorDeserializerCase c@Constructor {_constructorPayloadType = Nothing} =
         mconcat
           [ "            case \"",
@@ -257,7 +202,7 @@ outputUnionType name typeVariables constructors =
             "                data = ",
             fullNameWithTypeVariables
               (c & typeVariablesFrom & fromMaybe [])
-              (c & constructorName . unwrap %~ (<> "Data")),
+              (c & constructorName . unwrap %~ ("_" <>)),
             "();\n",
             "                return null;\n",
             "            }"
@@ -270,7 +215,7 @@ outputUnionType name typeVariables constructors =
             "                ",
             appliedNameWithTypeVariables
               (p & typeVariablesFrom & fromMaybe [])
-              (c & constructorName . unwrap %~ (<> "Data")),
+              (c & constructorName . unwrap %~ ("_" <>)),
             " v = void;\n",
             "                if (auto e = asdfData.deserializeValue(v)) return e;\n",
             "                data = v;\n",
@@ -297,7 +242,7 @@ outputUnionType name typeVariables constructors =
             "    }"
           ]
    in mconcat
-        [ mconcat [templateOrStruct, " ", fullName, "\n{\n"],
+        [ mconcat ["struct ", fullName, "\n{\n"],
           mconcat ["    alias Type = SumType!(", joinedPayloadNames, ");\n"],
           "    Type data;\n",
           "    alias data this;\n",
@@ -315,12 +260,12 @@ outputCaseUnion constructors _typeVariables =
   where
     outputCaseConstructor (Constructor (ConstructorName constructorName') Nothing) =
       let sanitizedName = constructorName' & upperCaseFirst & sanitizeName
-       in mconcat ["struct ", sanitizedName, "Data\n{\n}"]
+       in mconcat ["struct _", sanitizedName, "\n{\n}"]
     outputCaseConstructor c@(Constructor _constructorName (Just payload)) =
       let payloadOutput = outputFieldType payload
           fullName =
             c
-              & constructorName . unwrap %~ (upperCaseFirst >>> sanitizeName >>> (<> "Data"))
+              & constructorName . unwrap %~ (upperCaseFirst >>> sanitizeName >>> ("_" <>))
               & fullNameWithTypeVariables (payload & typeVariablesFrom & fromMaybe [])
        in mconcat
             [ "struct ",
@@ -330,7 +275,92 @@ outputCaseUnion constructors _typeVariables =
               " data;\n}"
             ]
 
-sanitizeName :: s -> s
+outputEmbeddedUnionType ::
+  FieldName ->
+  DefinitionName ->
+  [TypeVariable] ->
+  [EmbeddedConstructor] ->
+  Text
+outputEmbeddedUnionType tag name typeVariables constructors =
+  let fullName = mconcat [nameOf name, typeVariableOutput]
+      typeVariableOutput =
+        if null typeVariables then "" else mconcat ["(", joinTypeVariables typeVariables, ")"]
+      joinedPayloadNames = constructors & fmap appliedConstructorName & Text.intercalate ", "
+      appliedConstructorName c =
+        c
+          & embeddedConstructorName . unwrap %~ ("_" <>)
+          & appliedNameWithTypeVariables []
+      thisConstructorOutput =
+        Text.unlines
+          [ "    static foreach (T; Type.Types)",
+            "        this(T v) @safe pure nothrow @nogc { data = v; }"
+          ]
+      outputConstructorDeserializerCase c@EmbeddedConstructor {_embeddedConstructorPayload = Nothing} =
+        mconcat
+          [ "            case \"",
+            c & nameOf & sanitizeName,
+            "\": {\n",
+            "                data = ",
+            fullNameWithTypeVariables
+              []
+              (c & embeddedConstructorName . unwrap %~ ("_" <>)),
+            "();\n",
+            "                return null;\n",
+            "            }"
+          ]
+      outputConstructorDeserializerCase c@EmbeddedConstructor {_embeddedConstructorPayload = Just p} =
+        mconcat
+          [ "            case \"",
+            nameOf c,
+            "\": {\n",
+            "                ",
+            appliedNameWithTypeVariables (p & typeVariablesFrom & fromMaybe []) p,
+            " v = void;\n",
+            "                if (auto e = asdfData.deserializeValue(v)) return e;\n",
+            "                data = v;\n",
+            "                return null;\n",
+            "            }"
+          ]
+      deserializerCases =
+        constructors
+          & fmap outputConstructorDeserializerCase
+          & Text.intercalate "\n\n"
+      deserializerOutput =
+        mconcat
+          [ "    import asdf;\n",
+            "    SerdeException deserializeFromAsdf(Asdf asdfData)\n",
+            "    {\n",
+            "        string tag;\n",
+            mconcat
+              [ "        if (auto e = asdfData[\"",
+                tag ^. unwrap,
+                "\"].deserializeValue(tag)) return e;\n"
+              ],
+            "\n",
+            "        final switch (tag)\n",
+            "        {\n",
+            deserializerCases <> "\n\n",
+            "            default: return new SerdeException(\"Unknown tag: \" ~ tag);\n",
+            "        }\n",
+            "    }"
+          ]
+   in mconcat
+        [ mconcat ["struct ", fullName, "\n{\n"],
+          mconcat ["    alias Type = SumType!(", joinedPayloadNames, ");\n"],
+          "    Type data;\n",
+          "    alias data this;\n",
+          "\n",
+          thisConstructorOutput,
+          "\n",
+          deserializerOutput,
+          "\n",
+          "}"
+        ]
+
+sanitizeName :: (Eq s, IsString s) => s -> s
+sanitizeName "private" = "_private"
+sanitizeName "protected" = "_protected"
+sanitizeName "public" = "_public"
 sanitizeName other = other
 
 outputField :: StructField -> Text
@@ -345,8 +375,8 @@ outputFieldType (LiteralType (LiteralBoolean _b)) = outputBasicType Boolean
 outputFieldType (BasicType basicType) = outputBasicType basicType
 outputFieldType (ComplexType (OptionalType fieldType)) =
   mconcat ["Nullable!(", outputFieldType fieldType, ")"]
-outputFieldType (ComplexType (ArrayType _size fieldType)) =
-  mconcat [outputFieldType fieldType, "[]"]
+outputFieldType (ComplexType (ArrayType size fieldType)) =
+  mconcat [outputFieldType fieldType, "[", tshow size, "]"]
 outputFieldType (ComplexType (SliceType fieldType)) =
   mconcat [outputFieldType fieldType, "[]"]
 outputFieldType (ComplexType (PointerType fieldType)) = outputFieldType fieldType
@@ -369,7 +399,7 @@ outputDefinitionReference
       (TypeDefinition (DefinitionName name) _)
     ) =
     let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-     in mconcat ["(", name, " ", appliedFieldTypes, ")"]
+     in mconcat [name, "!(", appliedFieldTypes, ")"]
 outputDefinitionReference
   ( AppliedImportedGenericReference
       (ModuleName moduleName')

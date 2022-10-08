@@ -57,7 +57,8 @@ data DLangReferenceOutput = DLangReferenceOutput
     genericUnion :: !Text,
     basicEnumeration :: !Text,
     basicImport :: !Text,
-    basicOptional :: !Text
+    basicOptional :: !Text,
+    basic :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -105,6 +106,7 @@ dLangReferenceOutput = do
   basicEnumeration <- basicEnumerationReferenceOutput "d"
   basicImport <- basicImportReferenceOutput "d"
   basicOptional <- basicOptionalReferenceOutput "d"
+  basic <- basicReferenceOutput "d"
   pure
     DLangReferenceOutput
       { basicStruct,
@@ -113,7 +115,8 @@ dLangReferenceOutput = do
         genericUnion,
         basicEnumeration,
         basicImport,
-        basicOptional
+        basicOptional,
+        basic
       }
 
 basicStructReferenceOutput :: FilePath -> IO Text
@@ -192,6 +195,7 @@ spec
       dBasicEnumeration
       dBasicImport
       dBasicOptional
+      dBasic
     ) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
@@ -537,6 +541,7 @@ spec
         FSharp.outputModule basicModule `shouldBe` fsBasic
         Python.outputModule basicModule `shouldBe` pyBasic
         Kotlin.outputModule basicModule `shouldBe` ktBasic
+        DLang.outputModule basicModule `shouldBe` dBasic
 
       it "Mirrors reference output for `importExample.gotyno`" $ do
         importModule <-
