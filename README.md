@@ -43,18 +43,19 @@ can't personally vouch for them in a production context right now.
 - Kotlin
 - Haskell
 - F#
+- D
 - Python
 
 ## Planned support
 
 - PureScript
 - Elixir
-- D
 
 ## Maybe supported in the future
 
 - Swift
 - Scala 3 (if it's better now)
+- Rust
 
 ## Options you can pass to the compiler
 
