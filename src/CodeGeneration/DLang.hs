@@ -19,10 +19,9 @@ outputModule module' =
           & fmap
             ( \(ModuleName declarationModuleName) ->
                 mconcat
-                  [ "import qualified GotynoDeclarations.",
-                    upperCaseFirst declarationModuleName,
-                    " as ",
-                    upperCaseFirst declarationModuleName
+                  [ "static import gotyno_declarations.",
+                    pascalToSnake declarationModuleName,
+                    ";"
                   ]
             )
           & Text.intercalate "\n"
@@ -154,7 +153,7 @@ outputPlainStruct name fields =
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
   let fullName = fullNameWithTypeVariables typeVariables name
-      fieldsOutput = fields & fmap outputField & Text.intercalate ",\n    "
+      fieldsOutput = fields & fmap outputField & Text.intercalate "\n    "
    in mconcat
         [ mconcat ["struct ", fullName],
           "\n",
@@ -414,9 +413,9 @@ outputDefinitionReference
       (DefinitionName name)
       (AppliedTypes appliedTypes)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-        maybeAppliedOutput = if null appliedTypes then "" else mconcat [" ", appliedFieldTypes]
-     in mconcat ["(", upperCaseFirst moduleName', ".", sanitizeName name, maybeAppliedOutput, ")"]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
+     in mconcat
+          [pascalToSnake moduleName', ".", sanitizeName name, "!(", appliedFieldTypes, ")"]
 outputDefinitionReference (DeclarationReference (ModuleName moduleName') (DefinitionName name)) =
   mconcat [pascalToSnake moduleName', ".", sanitizeName name]
 
