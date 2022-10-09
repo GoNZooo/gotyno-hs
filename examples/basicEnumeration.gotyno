@@ -1,0 +1,13 @@
+enum StringValues {
+  first = "first"
+  second = "second"
+  third = "Third"
+  fourth = "Fourth"
+}
+
+enum IntValues {
+  first = 1
+  second = 2
+  third = 3
+  fourth = 4
+}

@@ -1,0 +1,3 @@
+struct GenericStruct <T>{
+  field: T
+}

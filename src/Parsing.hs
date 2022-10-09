@@ -1,5 +1,6 @@
 module Parsing (parseModules, test) where
 
+import CodeGeneration.Utilities (enumerationValueType)
 import qualified CodeGeneration.Utilities as Utilities
 import Qtility
 import qualified RIO.FilePath as FilePath
@@ -240,8 +241,15 @@ enumerationP :: Parser TypeDefinition
 enumerationP = do
   name <- lexeme readCurrentDefinitionName <* "{" <* eol
   values' <- enumerationValuesP
+  enumerationType <- ensureEnumerationValuesAreOfSameType values'
   char '}'
-  pure $ TypeDefinition name $ Enumeration values'
+  pure $ TypeDefinition name $ Enumeration enumerationType values'
+
+ensureEnumerationValuesAreOfSameType :: [EnumerationValue] -> Parser BasicTypeValue
+ensureEnumerationValuesAreOfSameType vs = do
+  case vs & fmap enumerationValueType & List.nub of
+    [t] -> pure t
+    types -> reportError $ mconcat ["Enumeration values must be of the same type, got: ", show types]
 
 enumerationValuesP :: Parser [EnumerationValue]
 enumerationValuesP = some enumerationValueP
@@ -518,7 +526,7 @@ isGenericType (TypeDefinition _name (DeclaredType _moduleName typeVariables)) =
   not $ List.null typeVariables
 isGenericType (TypeDefinition _name (EmbeddedUnion _tag _constructors)) = False
 isGenericType (TypeDefinition _name (UntaggedUnion _cases)) = False
-isGenericType (TypeDefinition _name (Enumeration _values)) = False
+isGenericType (TypeDefinition _name (Enumeration _type _values)) = False
 
 definitionNameP :: Parser DefinitionName
 definitionNameP = do

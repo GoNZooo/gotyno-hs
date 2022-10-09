@@ -3,6 +3,7 @@
 
 module Types where
 
+import Control.Lens.TH (makePrisms)
 import Qtility
 import RIO.Time (NominalDiffTime)
 import Text.Megaparsec (ParsecT)
@@ -105,7 +106,7 @@ data TypeData
   | Union FieldName UnionType
   | EmbeddedUnion FieldName [EmbeddedConstructor]
   | UntaggedUnion [FieldType]
-  | Enumeration [EnumerationValue]
+  | Enumeration BasicTypeValue [EnumerationValue]
   | DeclaredType ModuleName [TypeVariable]
   deriving (Eq, Show, Generic)
 
@@ -275,3 +276,28 @@ foldMapM
     ''Languages,
     ''AppState
   ]
+
+foldMapM makePrisms [''DefinitionReference]
+
+definitionReferenceName :: Lens' DefinitionReference DefinitionName
+definitionReferenceName = lens getter setter
+  where
+    getter (DefinitionReference (TypeDefinition name _)) = name
+    getter (ImportedDefinitionReference _ (TypeDefinition name _)) = name
+    getter (AppliedGenericReference _ (TypeDefinition name _)) = name
+    getter (AppliedImportedGenericReference _ _ (TypeDefinition name _)) = name
+    getter (DeclarationReference _ name) = name
+    getter (GenericDeclarationReference _ name _) = name
+
+    setter (DefinitionReference (TypeDefinition _ data')) name =
+      DefinitionReference (TypeDefinition name data')
+    setter (ImportedDefinitionReference module' (TypeDefinition _ data')) name =
+      ImportedDefinitionReference module' (TypeDefinition name data')
+    setter (AppliedGenericReference types (TypeDefinition _ data')) name =
+      AppliedGenericReference types (TypeDefinition name data')
+    setter (AppliedImportedGenericReference module' types (TypeDefinition _ data')) name =
+      AppliedImportedGenericReference module' types (TypeDefinition name data')
+    setter (DeclarationReference module' _) name =
+      DeclarationReference module' name
+    setter (GenericDeclarationReference module' _ types) name =
+      GenericDeclarationReference module' name types

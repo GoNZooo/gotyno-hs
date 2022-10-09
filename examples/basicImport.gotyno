@@ -1,0 +1,9 @@
+import basicStruct
+
+struct StructUsingImport {
+  field: basicStruct.BasicStruct
+}
+
+union UnionUsingImport {
+  ConstructorWithPayload: basicStruct.BasicStruct
+}

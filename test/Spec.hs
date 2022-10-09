@@ -12,6 +12,7 @@ main = do
   fsReferenceOutput <- ParsingSpec.fSharpReferenceOutput
   pyReferenceOutput <- ParsingSpec.pythonReferenceOutput
   ktReferenceOutput <- ParsingSpec.kotlinReferenceOutput
+  dLangReferenceOutput <- ParsingSpec.dLangReferenceOutput
   hspec $ do
     ParsingSpec.spec
       tsReferenceOutput
@@ -19,4 +20,5 @@ main = do
       fsReferenceOutput
       pyReferenceOutput
       ktReferenceOutput
+      dLangReferenceOutput
     HaskellOutputSpec.spec

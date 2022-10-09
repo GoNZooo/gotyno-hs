@@ -109,6 +109,10 @@ instance MaybeHasTypeVariables UnionType where
   typeVariablesFrom (PlainUnion _constructors) = Nothing
   typeVariablesFrom (GenericUnion ts _constructors) = Just ts
 
+instance MaybeHasTypeVariables Constructor where
+  {-# INLINE typeVariablesFrom #-}
+  typeVariablesFrom (Constructor _fields fieldType) = fieldType >>= typeVariablesFrom
+
 {-# INLINE typeVariablesFromFieldType #-}
 typeVariablesFromFieldType :: FieldType -> Maybe [TypeVariable]
 typeVariablesFromFieldType (TypeVariableReferenceType typeVariable) = pure [typeVariable]
@@ -131,7 +135,7 @@ typeVariablesFromDefinition :: TypeDefinition -> Maybe [TypeVariable]
 typeVariablesFromDefinition (TypeDefinition _name (Struct (PlainStruct _))) = Nothing
 typeVariablesFromDefinition (TypeDefinition _name (Union _tagType (PlainUnion _))) = Nothing
 typeVariablesFromDefinition (TypeDefinition _name (UntaggedUnion _)) = Nothing
-typeVariablesFromDefinition (TypeDefinition _name (Enumeration _)) = Nothing
+typeVariablesFromDefinition (TypeDefinition _name (Enumeration _t _)) = Nothing
 typeVariablesFromDefinition (TypeDefinition _name (EmbeddedUnion _tagType _constructors)) = Nothing
 typeVariablesFromDefinition (TypeDefinition _name (Struct (GenericStruct typeVariables _))) =
   pure typeVariables
@@ -172,3 +176,10 @@ structFieldsFromReference :: DefinitionReference -> [StructField]
 structFieldsFromReference
   (DefinitionReference (TypeDefinition _name (Struct (PlainStruct fields)))) = fields
 structFieldsFromReference _other = error "struct fields from anything other than plain struct"
+
+enumerationValueType :: EnumerationValue -> BasicTypeValue
+enumerationValueType v = case v ^. enumerationValueValue of
+  (LiteralString _) -> BasicString
+  (LiteralInteger _) -> U32
+  (LiteralFloat _) -> F32
+  (LiteralBoolean _) -> Boolean

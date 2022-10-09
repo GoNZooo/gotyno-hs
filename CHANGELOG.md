@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0
+
+### Breaking changes
+
+- Enums can now only contain the same type. This simplifies their usage greatly
+  in languages that either force you or allow you to choose a backing type for
+  your enum values. It's a breaking change because of the lack of flexibility
+  caused by enforcing only one type, but I think that it's a reasonable change
+  overall.
+
+### Added DLang
+
+D was added as a beta language. It needs to be tested in production.
+
 ## 1.1.0
 
 ### General

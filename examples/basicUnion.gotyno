@@ -1,0 +1,9 @@
+struct PayloadStruct {
+  field1: I32
+}
+
+union BasicUnion {
+  HasStringPayload: String
+  HasPayload: PayloadStruct
+  HasNoPayload
+}

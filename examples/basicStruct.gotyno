@@ -1,0 +1,4 @@
+struct BasicStruct {
+  field1: U32
+  field2: String
+}
