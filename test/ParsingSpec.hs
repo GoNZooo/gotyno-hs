@@ -60,7 +60,8 @@ data DLangReferenceOutput = DLangReferenceOutput
     basicOptional :: !Text,
     basic :: !Text,
     import' :: !Text,
-    hasGeneric :: !Text
+    hasGeneric :: !Text,
+    generics :: !Text
   }
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
@@ -111,6 +112,7 @@ dLangReferenceOutput = do
   basic <- basicReferenceOutput "d"
   import' <- importReferenceOutput "d"
   hasGeneric <- hasGenericReferenceOutput "d"
+  generics <- genericsReferenceOutput "d"
   pure
     DLangReferenceOutput
       { basicStruct,
@@ -122,7 +124,8 @@ dLangReferenceOutput = do
         basicOptional,
         basic,
         import',
-        hasGeneric
+        hasGeneric,
+        generics
       }
 
 basicStructReferenceOutput :: FilePath -> IO Text
@@ -204,6 +207,7 @@ spec
       dBasic
       dImport
       dHasGeneric
+      dGenerics
     ) = do
     describe "`parseModules`" $ do
       it "Parses and returns modules" $ do
@@ -585,6 +589,7 @@ spec
         FSharp.outputModule genericsModule `shouldBe` fsGenerics
         Python.outputModule genericsModule `shouldBe` pyGenerics
         Kotlin.outputModule genericsModule `shouldBe` ktGenerics
+        DLang.outputModule genericsModule `shouldBe` dGenerics
 
       it "Mirrors reference output for `github.gotyno`" $ do
         gitHubModule <-

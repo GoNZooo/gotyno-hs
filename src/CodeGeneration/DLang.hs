@@ -63,17 +63,19 @@ outputEmbeddedUnion :: DefinitionName -> FieldName -> [EmbeddedConstructor] -> T
 outputEmbeddedUnion unionName tag constructors =
   let payloadStructsOutput =
         constructors
-          & filter ((^. embeddedConstructorPayload) >>> isNothing)
           & fmap outputConstructorStruct
           & Text.intercalate "\n\n"
+      outputDataField definition = mconcat ["    ", definition & nameOf & sanitizeName, " data;\n"]
       outputConstructorStruct c =
-        mconcat
-          [ "struct ",
-            c & nameOf & upperCaseFirst & ("_" <>),
-            "\n",
-            "{\n",
-            "}"
-          ]
+        let maybePayloadOutput = c ^. embeddedConstructorPayload & maybe "" outputDataField
+         in mconcat
+              [ "struct ",
+                c & nameOf & upperCaseFirst & ("_" <>),
+                "\n",
+                "{\n",
+                maybePayloadOutput,
+                "}"
+              ]
       unionTypeOutput = outputEmbeddedUnionType tag unionName [] constructors
    in mconcat
         [ payloadStructsOutput,
@@ -83,46 +85,9 @@ outputEmbeddedUnion unionName tag constructors =
 
 outputUntaggedUnion :: DefinitionName -> [FieldType] -> Text
 outputUntaggedUnion unionName cases =
-  let typeOutput = mconcat ["data ", unDefinitionName unionName, "\n  = ", unionOutput]
-      unionOutput = cases & fmap outputCaseLine & Text.intercalate "\n  | "
-      caseConstructor fieldType = mconcat [nameOf unionName, fieldTypeName fieldType]
-      outputCaseLine fieldType =
-        mconcat
-          [ caseConstructor fieldType,
-            " ",
-            outputFieldType fieldType
-          ]
-      jsonInstanceOutput =
-        mconcat [fromJsonInstance, "\n\n", toJsonInstance]
-      fromJsonInstance =
-        mconcat
-          [ "instance FromJSON ",
-            unionName & nameOf & sanitizeName,
-            " where\n",
-            "  parseJSON v =\n",
-            "    ",
-            fromJsonCaseOutput
-          ]
-      toJsonInstance =
-        mconcat
-          [ "instance ToJSON ",
-            unionName & nameOf & sanitizeName,
-            " where\n",
-            toJsonCaseOutput
-          ]
-      fromJsonCaseOutput =
-        cases & fmap fromJsonCase & Text.intercalate "\n      <|> "
-      toJsonCaseOutput =
-        cases & fmap toJsonCase & Text.intercalate "\n"
-      fromJsonCase fieldType = mconcat ["(", caseConstructor fieldType, " <$> parseJSON v)"]
-      toJsonCase fieldType = mconcat ["  toJSON (", caseConstructor fieldType, " v) = toJSON v"]
-   in mconcat
-        [ typeOutput,
-          "\n",
-          "  deriving (Eq, Show, Generic)",
-          "\n\n",
-          jsonInstanceOutput
-        ]
+  let joinedCases =
+        cases & fmap outputFieldType & Text.intercalate ", "
+   in mconcat ["alias ", nameOf unionName, " = ", "SumType!(", joinedCases, ");"]
 
 outputEnumeration :: BasicTypeValue -> DefinitionName -> [EnumerationValue] -> Text
 outputEnumeration type' name values' =
@@ -287,7 +252,7 @@ outputEmbeddedUnionType tag name typeVariables constructors =
       joinedPayloadNames = constructors & fmap appliedConstructorName & Text.intercalate ", "
       appliedConstructorName c =
         c
-          & embeddedConstructorName . unwrap %~ ("_" <>)
+          & embeddedConstructorName . unwrap %~ (upperCaseFirst >>> ("_" <>))
           & appliedNameWithTypeVariables []
       thisConstructorOutput =
         Text.unlines
@@ -316,7 +281,9 @@ outputEmbeddedUnionType tag name typeVariables constructors =
             appliedNameWithTypeVariables (p & typeVariablesFrom & fromMaybe []) p,
             " v = void;\n",
             "                if (auto e = asdfData.deserializeValue(v)) return e;\n",
-            "                data = v;\n",
+            "                data = ",
+            appliedConstructorName c,
+            "(v);\n",
             "                return null;\n",
             "            }"
           ]

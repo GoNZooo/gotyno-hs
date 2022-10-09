@@ -276,6 +276,11 @@ struct Person
     Maybe!(Person) spouse;
 }
 
+struct _EmbeddedLogIn
+{
+    LogInData data;
+}
+
 struct _SystemImploded
 {
 }
@@ -300,7 +305,7 @@ struct EmbeddedEvent
             case "EmbeddedLogIn": {
                 LogInData v = void;
                 if (auto e = asdfData.deserializeValue(v)) return e;
-                data = v;
+                data = _EmbeddedLogIn(v);
                 return null;
             }
 
