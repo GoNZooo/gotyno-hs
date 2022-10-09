@@ -406,16 +406,8 @@ outputDefinitionReference
       (AppliedTypes appliedTypes)
       (TypeDefinition (DefinitionName name) _)
     ) =
-    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate " "
-     in mconcat
-          [ "(",
-            pascalToSnake moduleName',
-            ".",
-            sanitizeName name,
-            " ",
-            appliedFieldTypes,
-            ")"
-          ]
+    let appliedFieldTypes = appliedTypes & fmap outputFieldType & Text.intercalate ", "
+     in mconcat [pascalToSnake moduleName', ".", sanitizeName name, "!(", appliedFieldTypes, ")"]
 outputDefinitionReference
   ( GenericDeclarationReference
       (ModuleName moduleName')
