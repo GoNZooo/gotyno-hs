@@ -75,8 +75,8 @@ outputDefinition (TypeDefinition name (Struct (GenericStruct typeVariables field
 outputDefinition (TypeDefinition name (Union typeTag unionType)) =
   pure $ outputUnion name typeTag unionType
 -- @TODO: use the type here to set the type of the enumeration
-outputDefinition (TypeDefinition name (Enumeration _type enumerationValues)) =
-  pure $ outputEnumeration name enumerationValues
+outputDefinition (TypeDefinition name (Enumeration type' enumerationValues)) =
+  pure $ outputEnumeration type' name enumerationValues
 outputDefinition (TypeDefinition name (UntaggedUnion unionCases)) =
   pure $ outputUntaggedUnion name unionCases
 outputDefinition (TypeDefinition name (EmbeddedUnion typeTag constructors)) =
@@ -149,8 +149,8 @@ outputUntaggedUnion unionName cases =
           "}"
         ]
 
-outputEnumeration :: DefinitionName -> [EnumerationValue] -> Text
-outputEnumeration name values' =
+outputEnumeration :: BasicTypeValue -> DefinitionName -> [EnumerationValue] -> Text
+outputEnumeration basicType name values' =
   let valuesOutput =
         values'
           & fmap
@@ -171,7 +171,13 @@ outputEnumeration name values' =
       outputLiteralValue (LiteralFloat f) = tshow f
       outputLiteralValue (LiteralBoolean b) = bool "false" "true" b
    in mconcat
-        [ mconcat ["enum class ", nameOf name, "(val data: Any) : java.io.Serializable {\n"],
+        [ mconcat
+            [ "enum class ",
+              nameOf name,
+              "(val data: ",
+              outputFieldType $ BasicType basicType,
+              ") : java.io.Serializable {\n"
+            ],
           valuesOutput,
           ";\n",
           "\n",
