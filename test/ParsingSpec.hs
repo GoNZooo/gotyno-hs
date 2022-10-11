@@ -12,8 +12,16 @@ import qualified RIO.List.Partial as PartialList
 import Test.Hspec
 import Types
 
+-- { basicStruct :: !Text,
+--   basicUnion :: !Text,
+--   genericStruct :: !Text,
+--   genericUnion :: !Text,
+--   basicEnumeration :: !Text,
+--   basicImport :: !Text,
+--   basicOptional :: !Text,
 data TypeScriptReferenceOutput = TypeScriptReferenceOutput
-  { basic :: !Text,
+  { basicStruct :: !Text,
+    basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
     generics :: !Text,
@@ -66,12 +74,21 @@ data DLangReferenceOutput = DLangReferenceOutput
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
 typeScriptReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "ts"
   basic <- basicReferenceOutput "ts"
   import' <- importReferenceOutput "ts"
   hasGeneric <- hasGenericReferenceOutput "ts"
   generics <- genericsReferenceOutput "ts"
   gitHub <- gitHubReferenceOutput "ts"
-  pure TypeScriptReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+  pure
+    TypeScriptReferenceOutput
+      { basicStruct,
+        basic,
+        import',
+        hasGeneric,
+        generics,
+        gitHub
+      }
 
 haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
@@ -191,7 +208,7 @@ spec ::
   DLangReferenceOutput ->
   Spec
 spec
-  (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
+  (TypeScriptReferenceOutput tsBasicStruct tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
   (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
@@ -513,6 +530,7 @@ spec
       it "Mirrors reference output for `basicStruct.gotyno`" $ do
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
+        TypeScript.outputModule basicStructModule `shouldBe` tsBasicStruct
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
       it "Mirrors reference output for `basicUnion.gotyno`" $ do
