@@ -21,6 +21,7 @@ import Types
 --   basicOptional :: !Text,
 data TypeScriptReferenceOutput = TypeScriptReferenceOutput
   { basicStruct :: !Text,
+    basicUnion :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -75,6 +76,7 @@ data DLangReferenceOutput = DLangReferenceOutput
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
 typeScriptReferenceOutput = do
   basicStruct <- basicStructReferenceOutput "ts"
+  basicUnion <- basicUnionReferenceOutput "ts"
   basic <- basicReferenceOutput "ts"
   import' <- importReferenceOutput "ts"
   hasGeneric <- hasGenericReferenceOutput "ts"
@@ -83,6 +85,7 @@ typeScriptReferenceOutput = do
   pure
     TypeScriptReferenceOutput
       { basicStruct,
+        basicUnion,
         basic,
         import',
         hasGeneric,
@@ -208,7 +211,15 @@ spec ::
   DLangReferenceOutput ->
   Spec
 spec
-  (TypeScriptReferenceOutput tsBasicStruct tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
+  ( TypeScriptReferenceOutput
+      tsBasicStruct
+      tsBasicUnion
+      tsBasic
+      tsImport
+      tsHasGeneric
+      tsGenerics
+      tsGitHub
+    )
   (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
@@ -536,6 +547,7 @@ spec
       it "Mirrors reference output for `basicUnion.gotyno`" $ do
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
+        TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
       it "Mirrors reference output for `genericStruct.gotyno`" $ do
