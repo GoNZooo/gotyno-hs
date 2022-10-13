@@ -13,7 +13,14 @@ import Test.Hspec
 import Types
 
 data TypeScriptReferenceOutput = TypeScriptReferenceOutput
-  { basic :: !Text,
+  { basicStruct :: !Text,
+    basicUnion :: !Text,
+    genericStruct :: !Text,
+    genericUnion :: !Text,
+    basicEnumeration :: !Text,
+    basicImport :: !Text,
+    basicOptional :: !Text,
+    basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
     generics :: !Text,
@@ -66,12 +73,33 @@ data DLangReferenceOutput = DLangReferenceOutput
 
 typeScriptReferenceOutput :: IO TypeScriptReferenceOutput
 typeScriptReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "ts"
+  basicUnion <- basicUnionReferenceOutput "ts"
+  genericStruct <- genericStructReferenceOutput "ts"
+  genericUnion <- genericUnionReferenceOutput "ts"
+  basicEnumeration <- basicEnumerationReferenceOutput "ts"
+  basicImport <- basicImportReferenceOutput "ts"
+  basicOptional <- basicOptionalReferenceOutput "ts"
   basic <- basicReferenceOutput "ts"
   import' <- importReferenceOutput "ts"
   hasGeneric <- hasGenericReferenceOutput "ts"
   generics <- genericsReferenceOutput "ts"
   gitHub <- gitHubReferenceOutput "ts"
-  pure TypeScriptReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+  pure
+    TypeScriptReferenceOutput
+      { basicStruct,
+        basicUnion,
+        genericStruct,
+        genericUnion,
+        basicEnumeration,
+        basicImport,
+        basicOptional,
+        basic,
+        import',
+        hasGeneric,
+        generics,
+        gitHub
+      }
 
 haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
@@ -191,7 +219,20 @@ spec ::
   DLangReferenceOutput ->
   Spec
 spec
-  (TypeScriptReferenceOutput tsBasic tsImport tsHasGeneric tsGenerics tsGitHub)
+  ( TypeScriptReferenceOutput
+      tsBasicStruct
+      tsBasicUnion
+      tsGenericStruct
+      tsGenericUnion
+      tsBasicEnumeration
+      tsBasicImport
+      tsBasicOptional
+      tsBasic
+      tsImport
+      tsHasGeneric
+      tsGenerics
+      tsGitHub
+    )
   (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
@@ -513,37 +554,44 @@ spec
       it "Mirrors reference output for `basicStruct.gotyno`" $ do
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
+        TypeScript.outputModule basicStructModule `shouldBe` tsBasicStruct
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
       it "Mirrors reference output for `basicUnion.gotyno`" $ do
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
+        TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
       it "Mirrors reference output for `genericStruct.gotyno`" $ do
         genericStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericStruct.gotyno"]
+        TypeScript.outputModule genericStructModule `shouldBe` tsGenericStruct
         DLang.outputModule genericStructModule `shouldBe` dGenericStruct
 
       it "Mirrors reference output for `genericUnion.gotyno`" $ do
         genericUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericUnion.gotyno"]
+        TypeScript.outputModule genericUnionModule `shouldBe` tsGenericUnion
         DLang.outputModule genericUnionModule `shouldBe` dGenericUnion
 
       it "Mirrors reference output for `basicEnumeration.gotyno`" $ do
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
+        TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
       it "Mirrors reference output for `basicImport.gotyno`" $ do
         basicImportModule <-
           (getRight >>> PartialList.last)
             <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
+        TypeScript.outputModule basicImportModule `shouldBe` tsBasicImport
         DLang.outputModule basicImportModule `shouldBe` dBasicImport
 
       it "Mirrors reference output for `basicOptional.gotyno`" $ do
         basicOptionalModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
+        TypeScript.outputModule basicOptionalModule `shouldBe` tsBasicOptional
         DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 
       it "Mirrors reference output for `basic.gotyno`" $ do

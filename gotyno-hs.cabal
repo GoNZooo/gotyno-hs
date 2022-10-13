@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           gotyno-hs
-version:        2.1.0
+version:        2.2.0
 synopsis:       A type definition compiler supporting multiple output languages.
 description:    Compiles type definitions into F#, TypeScript and Python, with validators, decoders and encoders.
 category:       Compiler
@@ -31,8 +31,15 @@ extra-source-files:
     examples/python.gotyno
     test/reference-output/arrayOfArraysOfNullableStrings.ts
     test/reference-output/basic.ts
+    test/reference-output/basicEnumeration.ts
+    test/reference-output/basicImport.ts
+    test/reference-output/basicOptional.ts
+    test/reference-output/basicStruct.ts
+    test/reference-output/basicUnion.ts
     test/reference-output/external.ts
     test/reference-output/generics.ts
+    test/reference-output/genericStruct.ts
+    test/reference-output/genericUnion.ts
     test/reference-output/github.ts
     test/reference-output/hasGeneric.ts
     test/reference-output/importExample.ts

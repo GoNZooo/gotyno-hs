@@ -1038,7 +1038,10 @@ outputCaseType
   unionName
   (FieldName tag)
   (Constructor (ConstructorName name) maybePayload) =
-    let payloadLine = maybe "" (\p -> "    data: " <> outputFieldType p <> ";\n") maybePayload
+    let payloadLine = maybe "" outputDataField maybePayload
+        outputDataField (ComplexType (OptionalType t)) =
+          mconcat ["    data?: ", outputFieldType t, ";\n"]
+        outputDataField t = mconcat ["    data: ", outputFieldType t, ";\n"]
         maybeTypeVariables = maybe "" (typeVariablesFrom >>> maybeJoinTypeVariables) maybePayload
      in mconcat
           [ mconcat ["export type ", upperCaseFirst name, maybeTypeVariables, " = {\n"],
@@ -1058,7 +1061,9 @@ outputCaseConstructor
   unionName
   (FieldName tag)
   (Constructor (ConstructorName name) maybePayload) =
-    let argumentFieldAndType = maybe "" (\p -> "data: " <> outputFieldType p) maybePayload
+    let argumentFieldAndType = maybe "" outputDataParameter maybePayload
+        outputDataParameter (ComplexType (OptionalType t)) = mconcat ["data?: ", outputFieldType t]
+        outputDataParameter t = mconcat ["data: ", outputFieldType t]
         maybeTypeVariables = maybe "" joinTypeVariables (maybePayload >>= typeVariablesFrom)
      in mconcat
           [ mconcat
