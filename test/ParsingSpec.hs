@@ -24,6 +24,7 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
     basicUnion :: !Text,
     genericStruct :: !Text,
     genericUnion :: !Text,
+    basicEnumeration :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -81,6 +82,7 @@ typeScriptReferenceOutput = do
   basicUnion <- basicUnionReferenceOutput "ts"
   genericStruct <- genericStructReferenceOutput "ts"
   genericUnion <- genericUnionReferenceOutput "ts"
+  basicEnumeration <- basicEnumerationReferenceOutput "ts"
   basic <- basicReferenceOutput "ts"
   import' <- importReferenceOutput "ts"
   hasGeneric <- hasGenericReferenceOutput "ts"
@@ -92,6 +94,7 @@ typeScriptReferenceOutput = do
         basicUnion,
         genericStruct,
         genericUnion,
+        basicEnumeration,
         basic,
         import',
         hasGeneric,
@@ -222,6 +225,7 @@ spec
       tsBasicUnion
       tsGenericStruct
       tsGenericUnion
+      tsBasicEnumeration
       tsBasic
       tsImport
       tsHasGeneric
@@ -573,6 +577,7 @@ spec
       it "Mirrors reference output for `basicEnumeration.gotyno`" $ do
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
+        TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
       it "Mirrors reference output for `basicImport.gotyno`" $ do
