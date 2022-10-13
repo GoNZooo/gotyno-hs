@@ -12,13 +12,6 @@ import qualified RIO.List.Partial as PartialList
 import Test.Hspec
 import Types
 
--- { basicStruct :: !Text,
---   basicUnion :: !Text,
---   genericStruct :: !Text,
---   genericUnion :: !Text,
---   basicEnumeration :: !Text,
---   basicImport :: !Text,
---   basicOptional :: !Text,
 data TypeScriptReferenceOutput = TypeScriptReferenceOutput
   { basicStruct :: !Text,
     basicUnion :: !Text,
@@ -26,6 +19,7 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
     genericUnion :: !Text,
     basicEnumeration :: !Text,
     basicImport :: !Text,
+    basicOptional :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -85,6 +79,7 @@ typeScriptReferenceOutput = do
   genericUnion <- genericUnionReferenceOutput "ts"
   basicEnumeration <- basicEnumerationReferenceOutput "ts"
   basicImport <- basicImportReferenceOutput "ts"
+  basicOptional <- basicOptionalReferenceOutput "ts"
   basic <- basicReferenceOutput "ts"
   import' <- importReferenceOutput "ts"
   hasGeneric <- hasGenericReferenceOutput "ts"
@@ -98,6 +93,7 @@ typeScriptReferenceOutput = do
         genericUnion,
         basicEnumeration,
         basicImport,
+        basicOptional,
         basic,
         import',
         hasGeneric,
@@ -230,6 +226,7 @@ spec
       tsGenericUnion
       tsBasicEnumeration
       tsBasicImport
+      tsBasicOptional
       tsBasic
       tsImport
       tsHasGeneric
@@ -594,6 +591,7 @@ spec
       it "Mirrors reference output for `basicOptional.gotyno`" $ do
         basicOptionalModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
+        TypeScript.outputModule basicOptionalModule `shouldBe` tsBasicOptional
         DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 
       it "Mirrors reference output for `basic.gotyno`" $ do
