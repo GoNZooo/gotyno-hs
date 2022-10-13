@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.2.0
+
+### Added
+
+- More tests for TypeScript output; the "basic" suite
+
+### Fixes
+- Fixed bug where TypeScript's optional parameters to constructors would not
+  use `?`, i.e. `function Constructor(data?: string)`.
+
+## 2.1.0
+
+### Fixes
+
+- Made it so Kotlin started using types from enum definitions instead of `Any`.
+
 ## 2.0.0
 
 ### Breaking changes
