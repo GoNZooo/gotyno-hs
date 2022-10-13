@@ -32,6 +32,7 @@ extra-source-files:
     test/reference-output/arrayOfArraysOfNullableStrings.ts
     test/reference-output/basic.ts
     test/reference-output/basicEnumeration.ts
+    test/reference-output/basicImport.ts
     test/reference-output/basicStruct.ts
     test/reference-output/basicUnion.ts
     test/reference-output/external.ts
