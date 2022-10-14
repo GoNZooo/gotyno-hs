@@ -51,6 +51,7 @@ data PythonReferenceOutput = PythonReferenceOutput
 
 data KotlinReferenceOutput = KotlinReferenceOutput
   { basicStruct :: !Text,
+    basicUnion :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -123,6 +124,7 @@ fSharpReferenceOutput = do
 kotlinReferenceOutput :: IO KotlinReferenceOutput
 kotlinReferenceOutput = do
   basicStruct <- basicStructReferenceOutput "kt"
+  basicUnion <- basicUnionReferenceOutput "kt"
   basic <- basicReferenceOutput "kt"
   import' <- importReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
@@ -131,6 +133,7 @@ kotlinReferenceOutput = do
   pure
     KotlinReferenceOutput
       { basicStruct,
+        basicUnion,
         basic,
         import',
         hasGeneric,
@@ -248,6 +251,7 @@ spec
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   ( KotlinReferenceOutput
       ktBasicStruct
+      ktBasicUnion
       ktBasic
       ktImport
       ktHasGeneric
@@ -579,6 +583,7 @@ spec
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
         TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
+        Kotlin.outputModule basicUnionModule `shouldBe` ktBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
       it "Mirrors reference output for `genericStruct.gotyno`" $ do
