@@ -28,7 +28,8 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
   }
 
 data HaskellReferenceOutput = HaskellReferenceOutput
-  { basic :: !Text,
+  { basicStruct :: !Text,
+    basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
     generics :: !Text,
@@ -110,12 +111,21 @@ typeScriptReferenceOutput = do
 
 haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "hs"
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
   generics <- genericsReferenceOutput "hs"
   gitHub <- gitHubReferenceOutput "hs"
-  pure HaskellReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+  pure
+    HaskellReferenceOutput
+      { basicStruct,
+        basic,
+        import',
+        hasGeneric,
+        generics,
+        gitHub
+      }
 
 fSharpReferenceOutput :: IO FSharpReferenceOutput
 fSharpReferenceOutput = do
@@ -261,7 +271,14 @@ spec
       tsGenerics
       tsGitHub
     )
-  (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
+  ( HaskellReferenceOutput
+      hsBasicStruct
+      hsBasic
+      hsImport
+      hsHasGeneric
+      hsGenerics
+      hsGitHub
+    )
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   ( KotlinReferenceOutput
@@ -596,6 +613,7 @@ spec
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
         TypeScript.outputModule basicStructModule `shouldBe` tsBasicStruct
+        Haskell.outputModule basicStructModule `shouldBe` hsBasicStruct
         Kotlin.outputModule basicStructModule `shouldBe` ktBasicStruct
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
