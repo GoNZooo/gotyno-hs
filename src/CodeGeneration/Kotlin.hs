@@ -50,7 +50,7 @@ outputModule module' =
           moduleClassOutput,
           definitionOutput,
           "\n",
-          "}"
+          "}\n"
         ]
 
 modulePrelude :: Text
