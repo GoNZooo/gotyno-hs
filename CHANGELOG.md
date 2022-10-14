@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.1
+
+### Fixes
+
+- Added trailing newline in Kotlin output
+
 ## 2.2.0
 
 ### Added

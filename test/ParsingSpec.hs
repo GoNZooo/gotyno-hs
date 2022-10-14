@@ -50,7 +50,14 @@ data PythonReferenceOutput = PythonReferenceOutput
   }
 
 data KotlinReferenceOutput = KotlinReferenceOutput
-  { basic :: !Text,
+  { basicStruct :: !Text,
+    basicUnion :: !Text,
+    genericStruct :: !Text,
+    genericUnion :: !Text,
+    basicEnumeration :: !Text,
+    basicImport :: !Text,
+    basicOptional :: !Text,
+    basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
     generics :: !Text,
@@ -121,12 +128,33 @@ fSharpReferenceOutput = do
 
 kotlinReferenceOutput :: IO KotlinReferenceOutput
 kotlinReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "kt"
+  basicUnion <- basicUnionReferenceOutput "kt"
+  genericStruct <- genericStructReferenceOutput "kt"
+  genericUnion <- genericUnionReferenceOutput "kt"
+  basicEnumeration <- basicEnumerationReferenceOutput "kt"
+  basicImport <- basicImportReferenceOutput "kt"
+  basicOptional <- basicOptionalReferenceOutput "kt"
   basic <- basicReferenceOutput "kt"
   import' <- importReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
   generics <- genericsReferenceOutput "kt"
   gitHub <- gitHubReferenceOutput "kt"
-  pure KotlinReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+  pure
+    KotlinReferenceOutput
+      { basicStruct,
+        basicUnion,
+        genericStruct,
+        genericUnion,
+        basicEnumeration,
+        basicImport,
+        basicOptional,
+        basic,
+        import',
+        hasGeneric,
+        generics,
+        gitHub
+      }
 
 dLangReferenceOutput :: IO DLangReferenceOutput
 dLangReferenceOutput = do
@@ -236,7 +264,20 @@ spec
   (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
-  (KotlinReferenceOutput ktBasic ktImport ktHasGeneric ktGenerics ktGitHub)
+  ( KotlinReferenceOutput
+      ktBasicStruct
+      ktBasicUnion
+      ktGenericStruct
+      ktGenericUnion
+      ktBasicEnumeration
+      ktBasicImport
+      ktBasicOptional
+      ktBasic
+      ktImport
+      ktHasGeneric
+      ktGenerics
+      ktGitHub
+    )
   ( DLangReferenceOutput
       dBasicStruct
       dBasicUnion
@@ -555,30 +596,35 @@ spec
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
         TypeScript.outputModule basicStructModule `shouldBe` tsBasicStruct
+        Kotlin.outputModule basicStructModule `shouldBe` ktBasicStruct
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
       it "Mirrors reference output for `basicUnion.gotyno`" $ do
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
         TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
+        Kotlin.outputModule basicUnionModule `shouldBe` ktBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
       it "Mirrors reference output for `genericStruct.gotyno`" $ do
         genericStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericStruct.gotyno"]
         TypeScript.outputModule genericStructModule `shouldBe` tsGenericStruct
+        Kotlin.outputModule genericStructModule `shouldBe` ktGenericStruct
         DLang.outputModule genericStructModule `shouldBe` dGenericStruct
 
       it "Mirrors reference output for `genericUnion.gotyno`" $ do
         genericUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericUnion.gotyno"]
         TypeScript.outputModule genericUnionModule `shouldBe` tsGenericUnion
+        Kotlin.outputModule genericUnionModule `shouldBe` ktGenericUnion
         DLang.outputModule genericUnionModule `shouldBe` dGenericUnion
 
       it "Mirrors reference output for `basicEnumeration.gotyno`" $ do
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
         TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
+        Kotlin.outputModule enumerationModule `shouldBe` ktBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
       it "Mirrors reference output for `basicImport.gotyno`" $ do
@@ -586,12 +632,14 @@ spec
           (getRight >>> PartialList.last)
             <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
         TypeScript.outputModule basicImportModule `shouldBe` tsBasicImport
+        Kotlin.outputModule basicImportModule `shouldBe` ktBasicImport
         DLang.outputModule basicImportModule `shouldBe` dBasicImport
 
       it "Mirrors reference output for `basicOptional.gotyno`" $ do
         basicOptionalModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
         TypeScript.outputModule basicOptionalModule `shouldBe` tsBasicOptional
+        Kotlin.outputModule basicOptionalModule `shouldBe` ktBasicOptional
         DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 
       it "Mirrors reference output for `basic.gotyno`" $ do
