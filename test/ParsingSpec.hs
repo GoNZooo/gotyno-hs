@@ -54,6 +54,7 @@ data KotlinReferenceOutput = KotlinReferenceOutput
     basicUnion :: !Text,
     genericStruct :: !Text,
     genericUnion :: !Text,
+    basicEnumeration :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -129,6 +130,7 @@ kotlinReferenceOutput = do
   basicUnion <- basicUnionReferenceOutput "kt"
   genericStruct <- genericStructReferenceOutput "kt"
   genericUnion <- genericUnionReferenceOutput "kt"
+  basicEnumeration <- basicEnumerationReferenceOutput "kt"
   basic <- basicReferenceOutput "kt"
   import' <- importReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
@@ -140,6 +142,7 @@ kotlinReferenceOutput = do
         basicUnion,
         genericStruct,
         genericUnion,
+        basicEnumeration,
         basic,
         import',
         hasGeneric,
@@ -260,6 +263,7 @@ spec
       ktBasicUnion
       ktGenericStruct
       ktGenericUnion
+      ktBasicEnumeration
       ktBasic
       ktImport
       ktHasGeneric
@@ -612,6 +616,7 @@ spec
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
         TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
+        Kotlin.outputModule enumerationModule `shouldBe` ktBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
       it "Mirrors reference output for `basicImport.gotyno`" $ do
