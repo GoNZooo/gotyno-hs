@@ -55,6 +55,8 @@ data KotlinReferenceOutput = KotlinReferenceOutput
     genericStruct :: !Text,
     genericUnion :: !Text,
     basicEnumeration :: !Text,
+    basicImport :: !Text,
+    basicOptional :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -131,6 +133,8 @@ kotlinReferenceOutput = do
   genericStruct <- genericStructReferenceOutput "kt"
   genericUnion <- genericUnionReferenceOutput "kt"
   basicEnumeration <- basicEnumerationReferenceOutput "kt"
+  basicImport <- basicImportReferenceOutput "kt"
+  basicOptional <- basicOptionalReferenceOutput "kt"
   basic <- basicReferenceOutput "kt"
   import' <- importReferenceOutput "kt"
   hasGeneric <- hasGenericReferenceOutput "kt"
@@ -143,6 +147,8 @@ kotlinReferenceOutput = do
         genericStruct,
         genericUnion,
         basicEnumeration,
+        basicImport,
+        basicOptional,
         basic,
         import',
         hasGeneric,
@@ -264,6 +270,8 @@ spec
       ktGenericStruct
       ktGenericUnion
       ktBasicEnumeration
+      ktBasicImport
+      ktBasicOptional
       ktBasic
       ktImport
       ktHasGeneric
@@ -624,12 +632,14 @@ spec
           (getRight >>> PartialList.last)
             <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
         TypeScript.outputModule basicImportModule `shouldBe` tsBasicImport
+        Kotlin.outputModule basicImportModule `shouldBe` ktBasicImport
         DLang.outputModule basicImportModule `shouldBe` dBasicImport
 
       it "Mirrors reference output for `basicOptional.gotyno`" $ do
         basicOptionalModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
         TypeScript.outputModule basicOptionalModule `shouldBe` tsBasicOptional
+        Kotlin.outputModule basicOptionalModule `shouldBe` ktBasicOptional
         DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 
       it "Mirrors reference output for `basic.gotyno`" $ do
