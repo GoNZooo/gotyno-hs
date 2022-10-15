@@ -220,7 +220,7 @@ outputEnumeration name values' =
             )
           & Text.intercalate "\n"
       outputLiteral (LiteralString s) = mconcat ["String \"", s, "\""]
-      outputLiteral (LiteralInteger i) = mconcat ["Number $ fromInteger", tshow i]
+      outputLiteral (LiteralInteger i) = mconcat ["Number $ fromInteger ", tshow i]
       outputLiteral (LiteralFloat f) = mconcat ["Number ", tshow f]
       outputLiteral (LiteralBoolean b) = mconcat ["Boolean ", tshow b]
       fromJsonOutput =

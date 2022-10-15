@@ -32,6 +32,7 @@ data HaskellReferenceOutput = HaskellReferenceOutput
     basicUnion :: !Text,
     genericStruct :: !Text,
     genericUnion :: !Text,
+    basicEnumeration :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -118,6 +119,7 @@ haskellReferenceOutput = do
   basicUnion <- basicUnionReferenceOutput "hs"
   genericStruct <- genericStructReferenceOutput "hs"
   genericUnion <- genericUnionReferenceOutput "hs"
+  basicEnumeration <- basicEnumerationReferenceOutput "hs"
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
@@ -129,6 +131,7 @@ haskellReferenceOutput = do
         basicUnion,
         genericStruct,
         genericUnion,
+        basicEnumeration,
         basic,
         import',
         hasGeneric,
@@ -285,6 +288,7 @@ spec
       hsBasicUnion
       hsGenericStruct
       hsGenericUnion
+      hsBasicEnumeration
       hsBasic
       hsImport
       hsHasGeneric
@@ -657,6 +661,7 @@ spec
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
         TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
+        Haskell.outputModule enumerationModule `shouldBe` hsBasicEnumeration
         Kotlin.outputModule enumerationModule `shouldBe` ktBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
