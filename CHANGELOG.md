@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.2
+
+### Fixes
+
+- Fixed bug in Haskell number literal output
+
 ## 2.2.1
 
 ### Fixes

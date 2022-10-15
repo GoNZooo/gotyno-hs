@@ -29,12 +29,16 @@ data Holder t = Holder
   deriving (Eq, Show, Generic)
 
 instance (FromJSON t) => FromJSON (Holder t) where
-  parseJSON = JSON.genericParseJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_Holder") >>> lowerCaseFirst}
+  parseJSON =
+    JSON.genericParseJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_Holder") >>> lowerCaseFirst}
 
 instance (ToJSON t) => ToJSON (Holder t) where
-  toJSON = JSON.genericToJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_Holder") >>> lowerCaseFirst}
+  toJSON =
+    JSON.genericToJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_Holder") >>> lowerCaseFirst}
 
 makeLenses ''Holder
 
@@ -45,12 +49,16 @@ data MaybeHolder t = MaybeHolder
   deriving (Eq, Show, Generic)
 
 instance (FromJSON t) => FromJSON (MaybeHolder t) where
-  parseJSON = JSON.genericParseJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_MaybeHolder") >>> lowerCaseFirst}
+  parseJSON =
+    JSON.genericParseJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_MaybeHolder") >>> lowerCaseFirst}
 
 instance (ToJSON t) => ToJSON (MaybeHolder t) where
-  toJSON = JSON.genericToJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_MaybeHolder") >>> lowerCaseFirst}
+  toJSON =
+    JSON.genericToJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_MaybeHolder") >>> lowerCaseFirst}
 
 makeLenses ''MaybeHolder
 

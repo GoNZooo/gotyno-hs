@@ -25,12 +25,16 @@ data HoldsSomething t = HoldsSomething
   deriving (Eq, Show, Generic)
 
 instance (FromJSON t) => FromJSON (HoldsSomething t) where
-  parseJSON = JSON.genericParseJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_HoldsSomething") >>> lowerCaseFirst}
+  parseJSON =
+    JSON.genericParseJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_HoldsSomething") >>> lowerCaseFirst}
 
 instance (ToJSON t) => ToJSON (HoldsSomething t) where
-  toJSON = JSON.genericToJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_HoldsSomething") >>> lowerCaseFirst}
+  toJSON =
+    JSON.genericToJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_HoldsSomething") >>> lowerCaseFirst}
 
 makeLenses ''HoldsSomething
 

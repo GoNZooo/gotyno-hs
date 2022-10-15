@@ -28,7 +28,14 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
   }
 
 data HaskellReferenceOutput = HaskellReferenceOutput
-  { basic :: !Text,
+  { basicStruct :: !Text,
+    basicUnion :: !Text,
+    genericStruct :: !Text,
+    genericUnion :: !Text,
+    basicEnumeration :: !Text,
+    basicImport :: !Text,
+    basicOptional :: !Text,
+    basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
     generics :: !Text,
@@ -110,12 +117,33 @@ typeScriptReferenceOutput = do
 
 haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
+  basicStruct <- basicStructReferenceOutput "hs"
+  basicUnion <- basicUnionReferenceOutput "hs"
+  genericStruct <- genericStructReferenceOutput "hs"
+  genericUnion <- genericUnionReferenceOutput "hs"
+  basicEnumeration <- basicEnumerationReferenceOutput "hs"
+  basicImport <- basicImportReferenceOutput "hs"
+  basicOptional <- basicOptionalReferenceOutput "hs"
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
   generics <- genericsReferenceOutput "hs"
   gitHub <- gitHubReferenceOutput "hs"
-  pure HaskellReferenceOutput {basic, import', hasGeneric, generics, gitHub}
+  pure
+    HaskellReferenceOutput
+      { basicStruct,
+        basicUnion,
+        genericStruct,
+        genericUnion,
+        basicEnumeration,
+        basicImport,
+        basicOptional,
+        basic,
+        import',
+        hasGeneric,
+        generics,
+        gitHub
+      }
 
 fSharpReferenceOutput :: IO FSharpReferenceOutput
 fSharpReferenceOutput = do
@@ -261,7 +289,20 @@ spec
       tsGenerics
       tsGitHub
     )
-  (HaskellReferenceOutput hsBasic hsImport hsHasGeneric hsGenerics hsGitHub)
+  ( HaskellReferenceOutput
+      hsBasicStruct
+      hsBasicUnion
+      hsGenericStruct
+      hsGenericUnion
+      hsBasicEnumeration
+      hsBasicImport
+      hsBasicOptional
+      hsBasic
+      hsImport
+      hsHasGeneric
+      hsGenerics
+      hsGitHub
+    )
   (FSharpReferenceOutput fsBasic fsImport fsHasGeneric fsGenerics fsGitHub)
   (PythonReferenceOutput pyPython pyBasic pyGenerics)
   ( KotlinReferenceOutput
@@ -596,6 +637,7 @@ spec
         basicStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicStruct.gotyno"]
         TypeScript.outputModule basicStructModule `shouldBe` tsBasicStruct
+        Haskell.outputModule basicStructModule `shouldBe` hsBasicStruct
         Kotlin.outputModule basicStructModule `shouldBe` ktBasicStruct
         DLang.outputModule basicStructModule `shouldBe` dBasicStruct
 
@@ -603,6 +645,7 @@ spec
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
         TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
+        Haskell.outputModule basicUnionModule `shouldBe` hsBasicUnion
         Kotlin.outputModule basicUnionModule `shouldBe` ktBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
@@ -610,6 +653,7 @@ spec
         genericStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericStruct.gotyno"]
         TypeScript.outputModule genericStructModule `shouldBe` tsGenericStruct
+        Haskell.outputModule genericStructModule `shouldBe` hsGenericStruct
         Kotlin.outputModule genericStructModule `shouldBe` ktGenericStruct
         DLang.outputModule genericStructModule `shouldBe` dGenericStruct
 
@@ -617,6 +661,7 @@ spec
         genericUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericUnion.gotyno"]
         TypeScript.outputModule genericUnionModule `shouldBe` tsGenericUnion
+        Haskell.outputModule genericUnionModule `shouldBe` hsGenericUnion
         Kotlin.outputModule genericUnionModule `shouldBe` ktGenericUnion
         DLang.outputModule genericUnionModule `shouldBe` dGenericUnion
 
@@ -624,6 +669,7 @@ spec
         enumerationModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicEnumeration.gotyno"]
         TypeScript.outputModule enumerationModule `shouldBe` tsBasicEnumeration
+        Haskell.outputModule enumerationModule `shouldBe` hsBasicEnumeration
         Kotlin.outputModule enumerationModule `shouldBe` ktBasicEnumeration
         DLang.outputModule enumerationModule `shouldBe` dBasicEnumeration
 
@@ -632,6 +678,7 @@ spec
           (getRight >>> PartialList.last)
             <$> parseModules ["examples/basicStruct.gotyno", "examples/basicImport.gotyno"]
         TypeScript.outputModule basicImportModule `shouldBe` tsBasicImport
+        Haskell.outputModule basicImportModule `shouldBe` hsBasicImport
         Kotlin.outputModule basicImportModule `shouldBe` ktBasicImport
         DLang.outputModule basicImportModule `shouldBe` dBasicImport
 
@@ -639,6 +686,7 @@ spec
         basicOptionalModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicOptional.gotyno"]
         TypeScript.outputModule basicOptionalModule `shouldBe` tsBasicOptional
+        Haskell.outputModule basicOptionalModule `shouldBe` hsBasicOptional
         Kotlin.outputModule basicOptionalModule `shouldBe` ktBasicOptional
         DLang.outputModule basicOptionalModule `shouldBe` dBasicOptional
 

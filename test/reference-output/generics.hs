@@ -26,12 +26,16 @@ data UsingOwnGenerics t = UsingOwnGenerics
   deriving (Eq, Show, Generic)
 
 instance (FromJSON t) => FromJSON (UsingOwnGenerics t) where
-  parseJSON = JSON.genericParseJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_UsingOwnGenerics") >>> lowerCaseFirst}
+  parseJSON =
+    JSON.genericParseJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_UsingOwnGenerics") >>> lowerCaseFirst}
 
 instance (ToJSON t) => ToJSON (UsingOwnGenerics t) where
-  toJSON = JSON.genericToJSON
-    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length "_UsingOwnGenerics") >>> lowerCaseFirst}
+  toJSON =
+    JSON.genericToJSON
+      JSON.defaultOptions
+        {JSON.fieldLabelModifier = drop @[] (length "_UsingOwnGenerics") >>> lowerCaseFirst}
 
 makeLenses ''UsingOwnGenerics
 
