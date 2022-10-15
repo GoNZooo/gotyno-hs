@@ -30,6 +30,8 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
 data HaskellReferenceOutput = HaskellReferenceOutput
   { basicStruct :: !Text,
     basicUnion :: !Text,
+    genericStruct :: !Text,
+    genericUnion :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -114,6 +116,8 @@ haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
   basicStruct <- basicStructReferenceOutput "hs"
   basicUnion <- basicUnionReferenceOutput "hs"
+  genericStruct <- genericStructReferenceOutput "hs"
+  genericUnion <- genericUnionReferenceOutput "hs"
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
@@ -123,6 +127,8 @@ haskellReferenceOutput = do
     HaskellReferenceOutput
       { basicStruct,
         basicUnion,
+        genericStruct,
+        genericUnion,
         basic,
         import',
         hasGeneric,
@@ -277,6 +283,8 @@ spec
   ( HaskellReferenceOutput
       hsBasicStruct
       hsBasicUnion
+      hsGenericStruct
+      hsGenericUnion
       hsBasic
       hsImport
       hsHasGeneric
@@ -633,6 +641,7 @@ spec
         genericStructModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericStruct.gotyno"]
         TypeScript.outputModule genericStructModule `shouldBe` tsGenericStruct
+        Haskell.outputModule genericStructModule `shouldBe` hsGenericStruct
         Kotlin.outputModule genericStructModule `shouldBe` ktGenericStruct
         DLang.outputModule genericStructModule `shouldBe` dGenericStruct
 
@@ -640,6 +649,7 @@ spec
         genericUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/genericUnion.gotyno"]
         TypeScript.outputModule genericUnionModule `shouldBe` tsGenericUnion
+        Haskell.outputModule genericUnionModule `shouldBe` hsGenericUnion
         Kotlin.outputModule genericUnionModule `shouldBe` ktGenericUnion
         DLang.outputModule genericUnionModule `shouldBe` dGenericUnion
 

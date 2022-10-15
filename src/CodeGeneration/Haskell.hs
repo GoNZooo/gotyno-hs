@@ -299,8 +299,10 @@ outputGenericStruct name typeVariables fields =
         mconcat
           [ classHeaderOutput "ToJSON",
             "\n",
-            "  toJSON = JSON.genericToJSON\n",
-            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
+            "  toJSON =\n",
+            "    JSON.genericToJSON\n",
+            "      JSON.defaultOptions\n",
+            "        {JSON.fieldLabelModifier = drop @[] (length \"_",
             nameOf name,
             "\") >>> lowerCaseFirst}"
           ]
@@ -308,8 +310,10 @@ outputGenericStruct name typeVariables fields =
         mconcat
           [ classHeaderOutput "FromJSON",
             "\n",
-            "  parseJSON = JSON.genericParseJSON\n",
-            "    JSON.defaultOptions {JSON.fieldLabelModifier = drop @[] (length \"_",
+            "  parseJSON =\n",
+            "    JSON.genericParseJSON\n",
+            "      JSON.defaultOptions\n",
+            "        {JSON.fieldLabelModifier = drop @[] (length \"_",
             nameOf name,
             "\") >>> lowerCaseFirst}"
           ]
