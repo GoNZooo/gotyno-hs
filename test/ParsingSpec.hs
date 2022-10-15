@@ -29,6 +29,7 @@ data TypeScriptReferenceOutput = TypeScriptReferenceOutput
 
 data HaskellReferenceOutput = HaskellReferenceOutput
   { basicStruct :: !Text,
+    basicUnion :: !Text,
     basic :: !Text,
     import' :: !Text,
     hasGeneric :: !Text,
@@ -112,6 +113,7 @@ typeScriptReferenceOutput = do
 haskellReferenceOutput :: IO HaskellReferenceOutput
 haskellReferenceOutput = do
   basicStruct <- basicStructReferenceOutput "hs"
+  basicUnion <- basicUnionReferenceOutput "hs"
   basic <- basicReferenceOutput "hs"
   import' <- importReferenceOutput "hs"
   hasGeneric <- hasGenericReferenceOutput "hs"
@@ -120,6 +122,7 @@ haskellReferenceOutput = do
   pure
     HaskellReferenceOutput
       { basicStruct,
+        basicUnion,
         basic,
         import',
         hasGeneric,
@@ -273,6 +276,7 @@ spec
     )
   ( HaskellReferenceOutput
       hsBasicStruct
+      hsBasicUnion
       hsBasic
       hsImport
       hsHasGeneric
@@ -621,6 +625,7 @@ spec
         basicUnionModule <-
           (getRight >>> PartialList.head) <$> parseModules ["examples/basicUnion.gotyno"]
         TypeScript.outputModule basicUnionModule `shouldBe` tsBasicUnion
+        Haskell.outputModule basicUnionModule `shouldBe` hsBasicUnion
         Kotlin.outputModule basicUnionModule `shouldBe` ktBasicUnion
         DLang.outputModule basicUnionModule `shouldBe` dBasicUnion
 
