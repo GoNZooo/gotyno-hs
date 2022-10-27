@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.deser.std.*
 import java.text.ParseException
 import java.math.BigInteger
 import kotlinx.serialization.Serializable
+import org.gotynoDeclarations.BigIntegerSerializer
 
 class BasicUnion {
 @Serializable

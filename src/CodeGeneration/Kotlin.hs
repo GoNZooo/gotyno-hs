@@ -64,7 +64,8 @@ modulePrelude =
       "import com.fasterxml.jackson.databind.deser.std.*\n",
       "import java.text.ParseException\n",
       "import java.math.BigInteger\n",
-      "import kotlinx.serialization.Serializable"
+      "import kotlinx.serialization.Serializable\n",
+      "import org.gotynoDeclarations.BigIntegerSerializer"
     ]
 
 outputDefinition :: TypeDefinition -> Maybe Text
@@ -74,7 +75,6 @@ outputDefinition (TypeDefinition name (Struct (GenericStruct typeVariables field
   pure $ outputGenericStruct name typeVariables fields
 outputDefinition (TypeDefinition name (Union typeTag unionType)) =
   pure $ outputUnion name typeTag unionType
--- @TODO: use the type here to set the type of the enumeration
 outputDefinition (TypeDefinition name (Enumeration type' enumerationValues)) =
   pure $ outputEnumeration type' name enumerationValues
 outputDefinition (TypeDefinition name (UntaggedUnion unionCases)) =
@@ -332,6 +332,9 @@ outputField (StructField fieldName fieldType) =
     [ "@get:JsonProperty(\"",
       unFieldName fieldName,
       "\")\n",
+      if isBigIntType fieldType
+        then "    @Serializable(with = BigIntegerSerializer::class)\n"
+        else "",
       "    val ",
       unFieldName fieldName,
       ": ",
@@ -482,6 +485,17 @@ fieldTypeName
 fieldTypeName
   (DefinitionReferenceType (DeclarationReference _moduleName' (DefinitionName definitionName))) =
     definitionName
+
+isBigIntType :: FieldType -> Bool
+isBigIntType (ComplexType (SliceType fieldType)) = isBigIntType fieldType
+isBigIntType (ComplexType (ArrayType _size fieldType)) = isBigIntType fieldType
+isBigIntType (ComplexType (OptionalType fieldType)) = isBigIntType fieldType
+isBigIntType (ComplexType (PointerType fieldType)) = isBigIntType fieldType
+isBigIntType (BasicType U64) = True
+isBigIntType (BasicType U128) = True
+isBigIntType (BasicType I64) = True
+isBigIntType (BasicType I128) = True
+isBigIntType _ = False
 
 joinTypeVariables :: [TypeVariable] -> Text
 joinTypeVariables = fmap unTypeVariable >>> Text.intercalate ", "

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.3
+
+### Fixes
+
+- Fix bug where structures were not serializable in Kotlin if they had `{I,U}64`
+  fields.
+
 ## 2.2.2
 
 ### Fixes
