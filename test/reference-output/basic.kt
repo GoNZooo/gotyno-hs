@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.deser.std.*
 import java.text.ParseException
 import java.math.BigInteger
 import kotlinx.serialization.Serializable
+import org.gotynoDeclarations.BigIntegerSerializer
 
 class Basic {
 @Serializable
@@ -20,6 +21,7 @@ data class Recruiter(
     @get:JsonProperty("recruiter")
     val recruiter: Recruiter?,
     @get:JsonProperty("created")
+    @Serializable(with = BigIntegerSerializer::class)
     val created: BigInteger,
     @get:JsonProperty("type")
     val type: String = "Recruiter"
