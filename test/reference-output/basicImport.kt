@@ -18,7 +18,13 @@ class BasicImport {
 data class StructUsingImport(
     @get:JsonProperty("field")
     val field: BasicStruct.BasicStruct
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(field: BasicStruct.BasicStruct): StructUsingImport {
+            return StructUsingImport(field = field)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

@@ -50,6 +50,10 @@ instance HasName FieldName where
   {-# INLINE nameOf #-}
   nameOf = (^. unwrap)
 
+instance HasName StructField where
+  {-# INLINE nameOf #-}
+  nameOf = (^. structFieldName) >>> nameOf
+
 class HasDefinitionName a where
   definitionNameOf :: a -> DefinitionName
 

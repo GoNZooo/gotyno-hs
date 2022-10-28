@@ -16,7 +16,13 @@ class BasicUnion {
 data class PayloadStruct(
     @get:JsonProperty("field1")
     val field1: Int
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(field1: Int): PayloadStruct {
+            return PayloadStruct(field1 = field1)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

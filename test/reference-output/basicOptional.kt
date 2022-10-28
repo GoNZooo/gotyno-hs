@@ -20,7 +20,13 @@ data class HasOptionalString(
     val optionalArrayField: ArrayList<Int>?,
     @get:JsonProperty("arrayOfOptionalField")
     val arrayOfOptionalField: ArrayList<Int?>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(arrayOfOptionalField: ArrayList<Int?>, stringField: String? = null, optionalArrayField: ArrayList<Int>? = null): HasOptionalString {
+            return HasOptionalString(stringField = stringField, optionalArrayField = optionalArrayField, arrayOfOptionalField = arrayOfOptionalField)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

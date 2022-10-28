@@ -48,7 +48,13 @@ data class UserData(
     val location: String?,
     @get:JsonProperty("blog")
     val blog: String?
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(login: String, id: Int, avatar_url: String, url: String, html_url: String, followers_url: String, gists_url: String, repos_url: String, site_admin: Boolean, bio: String, public_repos: Int, followers: Int, following: Int, created_at: String, updated_at: String, location: String? = null, blog: String? = null): UserData {
+            return UserData(login = login, id = id, avatar_url = avatar_url, url = url, html_url = html_url, followers_url = followers_url, gists_url = gists_url, repos_url = repos_url, site_admin = site_admin, bio = bio, public_repos = public_repos, followers = followers, following = following, created_at = created_at, updated_at = updated_at, location = location, blog = blog)
+        }
+    }
+}
 
 @Serializable
 data class OwnerData(
@@ -68,7 +74,13 @@ data class OwnerData(
     val repos_url: String,
     @get:JsonProperty("site_admin")
     val site_admin: Boolean
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, login: String, url: String, html_url: String, followers_url: String, gists_url: String, repos_url: String, site_admin: Boolean): OwnerData {
+            return OwnerData(id = id, login = login, url = url, html_url = html_url, followers_url = followers_url, gists_url = gists_url, repos_url = repos_url, site_admin = site_admin)
+        }
+    }
+}
 
 @Serializable
 data class OrganizationData(
@@ -84,7 +96,13 @@ data class OrganizationData(
     val repos_url: String,
     @get:JsonProperty("description")
     val description: String?
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(login: String, id: Int, avatar_url: String, repos_url: String, members_url: String? = null, description: String? = null): OrganizationData {
+            return OrganizationData(login = login, id = id, avatar_url = avatar_url, members_url = members_url, repos_url = repos_url, description = description)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(
@@ -132,7 +150,13 @@ data class Repository(
     val html_url: String,
     @get:JsonProperty("language")
     val language: String?
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, name: String, full_name: String, private: Boolean, fork: Boolean, created_at: String, updated_at: String, owner: Owner, url: String, html_url: String, description: String? = null, language: String? = null): Repository {
+            return Repository(id = id, name = name, full_name = full_name, private = private, fork = fork, created_at = created_at, updated_at = updated_at, description = description, owner = owner, url = url, html_url = html_url, language = language)
+        }
+    }
+}
 
 @Serializable
 data class Pusher(
@@ -140,7 +164,13 @@ data class Pusher(
     val name: String,
     @get:JsonProperty("email")
     val email: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(name: String, email: String): Pusher {
+            return Pusher(name = name, email = email)
+        }
+    }
+}
 
 @Serializable
 data class Author(
@@ -150,7 +180,13 @@ data class Author(
     val email: String,
     @get:JsonProperty("username")
     val username: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(name: String, email: String, username: String): Author {
+            return Author(name = name, email = email, username = username)
+        }
+    }
+}
 
 @Serializable
 data class Label(
@@ -166,7 +202,13 @@ data class Label(
     val default: Boolean,
     @get:JsonProperty("description")
     val description: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, url: String, name: String, color: String, default: Boolean, description: String): Label {
+            return Label(id = id, url = url, name = name, color = color, default = default, description = description)
+        }
+    }
+}
 
 @Serializable
 data class Issue(
@@ -206,7 +248,13 @@ data class Issue(
     val author_association: String,
     @get:JsonProperty("body")
     val body: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, url: String, html_url: String, repository_url: String, number: Int, title: String, user: UserData, labels: ArrayList<Label>, state: String, locked: Boolean, assignees: ArrayList<UserData>, comments: Int, created_at: String, updated_at: String, author_association: String, body: String, assignee: UserData? = null, closed_at: String? = null): Issue {
+            return Issue(id = id, url = url, html_url = html_url, repository_url = repository_url, number = number, title = title, user = user, labels = labels, state = state, locked = locked, assignee = assignee, assignees = assignees, comments = comments, created_at = created_at, updated_at = updated_at, closed_at = closed_at, author_association = author_association, body = body)
+        }
+    }
+}
 
 @Serializable
 data class Commit(
@@ -232,7 +280,13 @@ data class Commit(
     val removed: ArrayList<String>,
     @get:JsonProperty("modified")
     val modified: ArrayList<String>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: String, tree_id: String, distinct: Boolean, message: String, timestamp: String, url: String, author: Author, committer: Author, added: ArrayList<String>, removed: ArrayList<String>, modified: ArrayList<String>): Commit {
+            return Commit(id = id, tree_id = tree_id, distinct = distinct, message = message, timestamp = timestamp, url = url, author = author, committer = committer, added = added, removed = removed, modified = modified)
+        }
+    }
+}
 
 @Serializable
 data class PushData(
@@ -262,7 +316,13 @@ data class PushData(
     val commits: ArrayList<Commit>,
     @get:JsonProperty("head_commit")
     val head_commit: Commit
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(repository: Repository, ref: String, before: String, after: String, pusher: Pusher, organization: OrganizationData, sender: UserData, created: Boolean, deleted: Boolean, forced: Boolean, compare: String, commits: ArrayList<Commit>, head_commit: Commit): PushData {
+            return PushData(repository = repository, ref = ref, before = before, after = after, pusher = pusher, organization = organization, sender = sender, created = created, deleted = deleted, forced = forced, compare = compare, commits = commits, head_commit = head_commit)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(
@@ -286,5 +346,11 @@ data class RepositorySearchData(
     val incomplete_results: Boolean,
     @get:JsonProperty("items")
     val items: ArrayList<Repository>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(total_count: Int, incomplete_results: Boolean, items: ArrayList<Repository>): RepositorySearchData {
+            return RepositorySearchData(total_count = total_count, incomplete_results = incomplete_results, items = items)
+        }
+    }
+}
 }

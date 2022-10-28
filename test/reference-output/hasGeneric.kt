@@ -38,7 +38,13 @@ sealed class Result<T, E> : java.io.Serializable {
 data class Holder<T>(
     @get:JsonProperty("value")
     val value: T
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun <T> create(value: T): Holder<T> {
+            return Holder(value = value)
+        }
+    }
+}
 
 @Serializable
 data class MaybeHolder<T>(
@@ -46,7 +52,13 @@ data class MaybeHolder<T>(
     val value: External_Option<T>,
     @get:JsonProperty("otherValue")
     val otherValue: Other_Plain
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun <T> create(value: External_Option<T>, otherValue: Other_Plain): MaybeHolder<T> {
+            return MaybeHolder(value = value, otherValue = otherValue)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0
+
+### Features
+
+- `Struct.create` function in companion object for all generated structs in
+  Kotlin output, which set optional fields to `null` by default.
+
 ## 2.2.3
 
 ### Fixes
