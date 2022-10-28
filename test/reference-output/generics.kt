@@ -21,13 +21,25 @@ data class UsingGenerics(
     val field1: Basic.Maybe<String>,
     @get:JsonProperty("field2")
     val field2: Basic.Either<String, Int>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(field1: Basic.Maybe<String>, field2: Basic.Either<String, Int>): UsingGenerics {
+            return UsingGenerics(field1 = field1, field2 = field2)
+        }
+    }
+}
 
 @Serializable
 data class UsingOwnGenerics<T>(
     @get:JsonProperty("field1")
     val field1: Basic.Maybe<T>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun <T> create(field1: Basic.Maybe<T>): UsingOwnGenerics<T> {
+            return UsingOwnGenerics(field1 = field1)
+        }
+    }
+}
 
 @Serializable
 data class KnownForMovie(
@@ -45,7 +57,13 @@ data class KnownForMovie(
     val overview: String,
     @get:JsonProperty("media_type")
     val media_type: String = "movie"
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, vote_average: Float, overview: String, poster_path: String? = null, title: String? = null, release_date: String? = null, media_type: String = "movie"): KnownForMovie {
+            return KnownForMovie(media_type = media_type, poster_path = poster_path, id = id, title = title, vote_average = vote_average, release_date = release_date, overview = overview)
+        }
+    }
+}
 
 @Serializable
 data class KnownForShow(
@@ -63,7 +81,13 @@ data class KnownForShow(
     val name: String?,
     @get:JsonProperty("media_type")
     val media_type: String = "tv"
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, vote_average: Float, overview: String, poster_path: String? = null, first_air_date: String? = null, name: String? = null, media_type: String = "tv"): KnownForShow {
+            return KnownForShow(media_type = media_type, poster_path = poster_path, id = id, vote_average = vote_average, overview = overview, first_air_date = first_air_date, name = name)
+        }
+    }
+}
 
 @JsonDeserialize(using = KnownFor.Deserializer::class)
 @Serializable
@@ -105,7 +129,13 @@ data class KnownForMovieWithoutTypeTag(
     val release_date: String?,
     @get:JsonProperty("overview")
     val overview: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, vote_average: Float, overview: String, poster_path: String? = null, title: String? = null, release_date: String? = null): KnownForMovieWithoutTypeTag {
+            return KnownForMovieWithoutTypeTag(poster_path = poster_path, id = id, title = title, vote_average = vote_average, release_date = release_date, overview = overview)
+        }
+    }
+}
 
 @Serializable
 data class KnownForShowWithoutTypeTag(
@@ -121,7 +151,13 @@ data class KnownForShowWithoutTypeTag(
     val first_air_date: String?,
     @get:JsonProperty("name")
     val name: String?
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(id: Int, vote_average: Float, overview: String, poster_path: String? = null, first_air_date: String? = null, name: String? = null): KnownForShowWithoutTypeTag {
+            return KnownForShowWithoutTypeTag(poster_path = poster_path, id = id, vote_average = vote_average, overview = overview, first_air_date = first_air_date, name = name)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

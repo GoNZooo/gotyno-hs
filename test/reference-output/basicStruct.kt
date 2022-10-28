@@ -18,5 +18,11 @@ data class BasicStruct(
     val field1: Int,
     @get:JsonProperty("field2")
     val field2: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(field1: Int, field2: String): BasicStruct {
+            return BasicStruct(field1 = field1, field2 = field2)
+        }
+    }
+}
 }

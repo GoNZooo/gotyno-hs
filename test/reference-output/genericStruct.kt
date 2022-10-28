@@ -16,5 +16,11 @@ class GenericStruct {
 data class GenericStruct<T>(
     @get:JsonProperty("field")
     val field: T
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun <T> create(field: T): GenericStruct<T> {
+            return GenericStruct(field = field)
+        }
+    }
+}
 }

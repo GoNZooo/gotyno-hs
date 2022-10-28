@@ -25,7 +25,13 @@ data class Recruiter(
     val created: BigInteger,
     @get:JsonProperty("type")
     val type: String = "Recruiter"
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(Name: String, emails: ArrayList<String?>, created: BigInteger, recruiter: Recruiter? = null, type: String = "Recruiter"): Recruiter {
+            return Recruiter(type = type, Name = Name, emails = emails, recruiter = recruiter, created = created)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(
@@ -65,7 +71,13 @@ sealed class GetSearchesFilter : java.io.Serializable {
 data class SearchesParameters(
     @get:JsonProperty("filters")
     val filters: ArrayList<GetSearchesFilter>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(filters: ArrayList<GetSearchesFilter>): SearchesParameters {
+            return SearchesParameters(filters = filters)
+        }
+    }
+}
 
 enum class StillSize(val data: String) : java.io.Serializable {
     @JsonProperty("w92") W92("w92"),
@@ -83,13 +95,25 @@ data class LogInData(
     val username: String,
     @get:JsonProperty("password")
     val password: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(username: String, password: String): LogInData {
+            return LogInData(username = username, password = password)
+        }
+    }
+}
 
 @Serializable
 data class UserId(
     @get:JsonProperty("value")
     val value: String
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(value: String): UserId {
+            return UserId(value = value)
+        }
+    }
+}
 
 @Serializable
 data class Channel(
@@ -97,7 +121,13 @@ data class Channel(
     val name: String,
     @get:JsonProperty("private")
     val private: Boolean
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(name: String, private: Boolean): Channel {
+            return Channel(name = name, private = private)
+        }
+    }
+}
 
 @Serializable
 data class Email(
@@ -105,7 +135,13 @@ data class Email(
     val value: String,
     @get:JsonProperty("public")
     val public: Boolean
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(value: String, public: Boolean): Email {
+            return Email(value = value, public = public)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(
@@ -205,7 +241,13 @@ data class Person(
     val recruiter: Recruiter,
     @get:JsonProperty("spouse")
     val spouse: Maybe<Person>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(name: String, age: Byte, efficiency: Float, on_vacation: Boolean, hobbies: ArrayList<String>, last_fifteen_comments: ArrayList<String>, recruiter: Recruiter, spouse: Maybe<Person>): Person {
+            return Person(name = name, age = age, efficiency = efficiency, on_vacation = on_vacation, hobbies = hobbies, last_fifteen_comments = last_fifteen_comments, recruiter = recruiter, spouse = spouse)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(

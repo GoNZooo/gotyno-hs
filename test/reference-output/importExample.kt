@@ -20,19 +20,37 @@ data class UsesImport(
     val recruiter: Basic.Recruiter,
     @get:JsonProperty("type")
     val type: String = "UsesImport"
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(recruiter: Basic.Recruiter, type: String = "UsesImport"): UsesImport {
+            return UsesImport(type = type, recruiter = recruiter)
+        }
+    }
+}
 
 @Serializable
 data class HoldsSomething<T>(
     @get:JsonProperty("holdingField")
     val holdingField: T
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun <T> create(holdingField: T): HoldsSomething<T> {
+            return HoldsSomething(holdingField = holdingField)
+        }
+    }
+}
 
 @Serializable
 data class StructureUsingImport(
     @get:JsonProperty("event")
     val event: Basic.Event
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(event: Basic.Event): StructureUsingImport {
+            return StructureUsingImport(event = event)
+        }
+    }
+}
 
 @Serializable
 @JsonTypeInfo(
@@ -58,5 +76,11 @@ sealed class UnionUsingImport : java.io.Serializable {
 data class AllConcrete(
     @get:JsonProperty("field")
     val field: HoldsSomething<Basic.Either<Basic.Maybe<StructureUsingImport>, UnionUsingImport>>
-) : java.io.Serializable
+) : java.io.Serializable {
+    companion object {
+        fun create(field: HoldsSomething<Basic.Either<Basic.Maybe<StructureUsingImport>, UnionUsingImport>>): AllConcrete {
+            return AllConcrete(field = field)
+        }
+    }
+}
 }

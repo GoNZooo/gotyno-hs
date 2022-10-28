@@ -194,7 +194,14 @@ outputPlainStruct name fields =
       literalCompare _other (StructField _aName (LiteralType _bl)) = LT
       literalCompare _a _b = EQ
       typeOutput = mconcat ["@Serializable\n", "data class ", nameOf name]
-   in mconcat [typeOutput, "(\n    ", fieldsOutput, "\n) : java.io.Serializable"]
+   in mconcat
+        [ typeOutput,
+          "(\n    ",
+          fieldsOutput,
+          "\n) : java.io.Serializable {\n",
+          outputStructCompanion name fields [],
+          "}"
+        ]
 
 outputGenericStruct :: DefinitionName -> [TypeVariable] -> [StructField] -> Text
 outputGenericStruct name typeVariables fields =
@@ -206,8 +213,54 @@ outputGenericStruct name typeVariables fields =
           "(\n    ",
           fieldsOutput,
           "\n",
-          ") : java.io.Serializable"
+          ") : java.io.Serializable {\n",
+          outputStructCompanion name fields typeVariables,
+          "}"
         ]
+
+outputStructCompanion :: DefinitionName -> [StructField] -> [TypeVariable] -> Text
+outputStructCompanion name fields typeVariables =
+  let createOutput =
+        mconcat
+          [ "        fun ",
+            typeVariableOutput <> if null typeVariables then "" else " ",
+            "create",
+            "(",
+            createParameterOutput,
+            "): ",
+            nameOf name,
+            typeVariableOutput,
+            " {\n",
+            "            return ",
+            nameOf name,
+            "(",
+            createArgumentOutput,
+            ")\n",
+            "        }\n"
+          ]
+      (optionalFields, nonOptionalFields) = List.partition isOptionalField fields
+      (literalFields, nonLiteralFields) = List.partition isLiteralField nonOptionalFields
+      typeVariableOutput =
+        if null typeVariables then "" else joinedTypeVariables
+      joinedTypeVariables = mconcat ["<", joinTypeVariables typeVariables, ">"]
+      createParameterOutput =
+        (nonLiteralFields <> optionalFields <> literalFields)
+          & fmap outputFieldParameter
+          & Text.intercalate ", "
+      outputFieldParameter f
+        | isOptionalField f =
+          mconcat [nameOf f, ": ", f ^. structFieldType & outputFieldType, " = null"]
+        | otherwise = mconcat [nameOf f, ": ", f ^. structFieldType & outputFieldType]
+      isOptionalField (StructField _ (ComplexType (OptionalType _))) = True
+      isOptionalField _ = False
+      isLiteralField (StructField _ (LiteralType _)) = True
+      isLiteralField _ = False
+      createArgumentOutput =
+        fields
+          & fmap outputFieldArgument
+          & Text.intercalate ", "
+      outputFieldArgument f = mconcat [nameOf f, " = ", nameOf f]
+   in mconcat ["    companion object {\n", createOutput, "    }\n"]
 
 outputUnion :: DefinitionName -> FieldName -> UnionType -> Text
 outputUnion name typeTag unionType =
